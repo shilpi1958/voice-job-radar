@@ -6,97 +6,164 @@
 <title>voice job radar</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.js"></script>
 <style>
+  @font-face{
+    font-family:'Fraunces';
+    src:local('Georgia');
+    font-weight:500 700;
+  }
   :root{
-    --bg:#0b0f0d; --panel:#111815; --phosphor:#5ee9a8; --phosphor-dim:#2f6b52;
-    --text:#d7f5e6; --muted:#7fa593; --danger:#ff6b6b; --card:#0f1512;
+    --bg:#f7f4ee; --panel:#ffffff; --border:#e4ddcd; --border-strong:#d3c9b0;
+    --text:#2a241c; --muted:#8a8071; --field-bg:#fbf9f4;
+    --accent:#d97a45; --accent-strong:#b85f2f; --accent-tint:#fbe4d3;
+    --secondary:#2d6a6a; --secondary-tint:#dbebe9;
+    --danger:#c94a35; --danger-tint:#f7e0da;
+    --card:#ffffff;
+    --shadow:0 1px 2px rgba(42,36,28,0.04), 0 2px 8px rgba(42,36,28,0.04);
+    --radius:12px;
+  }
+  :root[data-theme="dark"]{
+    --bg:#211c16; --panel:#2b241c; --border:#453b2c; --border-strong:#584b38;
+    --text:#f3ede0; --muted:#a89b83; --field-bg:#1c1712;
+    --accent:#e8935a; --accent-strong:#f0a876; --accent-tint:#4a3222;
+    --secondary:#5fa8a3; --secondary-tint:#243837;
+    --danger:#e0715c; --danger-tint:#4a2820;
+    --card:#2b241c;
+    --shadow:0 1px 2px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.25);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#211c16; --panel:#2b241c; --border:#453b2c; --border-strong:#584b38;
+      --text:#f3ede0; --muted:#a89b83; --field-bg:#1c1712;
+      --accent:#e8935a; --accent-strong:#f0a876; --accent-tint:#4a3222;
+      --secondary:#5fa8a3; --secondary-tint:#243837;
+      --danger:#e0715c; --danger-tint:#4a2820;
+      --card:#2b241c;
+      --shadow:0 1px 2px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.25);
+    }
   }
   *{box-sizing:border-box;}
   body{
-    background:var(--bg); color:var(--text); font-family:ui-monospace,Menlo,Consolas,monospace;
-    max-width:760px; margin:0 auto; padding:24px 16px 80px; line-height:1.5;
+    background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    max-width:640px; margin:0 auto; padding:32px 20px 80px; line-height:1.55;
+    -webkit-font-smoothing:antialiased;
   }
-  h1{color:var(--phosphor); font-size:1.4rem; margin-bottom:4px;}
-  .sub{color:var(--muted); margin-bottom:24px; font-size:0.9rem;}
-  section{background:var(--panel); border:1px solid var(--phosphor-dim); border-radius:8px; padding:16px; margin-bottom:16px;}
-  label{display:block; font-size:0.8rem; color:var(--muted); margin-bottom:6px;}
+  h1{
+    font-family:Fraunces,Georgia,'Times New Roman',serif; font-weight:600;
+    color:var(--text); font-size:1.7rem; margin:0 0 4px; letter-spacing:-0.01em;
+    text-wrap:balance;
+  }
+  .sub{color:var(--muted); margin-bottom:8px; font-size:0.95rem; max-width:46ch;}
+  section{
+    background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);
+    padding:22px; margin-bottom:18px; box-shadow:var(--shadow);
+  }
+  .step-head{display:flex; align-items:center; gap:10px; margin-bottom:4px;}
+  .step-num{
+    flex:none; width:26px; height:26px; border-radius:50%; background:var(--accent-tint);
+    color:var(--accent-strong); font-weight:700; font-size:0.85rem;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .step-title{font-size:1.05rem; font-weight:600; color:var(--text); margin:0;}
+  label{display:block; font-size:0.85rem; color:var(--muted); margin-bottom:6px; font-weight:500;}
   input[type=text], input[type=password], textarea, select{
-    width:100%; background:#081109; color:var(--text); border:1px solid var(--phosphor-dim);
-    border-radius:4px; padding:8px 10px; font-family:inherit; font-size:0.95rem;
+    width:100%; background:var(--field-bg); color:var(--text); border:1px solid var(--border-strong);
+    border-radius:8px; padding:10px 12px; font-family:inherit; font-size:0.95rem;
+  }
+  input:focus, textarea:focus, select:focus{
+    outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent);
   }
   textarea{resize:vertical; min-height:60px;}
   button{
-    background:var(--phosphor); color:#04140c; border:none; border-radius:4px; padding:10px 16px;
+    background:var(--accent); color:#fff; border:none; border-radius:8px; padding:10px 18px;
     font-family:inherit; font-weight:600; cursor:pointer; font-size:0.9rem;
+    transition:background 0.15s, transform 0.1s;
   }
+  button:hover:not(:disabled){background:var(--accent-strong);}
+  button:active:not(:disabled){transform:scale(0.98);}
   button:disabled{opacity:0.5; cursor:not-allowed;}
-  button.secondary{background:transparent; color:var(--phosphor); border:1px solid var(--phosphor-dim);}
-  button.mic{background:var(--danger); color:#1a0808;}
-  button.mic.recording{animation:pulse 1s infinite;}
-  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.6;}}
-  .row{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+  button:focus-visible{outline:2px solid var(--accent-strong); outline-offset:2px;}
+  button.secondary{background:transparent; color:var(--secondary); border:1px solid var(--border-strong);}
+  button.secondary:hover:not(:disabled){background:var(--secondary-tint); border-color:var(--secondary);}
+  button.mic{background:var(--danger); color:#fff;}
+  button.mic:hover:not(:disabled){background:var(--danger); filter:brightness(1.08);}
+  button.mic.recording{animation:pulse 1.1s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(201,74,53,0.35);}50%{box-shadow:0 0 0 8px rgba(201,74,53,0);}}
+  @media (prefers-reduced-motion: reduce){
+    button.mic.recording{animation:none;}
+    .chip{animation:none;}
+  }
+  .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
   .keys-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
-  .status{font-size:0.8rem; color:var(--muted); margin-top:8px; min-height:1.2em;}
+  .status{font-size:0.85rem; color:var(--muted); margin-top:8px; min-height:1.2em;}
   .status.err{color:var(--danger);}
-  .status.ok{color:var(--phosphor);}
-  .transcript-box{background:#081109; border:1px solid var(--phosphor-dim); border-radius:4px; padding:10px; margin-top:10px; font-size:0.9rem; display:none;}
+  .status.ok{color:var(--secondary);}
+  .transcript-box{background:var(--field-bg); border:1px solid var(--border); border-radius:8px; padding:12px; margin-top:10px; font-size:0.9rem; display:none;}
   .transcript-box.show{display:block;}
-  .transcript-box .label{color:var(--muted); font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em;}
-  .card{background:var(--card); border:1px solid var(--phosphor-dim); border-radius:6px; padding:14px; margin-bottom:12px;}
-  .card h3{margin:0 0 4px; color:var(--phosphor); font-size:1.05rem;}
-  .card .meta{color:var(--muted); font-size:0.85rem; margin-bottom:8px;}
-  .card .score{float:right; background:var(--phosphor-dim); color:var(--phosphor); border-radius:4px; padding:2px 8px; font-size:0.8rem;}
-  .card .fit{margin-bottom:8px;}
-  .card .gate{color:var(--danger); font-size:0.85rem; margin-bottom:8px;}
-  .card .skills{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;}
-  .card .skills span{background:#0a1a13; border:1px solid var(--phosphor-dim); border-radius:12px; padding:2px 8px; font-size:0.75rem; color:var(--muted);}
-  .card a{color:var(--phosphor);}
-  .spinner{display:inline-block; width:14px; height:14px; border:2px solid var(--phosphor-dim); border-top-color:var(--phosphor); border-radius:50%; animation:spin 0.7s linear infinite; vertical-align:middle; margin-right:6px;}
+  .transcript-box .label{color:var(--muted); font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em; font-weight:600;}
+  .card{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:18px; margin-bottom:14px; box-shadow:var(--shadow);}
+  .card h3{margin:0 0 4px; color:var(--text); font-size:1.1rem; font-weight:600; padding-right:70px;}
+  .card .meta{color:var(--muted); font-size:0.85rem; margin-bottom:10px;}
+  .card .score{float:right; background:var(--secondary-tint); color:var(--secondary); border-radius:20px; padding:3px 10px; font-size:0.8rem; font-weight:700; font-variant-numeric:tabular-nums;}
+  .card .fit{margin-bottom:10px;}
+  .card .gate{color:var(--danger); background:var(--danger-tint); border-radius:8px; padding:8px 10px; font-size:0.85rem; margin-bottom:10px;}
+  .card .skills{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;}
+  .card .skills span{background:var(--field-bg); border:1px solid var(--border); border-radius:12px; padding:3px 10px; font-size:0.78rem; color:var(--muted);}
+  .card a{color:var(--secondary); font-weight:600; text-decoration:none;}
+  .card a:hover{text-decoration:underline;}
+  .spinner{display:inline-block; width:14px; height:14px; border:2px solid var(--border-strong); border-top-color:var(--accent); border-radius:50%; animation:spin 0.7s linear infinite; vertical-align:middle; margin-right:6px;}
   @keyframes spin{to{transform:rotate(360deg);}}
+  @media (prefers-reduced-motion: reduce){ .spinner{animation:none;} }
   details summary{cursor:pointer; color:var(--muted); font-size:0.85rem;}
   .lang-select{max-width:220px;}
-  #settingsPanel{background:var(--panel); border:1px solid var(--phosphor-dim); border-radius:8px; padding:10px 16px; margin-bottom:16px;}
-  #settingsPanel[open]{padding-bottom:16px;}
-  #settingsSummary{font-size:0.9rem; padding:4px 0; color:var(--text); list-style:none;}
+  #settingsPanel{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:6px 20px; margin-bottom:18px; box-shadow:var(--shadow);}
+  #settingsPanel[open]{padding-bottom:20px;}
+  #settingsSummary{font-size:0.9rem; padding:12px 0; color:var(--text); list-style:none; font-weight:500;}
   #settingsSummary::-webkit-details-marker{display:none;}
-  #settingsSummary span{color:var(--muted);}
-  #settingsSummary span.ready{color:var(--phosphor);}
-  .chip-input{background:#081109; border:1px solid var(--phosphor-dim); border-radius:4px; padding:8px 10px;}
+  #settingsSummary span{color:var(--muted); font-weight:400;}
+  #settingsSummary span.ready{color:var(--secondary); font-weight:600;}
+  .chip-input{background:var(--field-bg); border:1px solid var(--border-strong); border-radius:8px; padding:8px 10px;}
   .chip-list{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px;}
   .chip-list:empty{margin-bottom:0;}
-  .chip{display:inline-flex; align-items:center; gap:6px; background:var(--phosphor-dim); color:var(--phosphor); border-radius:14px; padding:4px 6px 4px 12px; font-size:0.85rem; animation:chip-in 0.15s ease-out;}
+  .chip{display:inline-flex; align-items:center; gap:6px; background:var(--accent-tint); color:var(--accent-strong); border-radius:14px; padding:4px 6px 4px 12px; font-size:0.85rem; font-weight:600; animation:chip-in 0.15s ease-out;}
   @keyframes chip-in{from{transform:scale(0.85); opacity:0;}to{transform:scale(1); opacity:1;}}
-  .chip button{background:transparent; color:var(--phosphor); border:none; border-radius:50%; width:18px; height:18px; padding:0; font-size:0.9rem; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center;}
-  .chip button:hover{background:rgba(94,233,168,0.2);}
+  .chip button{background:transparent; color:var(--accent-strong); border:none; border-radius:50%; width:18px; height:18px; padding:0; font-size:0.9rem; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center;}
+  .chip button:hover{background:rgba(217,122,69,0.2);}
   .chip-input input{background:transparent; border:none; padding:4px 2px; width:100%;}
   .chip-input input:focus{outline:none;}
-  .cv-upload-btn{background:transparent; color:var(--phosphor); border:1px solid var(--phosphor-dim); border-radius:4px; padding:9px 16px; font-family:inherit; font-weight:600; cursor:pointer; font-size:0.9rem; display:inline-block;}
-  .cv-upload-btn:hover{border-color:var(--phosphor);}
-  .skill-gap{margin-top:10px; padding-top:10px; border-top:1px solid var(--phosphor-dim);}
-  .skill-gap .row-label{font-size:0.75rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;}
-  .skill-gap .skills{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;}
-  .skill-gap .skills span{border-radius:12px; padding:2px 8px; font-size:0.75rem;}
-  .skill-gap .skills.have span{background:rgba(94,233,168,0.15); border:1px solid var(--phosphor-dim); color:var(--phosphor);}
-  .skill-gap .skills.missing span{background:rgba(255,107,107,0.12); border:1px solid var(--danger); color:var(--danger);}
-  .skill-gap .next-step{font-size:0.85rem; color:var(--text);}
-  .job-chat{margin-top:10px; padding-top:10px; border-top:1px solid var(--phosphor-dim);}
+  .cv-upload-btn{background:transparent; color:var(--secondary); border:1px solid var(--border-strong); border-radius:8px; padding:9px 16px; font-family:inherit; font-weight:600; cursor:pointer; font-size:0.9rem; display:inline-block;}
+  .cv-upload-btn:hover{border-color:var(--secondary); background:var(--secondary-tint);}
+  .skill-gap{margin-top:12px; padding-top:12px; border-top:1px solid var(--border);}
+  .skill-gap .row-label{font-size:0.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; font-weight:600; margin-bottom:5px;}
+  .skill-gap .skills{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;}
+  .skill-gap .skills span{border-radius:12px; padding:3px 10px; font-size:0.78rem; font-weight:500;}
+  .skill-gap .skills.have span{background:var(--secondary-tint); border:1px solid var(--secondary); color:var(--secondary);}
+  .skill-gap .skills.missing span{background:var(--danger-tint); border:1px solid var(--danger); color:var(--danger);}
+  .skill-gap .next-step{font-size:0.88rem; color:var(--text);}
+  .job-chat{margin-top:12px; padding-top:12px; border-top:1px solid var(--border);}
   .job-chat-toggle{width:100%; text-align:left;}
   .job-chat-panel{margin-top:10px;}
   .job-chat-history{display:flex; flex-direction:column; gap:8px; margin-bottom:4px;}
-  .job-chat-msg{border-radius:8px; padding:8px 10px; font-size:0.85rem; max-width:90%;}
-  .job-chat-msg.user{background:var(--phosphor-dim); color:var(--phosphor); align-self:flex-end;}
-  .job-chat-msg.assistant{background:#0a1a13; border:1px solid var(--phosphor-dim); color:var(--text); align-self:flex-start;}
-  .job-chat-msg .msg-label{font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em; opacity:0.7; margin-bottom:2px;}
+  .job-chat-msg{border-radius:10px; padding:9px 12px; font-size:0.85rem; max-width:90%;}
+  .job-chat-msg.user{background:var(--accent-tint); color:var(--accent-strong); align-self:flex-end;}
+  .job-chat-msg.assistant{background:var(--field-bg); border:1px solid var(--border); color:var(--text); align-self:flex-start;}
+  .job-chat-msg .msg-label{font-size:0.68rem; text-transform:uppercase; letter-spacing:0.06em; opacity:0.7; margin-bottom:2px; font-weight:600;}
   .job-chat-mic{padding:6px 12px; font-size:0.85rem;}
+  .profile-tabs{display:flex; gap:6px; margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:0;}
+  .profile-tab{
+    background:transparent; color:var(--muted); border:none; border-bottom:2px solid transparent;
+    border-radius:0; padding:8px 4px; font-weight:600; font-size:0.88rem; margin-bottom:-1px;
+  }
+  .profile-tab:hover:not(:disabled){background:transparent; color:var(--text);}
+  .profile-tab.active{color:var(--accent-strong); border-bottom-color:var(--accent);}
+  .profile-panel{display:none;}
+  .profile-panel.active{display:block;}
 </style>
 </head>
 <body>
 
-<div class="row" style="justify-content:space-between; align-items:flex-start;">
-  <div>
-    <h1>voice job radar</h1>
-    <div class="sub">speak your job search, in your own language.</div>
-  </div>
-</div>
+<h1>Voice Job Radar</h1>
+<div class="sub">Find work by speaking, in your own language — no typing, no reading English required.</div>
 
 <details id="settingsPanel">
   <summary id="settingsSummary">&#9881; settings — <span id="settingsSummaryStatus">no API keys set yet</span></summary>
@@ -155,73 +222,94 @@
 </section>
 
 <section>
-  <label style="font-size:0.95rem; color:var(--text);">Step 1 — build your profile</label>
-  <div class="sub" style="margin-bottom:10px;">
-    Tell us about yourself and what you're looking for, in your own words —
-    speak as long as you like. We'll write it in English and read it back so
-    you can check we got it right.
+  <div class="step-head">
+    <span class="step-num">1</span>
+    <p class="step-title">Build your profile</p>
   </div>
-  <div class="row">
-    <button id="stanceMicBtn" class="mic">&#9679; hold to speak</button>
-    <span class="status" id="stanceMicStatus"></span>
-  </div>
-  <div class="transcript-box" id="stanceTranscriptBox">
-    <div class="label">heard (original)</div>
-    <div id="stanceTranscriptOriginal"></div>
-    <div class="label" style="margin-top:8px;">written in English</div>
-    <div id="stanceTranscriptEnglish"></div>
-  </div>
-  <textarea id="stanceText" rows="6" style="margin-top:8px; min-height:140px;" placeholder="e.g. I have 2 years of experience as a backend developer. I prefer remote work or Bangalore, don't want night shifts, and I'm open to fintech or e-commerce companies."></textarea>
-  <div class="row" style="margin-top:8px; justify-content:space-between;">
-    <span class="status" id="stanceReadbackStatus"></span>
+  <div class="sub" style="margin-bottom:16px;">
+    This helps us rank jobs for you specifically, not just match keywords.
   </div>
 
-  <div class="sub" style="margin-top:16px; margin-bottom:8px;">
-    Optional: add your CV so we can tell you exactly which skills you're
-    missing for each job, and what to do about it — not just whether it's a
-    match.
-  </div>
-  <div class="row">
-    <label for="cvFileInput" class="cv-upload-btn">&#128196; upload CV (PDF or text)</label>
-    <input type="file" id="cvFileInput" accept=".pdf,.txt" style="display:none;">
-    <span class="status" id="cvStatus"></span>
-    <button type="button" id="cvClearBtn" class="secondary" style="display:none;">remove CV</button>
+  <div class="profile-tabs" role="tablist">
+    <button type="button" class="profile-tab active" data-tab="speak" role="tab">Speak it</button>
+    <button type="button" class="profile-tab" data-tab="cv" role="tab">Upload CV</button>
+    <button type="button" class="profile-tab" data-tab="guided" role="tab">Answer questions</button>
   </div>
 
-  <div class="sub" style="margin-top:16px; margin-bottom:8px;">
-    No CV, or want to build a better one? Answer a few quick spoken
-    questions — in your own language — and we'll write you a proper
-    profile from your answers.
-  </div>
-  <div class="row">
-    <button type="button" id="startGuidedBtn" class="secondary">&#128172; build my profile with a few questions</button>
-  </div>
-
-  <div id="guidedConvo" style="display:none; margin-top:14px; padding-top:14px; border-top:1px solid var(--phosphor-dim);">
-    <div class="row" style="justify-content:space-between;">
-      <span class="status" id="guidedProgress" style="margin:0;"></span>
-      <button type="button" id="guidedCancelBtn" class="secondary">cancel</button>
+  <div class="profile-panel active" id="profilePanel-speak">
+    <div class="sub" style="margin-bottom:10px;">
+      Tell us about yourself and what you're looking for, in your own words —
+      speak as long as you like. We'll write it in English and read it back so
+      you can check we got it right.
     </div>
-    <div id="guidedQuestion" style="margin-top:8px; color:var(--text); font-size:0.95rem;"></div>
-    <div class="row" style="margin-top:10px;">
-      <button id="guidedMicBtn" class="mic">&#9679; hold to speak</button>
-      <span class="status" id="guidedMicStatus"></span>
+    <div class="row">
+      <button id="stanceMicBtn" class="mic">&#9679; hold to speak</button>
+      <span class="status" id="stanceMicStatus"></span>
     </div>
-    <div class="transcript-box" id="guidedTranscriptBox">
+    <div class="transcript-box" id="stanceTranscriptBox">
       <div class="label">heard (original)</div>
-      <div id="guidedTranscriptOriginal"></div>
+      <div id="stanceTranscriptOriginal"></div>
       <div class="label" style="margin-top:8px;">written in English</div>
-      <div id="guidedTranscriptEnglish"></div>
+      <div id="stanceTranscriptEnglish"></div>
     </div>
-    <div class="row" style="margin-top:10px; justify-content:flex-end;">
-      <button type="button" id="guidedNextBtn" style="display:none;">next question &rarr;</button>
+    <textarea id="stanceText" rows="6" style="margin-top:8px; min-height:140px;" placeholder="e.g. I have 2 years of experience as a backend developer. I prefer remote work or Bangalore, don't want night shifts, and I'm open to fintech or e-commerce companies."></textarea>
+    <div class="row" style="margin-top:8px; justify-content:space-between;">
+      <span class="status" id="stanceReadbackStatus"></span>
+    </div>
+  </div>
+
+  <div class="profile-panel" id="profilePanel-cv">
+    <div class="sub" style="margin-bottom:10px;">
+      Upload your CV so we can tell you exactly which skills you're missing
+      for each job, and what to do about it — not just whether it's a match.
+    </div>
+    <div class="row">
+      <label for="cvFileInput" class="cv-upload-btn">&#128196; upload CV (PDF or text)</label>
+      <input type="file" id="cvFileInput" accept=".pdf,.txt" style="display:none;">
+      <span class="status" id="cvStatus"></span>
+      <button type="button" id="cvClearBtn" class="secondary" style="display:none;">remove CV</button>
+    </div>
+  </div>
+
+  <div class="profile-panel" id="profilePanel-guided">
+    <div class="sub" style="margin-bottom:10px;">
+      No CV, or want to build a better one? Answer a few quick spoken
+      questions — in your own language — and we'll write you a proper
+      profile from your answers.
+    </div>
+    <div class="row">
+      <button type="button" id="startGuidedBtn" class="secondary">&#128172; start the 5 questions</button>
+    </div>
+
+    <div id="guidedConvo" style="display:none; margin-top:14px; padding-top:14px; border-top:1px solid var(--border);">
+      <div class="row" style="justify-content:space-between;">
+        <span class="status" id="guidedProgress" style="margin:0;"></span>
+        <button type="button" id="guidedCancelBtn" class="secondary">cancel</button>
+      </div>
+      <div id="guidedQuestion" style="margin-top:8px; color:var(--text); font-size:0.95rem;"></div>
+      <div class="row" style="margin-top:10px;">
+        <button id="guidedMicBtn" class="mic">&#9679; hold to speak</button>
+        <span class="status" id="guidedMicStatus"></span>
+      </div>
+      <div class="transcript-box" id="guidedTranscriptBox">
+        <div class="label">heard (original)</div>
+        <div id="guidedTranscriptOriginal"></div>
+        <div class="label" style="margin-top:8px;">written in English</div>
+        <div id="guidedTranscriptEnglish"></div>
+      </div>
+      <div class="row" style="margin-top:10px; justify-content:flex-end;">
+        <button type="button" id="guidedNextBtn" style="display:none;">next question &rarr;</button>
+      </div>
     </div>
   </div>
 </section>
 
 <section>
-  <label style="font-size:0.95rem; color:var(--text);">Step 2 — search for jobs</label>
-  <div class="sub" style="margin-bottom:10px;">
+  <div class="step-head">
+    <span class="step-num">2</span>
+    <p class="step-title">Search for jobs</p>
+  </div>
+  <div class="sub" style="margin-bottom:16px;">
     Add roles, companies, or keywords — speak one at a time, or type and
     press Enter. Add as many as you like.
   </div>
@@ -249,8 +337,11 @@
 </section>
 
 <section id="resultsSection" style="display:none;">
-  <label style="margin:0;">results</label>
-  <div id="resultsList" style="margin-top:10px;"></div>
+  <div class="step-head" style="margin-bottom:16px;">
+    <span class="step-num">3</span>
+    <p class="step-title">Your matches</p>
+  </div>
+  <div id="resultsList"></div>
 </section>
 
 <details>
@@ -385,6 +476,16 @@ document.getElementById('saveKeysBtn').addEventListener('click', ()=>{
   updateSettingsSummary();
 });
 loadKeyInputs();
+
+// ---------- profile tabs ----------
+document.querySelectorAll('.profile-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.profile-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.profile-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(`profilePanel-${tab.dataset.tab}`).classList.add('active');
+  });
+});
 
 function log(msg){
   const el = document.getElementById('debugLog');
