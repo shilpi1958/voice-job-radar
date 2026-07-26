@@ -513,7 +513,7 @@
   </div>
 
   <div class="profile-panel active" id="profilePanel-speak">
-    <p class="hint">Speak in short takes (Start / Stop). Each take adds on — keep going for a longer profile.</p>
+    <p class="hint">Speak freely — tap Start, then Stop when you're done. Longer answers are fine.</p>
     <div class="mic-control">
       <button id="stanceMicBtn" class="mic" type="button" aria-label="Start recording">
         <span class="mic-ico" aria-hidden="true"></span>
@@ -1532,17 +1532,23 @@ document.getElementById('searchBtn').addEventListener('click', async () => {
 });
 
 // ---------- mic recording ----------
-// Sarvam STT caps each clip at ~30s. Longer profiles = multiple Start/Stop takes that append.
-const MAX_RECORD_SECONDS = 30;
-const MAX_RECORD_MS = 29500;
-let mediaRecorder = null;
-let audioChunks = [];
-let recordTickInterval = null;
-let recordHardStop = null;
+// Sarvam STT caps each clip at ~30s. We keep one Start→Stop session and
+// quietly roll ~30s chunks in the background so the UI just shows Recording…
+const CHUNK_MS = 29500;
+let activeMicButton = null;
+let recordSession = null;
 
-function clearRecordTimer(){
-  if(recordTickInterval){ clearInterval(recordTickInterval); recordTickInterval = null; }
-  if(recordHardStop){ clearTimeout(recordHardStop); recordHardStop = null; }
+function clearRecordTimers(){
+  if(!recordSession) return;
+  if(recordSession.tickInterval){ clearInterval(recordSession.tickInterval); recordSession.tickInterval = null; }
+  if(recordSession.chunkTimer){ clearTimeout(recordSession.chunkTimer); recordSession.chunkTimer = null; }
+}
+
+function formatRecordClock(ms){
+  const secs = Math.max(0, Math.floor(ms / 1000));
+  const m = Math.floor(secs / 60);
+  const s = String(secs % 60).padStart(2, '0');
+  return `${m}:${s}`;
 }
 
 function setMicButtonRecording(btn, recording){
@@ -1555,41 +1561,95 @@ function setMicButtonRecording(btn, recording){
   if(short) short.textContent = recording ? 'Stop' : 'Start';
 }
 
-function startRecordTimer(statusId, onLimit){
-  clearRecordTimer();
-  const startedAt = Date.now();
+function startRecorderOnStream(stream){
+  const chunks = [];
+  const recorder = new MediaRecorder(stream);
+  recorder.ondataavailable = (e) => { if(e.data && e.data.size) chunks.push(e.data); };
+  recorder.start();
+  return { recorder, chunks };
+}
+
+function stopRecorder(recorder, chunks){
+  return new Promise((resolve) => {
+    if(!recorder || recorder.state === 'inactive'){
+      resolve(new Blob(chunks, { type: 'audio/webm' }));
+      return;
+    }
+    recorder.onstop = () => resolve(new Blob(chunks, { type: 'audio/webm' }));
+    try{ recorder.requestData(); }catch(_){ /* older browsers */ }
+    recorder.stop();
+  });
+}
+
+async function rollRecordChunk(){
+  if(!recordSession || recordSession.rolling) return;
+  const session = recordSession;
+  session.rolling = true;
+  try{
+    const blob = await stopRecorder(session.recorder, session.chunks);
+    if(recordSession !== session) return; // user stopped mid-roll
+    if(blob && blob.size > 500) session.blobs.push(blob);
+    const next = startRecorderOnStream(session.stream);
+    session.recorder = next.recorder;
+    session.chunks = next.chunks;
+    scheduleChunkRoll();
+  }finally{
+    if(recordSession === session) session.rolling = false;
+  }
+}
+
+function scheduleChunkRoll(){
+  if(!recordSession) return;
+  if(recordSession.chunkTimer) clearTimeout(recordSession.chunkTimer);
+  recordSession.chunkTimer = setTimeout(() => { rollRecordChunk(); }, CHUNK_MS);
+}
+
+function startElapsedClock(statusId){
+  if(!recordSession) return;
   const tick = () => {
-    const elapsed = Date.now() - startedAt;
-    const left = Math.max(0, Math.ceil((MAX_RECORD_MS - elapsed) / 1000));
-    setStatus(statusId, `recording… ${left}s left this take · tap Stop, then Start again to add more`, '');
+    if(!recordSession) return;
+    const elapsed = Date.now() - recordSession.startedAt;
+    setStatus(statusId, `Recording… ${formatRecordClock(elapsed)}`, '');
   };
   tick();
-  recordTickInterval = setInterval(tick, 200);
-  recordHardStop = setTimeout(() => {
-    clearRecordTimer();
-    setStatus(statusId, `${MAX_RECORD_SECONDS}s take limit — stopping (Start again to continue)`, '');
-    onLimit();
-  }, MAX_RECORD_MS);
+  recordSession.tickInterval = setInterval(tick, 250);
 }
 
-async function startRecording(){
+async function beginRecordSession({ btn, statusId }){
+  if(recordSession || activeMicButton) throw new Error('already recording');
   const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  mediaRecorder = new MediaRecorder(stream);
-  audioChunks = [];
-  mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-  mediaRecorder.start();
+  const { recorder, chunks } = startRecorderOnStream(stream);
+  recordSession = {
+    stream, recorder, chunks, blobs: [],
+    btn, statusId, startedAt: Date.now(),
+    tickInterval: null, chunkTimer: null, rolling: false
+  };
+  activeMicButton = btn;
+  setMicButtonRecording(btn, true);
+  startElapsedClock(statusId);
+  scheduleChunkRoll();
 }
 
-function stopRecording(){
-  clearRecordTimer();
-  return new Promise((resolve) => {
-    mediaRecorder.onstop = () => {
-      const blob = new Blob(audioChunks, { type: 'audio/webm' });
-      mediaRecorder.stream.getTracks().forEach(t => t.stop());
-      resolve(blob);
-    };
-    mediaRecorder.stop();
-  });
+async function endRecordSession(){
+  if(!recordSession) return [];
+  const session = recordSession;
+  clearRecordTimers();
+  // Wait out an in-flight chunk roll so we don't double-stop the recorder
+  const waitStart = Date.now();
+  while(session.rolling && Date.now() - waitStart < 3000){
+    await new Promise(r => setTimeout(r, 40));
+  }
+  session.rolling = true;
+  try{
+    const last = await stopRecorder(session.recorder, session.chunks);
+    if(last && last.size > 500) session.blobs.push(last);
+  }catch(_){ /* ignore */ }
+  try{ session.stream.getTracks().forEach(t => t.stop()); }catch(_){ /* ignore */ }
+  const blobs = session.blobs.slice();
+  setMicButtonRecording(session.btn, false);
+  if(activeMicButton === session.btn) activeMicButton = null;
+  if(recordSession === session) recordSession = null;
+  return blobs;
 }
 
 /** Append a new dictation take without wiping earlier text. */
@@ -1601,12 +1661,48 @@ function appendDictatedText(current, next, separator = ' '){
   return `${a}${separator}${b}`;
 }
 
-// Read the new take back in the speaker's language (not the whole profile).
+async function transcribeBlobsToEnglish(blobs){
+  const selectedLang = document.getElementById('langSelect').value;
+  lastSpokenLanguage = selectedLang === 'unknown' ? 'hi-IN' : selectedLang;
+  const originals = [];
+  const englishParts = [];
+  let detectedLang = selectedLang;
+  let langMismatch = false;
+
+  for(const blob of blobs){
+    if(!blob || blob.size < 500) continue;
+    const sttResult = await sarvamTranscribe(blob, selectedLang);
+    const original = (sttResult.transcript || '').trim();
+    if(!original) continue;
+    detectedLang = sttResult.language_code || detectedLang;
+    if(detectedLang && detectedLang !== 'unknown') lastSpokenLanguage = detectedLang;
+    log(`STT transcript (${detectedLang}): ${original}`);
+    originals.push(original);
+
+    if(selectedLang !== 'unknown' && detectedLang !== 'unknown'
+      && detectedLang.split('-')[0] !== selectedLang.split('-')[0]){
+      langMismatch = true;
+    }
+
+    const translated = await sarvamTranslate(original, detectedLang, 'en-IN');
+    const english = await cleanupTranslatedText(translated);
+    log(`cleaned up: ${english}`);
+    if(english.trim()) englishParts.push(english.trim());
+  }
+
+  return {
+    original: originals.join(' '),
+    english: englishParts.join(' '),
+    detectedLang,
+    langMismatch
+  };
+}
+
 async function speakBackForConfirmation(englishText, spokenLanguage, statusId){
   if(!statusId) return;
   try{
     setStatus(statusId, '', '');
-    document.getElementById(statusId).innerHTML = '<span class="spinner"></span>reading that take back…';
+    document.getElementById(statusId).innerHTML = '<span class="spinner"></span>reading it back…';
     let textToSpeak = englishText;
     if(!spokenLanguage.startsWith('en')){
       textToSpeak = await sarvamTranslate(englishText, 'en-IN', spokenLanguage);
@@ -1615,71 +1711,44 @@ async function speakBackForConfirmation(englishText, spokenLanguage, statusId){
     for(const b64 of audios){
       await playBase64Wav(b64);
     }
-    setStatus(statusId, 'added — tap Start again to keep going', 'ok');
+    setStatus(statusId, 'added — edit anything that looks off', 'ok');
   }catch(err){
     log(`readback ERROR: ${err.message}`);
     setStatus(statusId, `couldn't read it back: ${err.message}`, 'err');
   }
 }
 
-// One recorder shared across mic buttons — only one can record at a time.
-let activeMicButton = null;
-
 function bindMicButton({ buttonId, statusId, onResult, originalBoxId, englishBoxId, transcriptBoxId, speakBackAfter = false, readbackStatusId = null }){
   const btn = document.getElementById(buttonId);
-  let isRecording = false;
-  let stopping = false;
+  let busy = false;
 
   async function startMic(){
-    if(isRecording || activeMicButton || stopping) return;
+    if(busy || recordSession || activeMicButton) return;
     try{
-      await startRecording();
-      isRecording = true;
-      activeMicButton = btn;
-      setMicButtonRecording(btn, true);
-      startRecordTimer(statusId, () => stopMic({ hitLimit: true }));
+      await beginRecordSession({ btn, statusId });
     }catch(err){
-      clearRecordTimer();
       setMicButtonRecording(btn, false);
       setStatus(statusId, `mic error: ${err.message}`, 'err');
     }
   }
 
-  async function stopMic(opts = {}){
-    if(!isRecording || stopping) return;
-    stopping = true;
-    isRecording = false;
-    activeMicButton = null;
-    setMicButtonRecording(btn, false);
-    clearRecordTimer();
+  async function stopMic(){
+    if(busy || !recordSession || recordSession.btn !== btn) return;
+    busy = true;
     setStatus(statusId, '', '');
-    document.getElementById(statusId).innerHTML =
-      `<span class="spinner"></span>${opts.hitLimit ? '30s take limit — transcribing…' : 'transcribing…'}`;
+    document.getElementById(statusId).innerHTML = '<span class="spinner"></span>transcribing…';
     try{
-      const blob = await stopRecording();
-      const selectedLang = document.getElementById('langSelect').value;
-      lastSpokenLanguage = selectedLang === 'unknown' ? 'hi-IN' : selectedLang;
-
-      const sttResult = await sarvamTranscribe(blob, selectedLang);
-      const original = sttResult.transcript || '';
-      const detectedLang = sttResult.language_code || selectedLang;
-      if(detectedLang && detectedLang !== 'unknown') lastSpokenLanguage = detectedLang;
-      log(`STT transcript (${detectedLang}): ${original}`);
-
-      if(!original.trim()){
-        setStatus(statusId, 'didn\'t catch that — tap Start and try again', 'err');
+      const blobs = await endRecordSession();
+      if(!blobs.length){
+        setStatus(statusId, 'didn\'t catch that — try again', 'err');
         return;
       }
-
-      const langMismatch = selectedLang !== 'unknown' && detectedLang !== 'unknown'
-        && detectedLang.split('-')[0] !== selectedLang.split('-')[0];
-
-      const translated = await sarvamTranslate(original, detectedLang, 'en-IN');
-      log(`translated: ${translated}`);
-
       document.getElementById(statusId).innerHTML = '<span class="spinner"></span>cleaning up…';
-      const english = await cleanupTranslatedText(translated);
-      log(`cleaned up: ${english}`);
+      const { original, english, langMismatch } = await transcribeBlobsToEnglish(blobs);
+      if(!english.trim()){
+        setStatus(statusId, 'didn\'t catch that — try again', 'err');
+        return;
+      }
 
       const prevOriginal = document.getElementById(originalBoxId).textContent || '';
       const prevEnglish = document.getElementById(englishBoxId).textContent || '';
@@ -1689,11 +1758,9 @@ function bindMicButton({ buttonId, statusId, onResult, originalBoxId, englishBox
       onResult(english);
 
       if(langMismatch){
-        setStatus(statusId, `added — but this sounded like ${detectedLang}, not ${selectedLang}. Review below.`, 'err');
+        setStatus(statusId, 'added — language sounded different from your selection. Review below.', 'err');
       }else{
-        setStatus(statusId, opts.hitLimit
-          ? 'take saved — tap Start again to keep adding (30s per take)'
-          : 'added — tap Start again to keep going', 'ok');
+        setStatus(statusId, 'added', 'ok');
       }
 
       if(speakBackAfter && !langMismatch){
@@ -1701,15 +1768,17 @@ function bindMicButton({ buttonId, statusId, onResult, originalBoxId, englishBox
       }
     }catch(err){
       log(`ERROR: ${err.message}`);
+      // Ensure we don't leave a dangling session
+      if(recordSession) await endRecordSession().catch(() => {});
       setStatus(statusId, err.message, 'err');
     }finally{
-      stopping = false;
+      busy = false;
     }
   }
 
   btn.addEventListener('click', (e) => {
     e.preventDefault();
-    if(isRecording) stopMic();
+    if(recordSession && recordSession.btn === btn) stopMic();
     else startMic();
   });
 }
@@ -2188,38 +2257,23 @@ Answer directly and concisely — 2-4 sentences, plain language, no headers or m
     : callClaude(prompt, { webSearch: false, maxTokens: 1200 });
 }
 
-async function handleJobChatQuestion(index, blob){
+async function handleJobChatQuestionFromText(index, englishQuestion){
   const statusId = `jobChatMicStatus-${index}`;
-  setStatus(statusId, '', '');
-  document.getElementById(statusId).innerHTML = '<span class="spinner"></span>transcribing…';
+  const spokenLang = document.getElementById('langSelect').value === 'unknown'
+    ? lastSpokenLanguage
+    : document.getElementById('langSelect').value;
   try{
-    const selectedLang = document.getElementById('langSelect').value;
-    const spokenLang = selectedLang === 'unknown' ? lastSpokenLanguage : selectedLang;
-
-    const sttResult = await sarvamTranscribe(blob, selectedLang);
-    const original = sttResult.transcript || '';
-    const detectedLang = sttResult.language_code || spokenLang;
-    if(!original.trim()){
-      setStatus(statusId, 'didn\'t catch that — try again', 'err');
-      return;
-    }
-
-    const translated = await sarvamTranslate(original, detectedLang, 'en-IN');
-    const question = await cleanupTranslatedText(translated);
-
-    jobChatHistories[index] = jobChatHistories[index] || [];
-    jobChatHistories[index].push({ role: 'user', text: question });
+    if(!jobChatHistories[index]) jobChatHistories[index] = [];
+    jobChatHistories[index].push({ role: 'user', text: englishQuestion.trim() });
     renderJobChatHistory(index);
-
     document.getElementById(statusId).innerHTML = '<span class="spinner"></span>thinking…';
-    const englishAnswer = await answerJobChatQuestion(index, question);
-
+    const englishAnswer = await answerJobChatQuestion(index, englishQuestion.trim());
     jobChatHistories[index].push({ role: 'assistant', text: englishAnswer.trim() });
     renderJobChatHistory(index);
 
     document.getElementById(statusId).innerHTML = '<span class="spinner"></span>reading answer aloud…';
     let answerToSpeak = englishAnswer.trim();
-    const replyLang = detectedLang !== 'unknown' ? detectedLang : spokenLang;
+    const replyLang = lastSpokenLanguage || spokenLang;
     if(!replyLang.startsWith('en')){
       answerToSpeak = await sarvamTranslate(englishAnswer.trim(), 'en-IN', replyLang);
     }
@@ -2235,56 +2289,49 @@ async function handleJobChatQuestion(index, blob){
 }
 
 // Event delegation: chat mic buttons are created dynamically per card.
-let jobChatRecording = false;
-let jobChatStopping = false;
-
-async function finishJobChatRecording(btn){
-  if(!jobChatRecording || !btn || jobChatStopping) return;
-  jobChatStopping = true;
-  const index = btn.dataset.jobIndex;
-  const hitLimit = btn.dataset.hitLimit === '1';
-  delete btn.dataset.hitLimit;
-  jobChatRecording = false;
-  activeMicButton = null;
-  setMicButtonRecording(btn, false);
-  clearRecordTimer();
-  if(hitLimit){
-    document.getElementById(`jobChatMicStatus-${index}`).innerHTML =
-      '<span class="spinner"></span>30s take limit — transcribing…';
-  }
-  try{
-    const blob = await stopRecording();
-    await handleJobChatQuestion(index, blob);
-  }finally{
-    jobChatStopping = false;
-  }
-}
+let jobChatBusy = false;
 
 document.getElementById('resultsList').addEventListener('click', async (e) => {
   const btn = e.target.closest('.job-chat-mic');
   if(!btn) return;
   e.preventDefault();
   const index = btn.dataset.jobIndex;
+  const statusId = `jobChatMicStatus-${index}`;
 
-  if(jobChatRecording && activeMicButton === btn){
-    await finishJobChatRecording(btn);
+  if(recordSession && recordSession.btn === btn){
+    if(jobChatBusy) return;
+    jobChatBusy = true;
+    setStatus(statusId, '', '');
+    document.getElementById(statusId).innerHTML = '<span class="spinner"></span>transcribing…';
+    try{
+      const blobs = await endRecordSession();
+      if(!blobs.length){
+        setStatus(statusId, 'didn\'t catch that — try again', 'err');
+        return;
+      }
+      document.getElementById(statusId).innerHTML = '<span class="spinner"></span>cleaning up…';
+      const { english } = await transcribeBlobsToEnglish(blobs);
+      if(!english.trim()){
+        setStatus(statusId, 'didn\'t catch that — try again', 'err');
+        return;
+      }
+      await handleJobChatQuestionFromText(index, english);
+    }catch(err){
+      log(`job chat mic ERROR: ${err.message}`);
+      if(recordSession) await endRecordSession().catch(() => {});
+      setStatus(statusId, err.message, 'err');
+    }finally{
+      jobChatBusy = false;
+    }
     return;
   }
-  if(jobChatRecording || activeMicButton || jobChatStopping) return;
 
+  if(jobChatBusy || recordSession || activeMicButton) return;
   try{
-    await startRecording();
-    jobChatRecording = true;
-    activeMicButton = btn;
-    setMicButtonRecording(btn, true);
-    startRecordTimer(`jobChatMicStatus-${index}`, () => {
-      btn.dataset.hitLimit = '1';
-      finishJobChatRecording(btn);
-    });
+    await beginRecordSession({ btn, statusId });
   }catch(err){
-    clearRecordTimer();
     setMicButtonRecording(btn, false);
-    setStatus(`jobChatMicStatus-${index}`, `mic error: ${err.message}`, 'err');
+    setStatus(statusId, `mic error: ${err.message}`, 'err');
   }
 });
 
