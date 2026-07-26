@@ -11,11 +11,12 @@ cards → Sarvam TTS reads the top results back in the original language.
 No auth, no database, no persistence — session-only state. No code reused
 from the original job radar; this is a fresh build that extends the idea.
 
-**Provider note:** Claude is the documented, submitted path — called direct
-from the browser, no backend. OpenAI was added as a second toggleable
-provider purely because a Claude key wasn't on hand to test with during the
-build; it requires the small local proxy in `server.js` since OpenAI's API
-(unlike Claude's) blocks direct browser calls. The demo runs on Claude.
+**Provider note:** OpenAI is the real, tested, demo-day path, run through
+the small local proxy in `server.js` since OpenAI's API blocks direct
+browser calls (unlike Claude's). Claude is supported as a toggleable
+alternate — same prompt, no backend needed — but has never been run
+against a live key; no Anthropic key was available during the build.
+The demo runs on OpenAI.
 
 ## Sarvam parameter declared: Voice Experience
 
@@ -70,17 +71,49 @@ adding a second call to build, wire, and test under time pressure.
    rubric explicitly rewards teams who know and state their real limits
    over teams who claim robustness they haven't tested.
 
-## Deferred, not abandoned
+## Since the original 8-hour plan: what actually got built
 
-Two more barriers from the four-barrier framework (see main README) are
-scoped but not built in this pass:
+The original plan scoped only barriers #1 and #4 and deferred #2 and #3.
+Both have since been built, at a lighter weight than the original
+deferred-scope description:
 
-- **Comprehension barrier** — ask "what does this mean?" about a result, in
-  your language, answered from that result's own content.
-- **Trust barrier** — for any translation feeding something consequential
-  (not a one-off search), verify independently: transcribe and translate
-  separately, diff entities and numbers, check semantic intent, ask rather
-  than guess on any mismatch.
+- **Comprehension barrier** — built as "chat with a job": a per-card
+  spoken Q&A panel, answers grounded in that job's own data plus general
+  knowledge, no new web search per question, multi-turn history kept per
+  card, answers translated back and read aloud.
+- **Trust barrier** — built as a lighter version than originally scoped.
+  The original plan called for independent dual-translation and entity
+  diffing; what's actually built is a human-in-the-loop confirmation
+  instead: the spoken profile is read back via TTS in the user's own
+  language before use, so *they* catch a mistranslation rather than an
+  automated diff catching it. Cheaper to build, no second translation
+  call per input, and arguably more trustworthy for a single-shot flow —
+  but it is not the automated verification pipeline originally described,
+  and that distinction should be stated plainly to judges if asked.
 
-Not building these now is a scope decision, not an oversight — depth on one
-real loop beats partial coverage of four.
+Also added, beyond the original four-barrier scope:
+- Chip-based keyword search (roles/companies/keywords, add by voice or
+  typing) instead of one free-text query string.
+- CV upload (PDF or text, parsed client-side, session-only) plus
+  per-job skill-gap analysis: matched skills, missing skills, and one
+  concrete next step per result — this is the part translation alone
+  never provides, since it requires reasoning about the candidate
+  against the specific posting.
+- A guided 5-question spoken conversation that synthesizes answers into
+  a CV-style profile, for users with no CV to upload.
+- Per-job TTS readback (previously one batch summary of the top 3
+  results) — now the user picks which specific job to hear, read back
+  in full detail including its skill gap.
+
+## What's NOT yet done, with ~4 hours and ~$40 left
+
+- **No real microphone test has been run.** Every test so far used either
+  typed text or a JS-injected fake STT response — the actual
+  speak-into-a-mic path (browser permissions, real accents, background
+  noise, real Sarvam STT accuracy) is completely unverified. This is the
+  single biggest risk before a live demo and the highest-priority item
+  left.
+- Real Claude-path test (currently untested, OpenAI is the verified path).
+- Testing across multiple real spoken languages/queries, per the original
+  hour 3-4 plan — not yet done with real audio.
+- Demo rehearsal — not yet done at all.

@@ -43,24 +43,51 @@ wall if you don't read fluently.
 
 ## What this build demonstrates
 
-Given the time available, this build goes deep on **barrier #1 (input)**
-and closes the loop with a working version of **barrier #4 (output)** —
-a complete, real, working slice rather than four shallow ones:
+All four barriers have a working version in this build — some deep, some
+lightweight, but none are just a design doc anymore:
 
-1. **Speak a job search query**, in an Indian language — Sarvam
-   speech-to-text transcribes it, Sarvam translation converts it to English.
-2. **Real jobs, not a mock list.** The translated query, combined with a
-   short stated profile ("what I'm looking for"), goes to Claude with web
-   search enabled — it finds and ranks actual live job postings against
-   that profile, the same way a scan does in the original (English-only)
-   job radar this project extends the idea from.
-3. **Results are read back out loud**, in the language the person searched
-   in, via Sarvam text-to-speech — so the loop never requires reading
-   English at all.
+**Barrier #1 (input) — full depth.**
+- **Speak a job search query**, in an Indian language — Sarvam
+  speech-to-text transcribes it, Sarvam translation converts it to
+  English, then one LLM cleanup pass fixes STT/translation artifacts
+  (fillers, awkward literal phrasing) before it's used.
+- Search terms are **chips** (role, company, keyword) — add by voice or
+  by typing, remove any, combine as many as needed.
+- A **profile/stance** field, buildable three ways: speak it freely,
+  upload a CV (PDF or text, parsed client-side, never persisted), or
+  answer a **guided 5-question spoken conversation** (strengths,
+  coaching areas, a past-but-dropped skill, a proud highlight, current
+  focus) that gets synthesized into a clean CV-style profile.
 
-Barriers #2 (comprehension) and #3 (trust) are scoped and designed —
-see [`docs/`](./docs) — but not built in this pass. Depth on one working
-loop beats breadth across four half-built ones.
+**Barrier #2 (comprehension) — built via "chat with a job."**
+Each result card has an ask-a-question panel: speak a follow-up about
+that specific job (e.g. "what does this requirement mean?"), and get an
+answer grounded in that job's own details plus general knowledge — no
+new web search per question, so it stays fast and doesn't reopen
+fabrication risk on every turn. Multi-turn history is kept per card, and
+every answer is translated back and read aloud in the language the
+question was asked in.
+
+**Barrier #3 (trust) — a lightweight, human-in-the-loop version, not the
+full independent-verification pipeline.** After the spoken profile is
+transcribed, translated, and cleaned up, it's read back to the user via
+TTS in their own language before it's used — so they catch a
+mistranslation themselves instead of the app silently trusting it. This
+is not automated verification (no independent second translation or
+entity diffing); it's "let the person confirm," which is cheaper and,
+for a single-shot flow like this, arguably more trustworthy than an
+automated check would be.
+
+**Barrier #4 (output) — full depth.**
+Every result can be read aloud individually, in the language the person
+searched in, including the fit, any hard blocker, and — when a CV was
+provided — exactly which skills are missing and what to do about it.
+
+**Skill-gap analysis**, layered on top: when a CV is provided, each
+result shows which required skills the candidate already has, which are
+missing, and one concrete, job-specific next step to close the gap —
+the thing translation alone never gives you, because it requires
+actually reasoning about the candidate against the posting.
 
 ## Why job customization matters here
 
@@ -74,18 +101,17 @@ product: the customization is structural, not decorative.
 ## Stack
 
 - Sarvam AI — speech-to-text, translation, text-to-speech (Voice Experience)
-- Claude (Anthropic) — web search + ranking against the stated profile, in
-  one call. This is the documented, primary path: called directly from the
-  browser, no backend needed.
-- OpenAI — supported as an alternate provider (toggle in the UI), added
-  because Claude access wasn't available to test with during the build.
-  Unlike Claude, OpenAI's API blocks direct browser calls, so this path
-  requires running the small local proxy in `server.js`. Not the path this
-  project is submitted/demoed on; kept because it's what got the pipeline
-  actually verified end-to-end.
-- HTML/JS frontend, no auth, no database — session-only. `server.js` is an
-  optional ~40-line dev-only proxy for the OpenAI path; the Claude path
-  needs no backend at all.
+- OpenAI — web search + ranking against the stated profile, in one call.
+  This is the real, tested, demo-day path. OpenAI's API blocks direct
+  browser calls, so this path runs through the small local proxy in
+  `server.js` (~40 lines, no dependencies, BYOK — it relays the key from
+  the browser per request and never stores one itself).
+- Claude (Anthropic) — supported as an alternate provider (toggle in the
+  UI), called directly from the browser with no backend needed. The code
+  path exists and mirrors the OpenAI prompt exactly, but it has not been
+  run against a live Claude key — no Anthropic key was available during
+  the build. Untested, not the demo path.
+- HTML/JS frontend, no auth, no database — session-only.
 
 ## Status
 
