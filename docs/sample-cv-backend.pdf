@@ -1,0 +1,238 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 3872 >>
+stream
+BT
+/F1 20 Tf
+1 0 0 1 48.00 789.89 Tm
+(Rahul Sharma) Tj
+ET
+BT
+/F1 10 Tf
+1 0 0 1 48.00 773.89 Tm
+(Backend / Full-Stack Developer  |  Bangalore / Remote  |  No night shifts) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 48.00 760.89 Tm
+(rahul.sharma.dev@email.com  |  +91 98765 43210  |  linkedin.com/in/rahulsharma-backend) Tj
+ET
+0.75 w
+48.00 752.89 m
+547.28 752.89 l
+S
+BT
+/F1 11 Tf
+1 0 0 1 48.00 734.89 Tm
+(SUMMARY) Tj
+ET
+0.75 w
+48.00 728.89 m
+547.28 728.89 l
+S
+BT
+/F1 9.5 Tf
+1 0 0 1 48.00 714.89 Tm
+(Backend developer with ~3 years of experience building Node.js and PostgreSQL services.) Tj
+ET
+BT
+/F1 9.5 Tf
+1 0 0 1 48.00 702.89 Tm
+(Strong interest in fintech and deep-tech products. Comfortable owning APIs end-to-end,) Tj
+ET
+BT
+/F1 9.5 Tf
+1 0 0 1 48.00 690.89 Tm
+(improving reliability under load, and collaborating with product teams. Currently leveling) Tj
+ET
+BT
+/F1 9.5 Tf
+1 0 0 1 48.00 678.89 Tm
+(up in system design and AWS. Past exposure to Android basics.) Tj
+ET
+BT
+/F1 11 Tf
+1 0 0 1 48.00 648.89 Tm
+(EXPERIENCE) Tj
+ET
+0.75 w
+48.00 642.89 m
+547.28 642.89 l
+S
+BT
+/F1 10.5 Tf
+1 0 0 1 48.00 628.89 Tm
+(Backend Engineer  -  PayFlow Technologies, Bangalore) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 48.00 616.89 Tm
+(Jan 2023 - Present) Tj
+ET
+BT
+/F1 9.5 Tf
+1 0 0 1 48.00 603.89 Tm
+(- Designed and operated a payments API serving high transaction volume with zero planned) Tj
+ET
+BT
+/F1 9.5 Tf
+1 0 0 1 58.00 591.89 Tm
+(downtime.) Tj
+ET
+BT
+/F1 9.5 Tf
+1 0 0 1 48.00 577.89 Tm
+(- Built Node.js services on PostgreSQL with idempotent payment flows, retries, and audit) Tj
+ET
+BT
+/F1 9.5 Tf
+1 0 0 1 58.00 565.89 Tm
+(logging.) Tj
+ET
+BT
+/F1 9.5 Tf
+1 0 0 1 48.00 551.89 Tm
+(- Reduced p95 latency on checkout endpoints by optimizing queries and connection pooling.) Tj
+ET
+BT
+/F1 9.5 Tf
+1 0 0 1 48.00 537.89 Tm
+(- Partnered with product and mobile on mid-level backend and full-stack merchant dashboard) Tj
+ET
+BT
+/F1 9.5 Tf
+1 0 0 1 58.00 525.89 Tm
+(features.) Tj
+ET
+BT
+/F1 9.5 Tf
+1 0 0 1 48.00 511.89 Tm
+(- Added monitoring and runbooks so on-call could recover from provider outages without night) Tj
+ET
+BT
+/F1 9.5 Tf
+1 0 0 1 58.00 499.89 Tm
+(shifts.) Tj
+ET
+BT
+/F1 10.5 Tf
+1 0 0 1 48.00 481.89 Tm
+(Software Engineer \(Backend\)  -  Nimbus Soft, Hyderabad) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 48.00 469.89 Tm
+(Jul 2021 - Dec 2022) Tj
+ET
+BT
+/F1 9.5 Tf
+1 0 0 1 48.00 456.89 Tm
+(- Developed REST APIs in Node.js for internal tools and customer-facing workflows.) Tj
+ET
+BT
+/F1 9.5 Tf
+1 0 0 1 48.00 442.89 Tm
+(- Modeled relational data in PostgreSQL; wrote migrations and indexes for growing datasets.) Tj
+ET
+BT
+/F1 9.5 Tf
+1 0 0 1 48.00 428.89 Tm
+(- Contributed early Android prototypes \(Java/Kotlin basics\) before focusing fully on) Tj
+ET
+BT
+/F1 9.5 Tf
+1 0 0 1 58.00 416.89 Tm
+(backend.) Tj
+ET
+BT
+/F1 11 Tf
+1 0 0 1 48.00 384.89 Tm
+(SKILLS) Tj
+ET
+0.75 w
+48.00 378.89 m
+547.28 378.89 l
+S
+BT
+/F1 9.5 Tf
+1 0 0 1 48.00 364.89 Tm
+(- Languages & runtime: JavaScript, TypeScript, Node.js) Tj
+ET
+BT
+/F1 9.5 Tf
+1 0 0 1 48.00 352.89 Tm
+(- Data: PostgreSQL, Redis \(basic\), SQL query tuning) Tj
+ET
+BT
+/F1 9.5 Tf
+1 0 0 1 48.00 340.89 Tm
+(- APIs & practices: REST, webhooks, idempotency, logging, testing) Tj
+ET
+BT
+/F1 9.5 Tf
+1 0 0 1 48.00 328.89 Tm
+(- Cloud & learning: AWS \(in progress\), system design fundamentals) Tj
+ET
+BT
+/F1 9.5 Tf
+1 0 0 1 48.00 316.89 Tm
+(- Other: Git, CI basics; Android fundamentals \(past\)) Tj
+ET
+BT
+/F1 9.5 Tf
+1 0 0 1 48.00 304.89 Tm
+(- Preferences: Bangalore or remote; daytime IST hours; fintech / deep-tech domains) Tj
+ET
+BT
+/F1 11 Tf
+1 0 0 1 48.00 274.89 Tm
+(EDUCATION) Tj
+ET
+0.75 w
+48.00 268.89 m
+547.28 268.89 l
+S
+BT
+/F1 10.5 Tf
+1 0 0 1 48.00 254.89 Tm
+(B.Tech, Computer Science  -  VIT University) Tj
+ET
+BT
+/F1 9.5 Tf
+1 0 0 1 48.00 242.89 Tm
+(2017 - 2021) Tj
+ET
+BT
+/F1 8.5 Tf
+1 0 0 1 48.00 228.89 Tm
+(This document is a fictional sample CV for product demos. All names and employers are made up.) Tj
+ET
+
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000121 00000 n 
+0000000253 00000 n 
+0000004177 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+4247
+%%EOF

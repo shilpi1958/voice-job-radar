@@ -102,10 +102,11 @@ product: the customization is structural, not decorative.
 
 - Sarvam AI — speech-to-text, translation, text-to-speech (Voice Experience)
 - OpenAI — web search + ranking against the stated profile, in one call.
-  This is the real, tested, demo-day path. OpenAI's API blocks direct
-  browser calls, so this path runs through the small local proxy in
-  `server.js` (~40 lines, no dependencies, BYOK — it relays the key from
-  the browser per request and never stores one itself).
+  This is the real, tested, demo-day path. OpenAI’s API blocks direct
+  browser calls, so this path runs through a small BYOK proxy that relays
+  the browser’s key per request and never stores one: local `server.js`,
+  or the same handler as a Vercel serverless function at
+  `/api/openai-search`.
 - Claude (Anthropic) — supported as an alternate provider (toggle in the
   UI), called directly from the browser with no backend needed. The code
   path exists and mirrors the OpenAI prompt exactly, but it has not been
@@ -113,18 +114,38 @@ product: the customization is structural, not decorative.
   the build. Untested, not the demo path.
 - HTML/JS frontend, no auth, no database — session-only.
 
-## GitHub Pages
+## Deployments
+
+### Vercel (recommended for OpenAI)
+
+Live: https://voice-job-radar.vercel.app/
+
+Hosts the static app (`index.html`, `vendor/`) plus serverless
+`POST /api/openai-search` (same BYOK relay as `server.js`). Same-origin
+relative fetch — OpenAI works out of the box.
+
+```bash
+npx vercel          # preview
+npx vercel --prod   # production
+```
+
+Link the GitHub repo in the Vercel dashboard (or `vercel link`) so pushes
+to `main` auto-deploy.
+
+### GitHub Pages
 
 Live: https://shilpi1958.github.io/voice-job-radar/
 
-Served from the `gh-pages` branch (`index.html` + `.nojekyll`). Pushes to
-`main` update that branch via `.github/workflows/pages.yml`.
+Served from the `gh-pages` branch (`index.html` + `vendor/` + `.nojekyll`).
+Pushes to `main` update that branch via `.github/workflows/pages.yml`.
 
-On Pages, use **Claude** (direct from the browser). OpenAI needs the local
-proxy in `server.js`, which does not run on Pages — for OpenAI, run
-`node server.js` and open `http://localhost:8788`.
+On Pages, **Claude** works directly from the browser. **OpenAI** POSTs
+cross-origin to the Vercel proxy (or open the Vercel URL for a cleaner
+same-origin path). For local OpenAI, run `node server.js` and open the
+printed URL (prefer `http://127.0.0.1:8788`; `localhost` can hit Cursor’s
+IPv6 listener on some machines).
 
-If the site ever 404s, re-enable under
+If the Pages site ever 404s, re-enable under
 [Pages settings](https://github.com/shilpi1958/voice-job-radar/settings/pages):
 **Deploy from a branch** → `gh-pages` → `/` (root).
 
