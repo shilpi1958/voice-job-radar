@@ -45,12 +45,12 @@
   body{
     background:var(--bg); color:var(--text);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    max-width:640px; margin:0 auto; padding:32px 20px 80px; line-height:1.55;
+    max-width:640px; margin:0 auto; padding:24px 20px 80px; line-height:1.55;
     -webkit-font-smoothing:antialiased;
   }
   h1{
     font-family:Fraunces,Georgia,'Times New Roman',serif; font-weight:600;
-    color:var(--text); font-size:1.7rem; margin:0 0 4px; letter-spacing:-0.01em;
+    color:var(--text); font-size:1.7rem; margin:0; letter-spacing:-0.01em;
     text-wrap:balance;
   }
   .sub{color:var(--muted); margin-bottom:8px; font-size:0.95rem; max-width:46ch;}
@@ -64,6 +64,7 @@
     color:var(--accent-strong); font-weight:700; font-size:0.85rem;
     display:flex; align-items:center; justify-content:center;
   }
+  .step-num.done{background:var(--secondary-tint); color:var(--secondary);}
   .step-title{font-size:1.05rem; font-weight:600; color:var(--text); margin:0;}
   label{display:block; font-size:0.85rem; color:var(--muted); margin-bottom:6px; font-weight:500;}
   input[type=text], input[type=password], textarea, select{
@@ -85,16 +86,48 @@
   button:focus-visible{outline:2px solid var(--accent-strong); outline-offset:2px;}
   button.secondary{background:transparent; color:var(--secondary); border:1px solid var(--border-strong);}
   button.secondary:hover:not(:disabled){background:var(--secondary-tint); border-color:var(--secondary);}
-  button.mic{background:var(--danger); color:#fff;}
-  button.mic:hover:not(:disabled){background:var(--danger); filter:brightness(1.08);}
-  button.mic.recording{animation:pulse 1.1s ease-in-out infinite;}
-  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(201,74,53,0.35);}50%{box-shadow:0 0 0 8px rgba(201,74,53,0);}}
+  button.mic{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    background:var(--danger-tint); color:var(--danger);
+    border:1px solid color-mix(in srgb, var(--danger) 32%, var(--border-strong));
+    border-radius:999px; padding:9px 16px 9px 12px;
+    font-size:0.88rem; font-weight:600; letter-spacing:0.01em;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.45);
+    transition:background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s, transform 0.1s;
+    user-select:none; -webkit-user-select:none; touch-action:none;
+  }
+  button.mic:hover:not(:disabled){
+    background:color-mix(in srgb, var(--danger-tint) 70%, #fff);
+    border-color:var(--danger); color:var(--danger); filter:none;
+  }
+  button.mic:active:not(:disabled){
+    background:var(--danger); color:#fff; border-color:var(--danger);
+    box-shadow:none; transform:scale(0.97);
+  }
+  button.mic.recording{
+    background:var(--danger); color:#fff; border-color:var(--danger);
+    box-shadow:none; animation:mic-pulse 1.15s ease-in-out infinite;
+  }
+  button.mic .mic-ico{
+    width:15px; height:15px; flex:none; background:currentColor;
+    -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 14a3 3 0 0 0 3-3V5a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 14a3 3 0 0 0 3-3V5a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z'/%3E%3C/svg%3E") center / contain no-repeat;
+  }
+  button.mic .mic-text .short{display:none;}
+  @keyframes mic-pulse{
+    0%,100%{box-shadow:0 0 0 0 color-mix(in srgb, var(--danger) 32%, transparent);}
+    50%{box-shadow:0 0 0 10px transparent;}
+  }
   @media (prefers-reduced-motion: reduce){
     button.mic.recording{animation:none;}
     .chip{animation:none;}
   }
+  .mic-control{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    margin:0 0 12px;
+  }
+  .mic-control .status{margin:0; min-height:0;}
   .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
-  .keys-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
   .status{font-size:0.85rem; color:var(--muted); margin-top:8px; min-height:1.2em;}
   .status.err{color:var(--danger);}
   .status.ok{color:var(--secondary);}
@@ -116,12 +149,79 @@
   @media (prefers-reduced-motion: reduce){ .spinner{animation:none;} }
   details summary{cursor:pointer; color:var(--muted); font-size:0.85rem;}
   .lang-select{max-width:220px;}
-  #settingsPanel{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:6px 20px; margin-bottom:18px; box-shadow:var(--shadow);}
-  #settingsPanel[open]{padding-bottom:20px;}
-  #settingsSummary{font-size:0.9rem; padding:12px 0; color:var(--text); list-style:none; font-weight:500;}
-  #settingsSummary::-webkit-details-marker{display:none;}
-  #settingsSummary span{color:var(--muted); font-weight:400;}
-  #settingsSummary span.ready{color:var(--secondary); font-weight:600;}
+
+  /* top nav */
+  .topbar{
+    display:flex; align-items:flex-start; justify-content:space-between; gap:16px;
+    margin-bottom:28px;
+  }
+  .topbar-brand{min-width:0;}
+  .topbar .sub{margin:4px 0 0;}
+  .nav{
+    display:flex; gap:4px; flex:none; background:var(--panel);
+    border:1px solid var(--border); border-radius:10px; padding:4px; box-shadow:var(--shadow);
+  }
+  .nav-btn{
+    background:transparent; color:var(--muted); border:none; border-radius:7px;
+    padding:8px 14px; font-weight:600; font-size:0.85rem; position:relative;
+  }
+  .nav-btn:hover:not(:disabled){background:var(--field-bg); color:var(--text);}
+  .nav-btn.active{background:var(--accent-tint); color:var(--accent-strong);}
+  .nav-btn .dot{
+    position:absolute; top:7px; right:7px; width:7px; height:7px;
+    border-radius:50%; background:var(--danger); display:none;
+  }
+  .nav-btn.needs-setup .dot{display:block;}
+
+  .view{display:none;}
+  .view.active{display:block;}
+
+  /* setup wizard */
+  .setup-progress{
+    display:flex; gap:8px; margin-bottom:22px; align-items:center;
+  }
+  .setup-progress .pip{
+    flex:1; height:3px; border-radius:2px; background:var(--border);
+    transition:background 0.2s;
+  }
+  .setup-progress .pip.on{background:var(--accent);}
+  .setup-progress .pip.done{background:var(--secondary);}
+  .setup-step{display:none;}
+  .setup-step.active{display:block;}
+  .setup-step .hint{color:var(--muted); font-size:0.9rem; margin:0 0 18px; max-width:40ch;}
+  .provider-picks{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;}
+  .provider-pick{
+    display:block; cursor:pointer; border:1px solid var(--border-strong);
+    border-radius:10px; padding:14px 14px 12px; background:var(--field-bg);
+    transition:border-color 0.15s, background 0.15s;
+  }
+  .provider-pick:hover{border-color:var(--accent);}
+  .provider-pick:has(input:checked){
+    border-color:var(--accent); background:var(--accent-tint);
+  }
+  .provider-pick input{position:absolute; opacity:0; pointer-events:none;}
+  .provider-pick .name{display:block; font-weight:600; color:var(--text); font-size:0.95rem;}
+  .provider-pick .desc{display:block; font-size:0.78rem; color:var(--muted); margin-top:2px;}
+  .setup-actions{display:flex; gap:10px; align-items:center; margin-top:20px; flex-wrap:wrap;}
+  .setup-actions .spacer{flex:1;}
+  .setup-done{
+    text-align:center; padding:28px 12px 8px;
+  }
+  .setup-done .check{
+    width:44px; height:44px; border-radius:50%; background:var(--secondary-tint);
+    color:var(--secondary); display:inline-flex; align-items:center; justify-content:center;
+    font-size:1.3rem; font-weight:700; margin-bottom:12px;
+  }
+  .setup-done h2{
+    font-family:Fraunces,Georgia,serif; font-size:1.35rem; font-weight:600;
+    margin:0 0 6px;
+  }
+  .setup-done p{color:var(--muted); margin:0 0 20px; font-size:0.95rem;}
+  @media (max-width:480px){
+    .topbar{flex-direction:column; gap:14px;}
+    .provider-picks{grid-template-columns:1fr;}
+  }
+
   .chip-input{background:var(--field-bg); border:1px solid var(--border-strong); border-radius:8px; padding:8px 10px;}
   .chip-list{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px;}
   .chip-list:empty{margin-bottom:0;}
@@ -148,199 +248,413 @@
   .job-chat-msg.user{background:var(--accent-tint); color:var(--accent-strong); align-self:flex-end;}
   .job-chat-msg.assistant{background:var(--field-bg); border:1px solid var(--border); color:var(--text); align-self:flex-start;}
   .job-chat-msg .msg-label{font-size:0.68rem; text-transform:uppercase; letter-spacing:0.06em; opacity:0.7; margin-bottom:2px; font-weight:600;}
-  .job-chat-mic{padding:6px 12px; font-size:0.85rem;}
-  .profile-tabs{display:flex; gap:6px; margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:0;}
-  .profile-tab{
-    background:transparent; color:var(--muted); border:none; border-bottom:2px solid transparent;
-    border-radius:0; padding:8px 4px; font-weight:600; font-size:0.88rem; margin-bottom:-1px;
+  .job-chat-mic{padding:7px 14px 7px 11px; font-size:0.82rem;}
+  .job-chat .mic-control{margin:8px 0 0;}
+  .profile-methods{
+    display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-bottom:18px;
   }
-  .profile-tab:hover:not(:disabled){background:transparent; color:var(--text);}
-  .profile-tab.active{color:var(--accent-strong); border-bottom-color:var(--accent);}
+  .method-pick{
+    background:var(--field-bg); color:var(--text); border:1px solid var(--border-strong);
+    border-radius:10px; padding:12px 10px; text-align:center; font-weight:600; font-size:0.85rem;
+  }
+  .method-pick:hover:not(:disabled){background:var(--field-bg); border-color:var(--accent); color:var(--text);}
+  .method-pick.active{
+    background:var(--accent-tint); border-color:var(--accent); color:var(--accent-strong);
+  }
+  .method-pick .desc{
+    display:block; font-weight:400; font-size:0.72rem; color:var(--muted); margin-top:2px;
+  }
+  .method-pick.active .desc{color:var(--accent-strong); opacity:0.85;}
   .profile-panel{display:none;}
   .profile-panel.active{display:block;}
+  .profile-panel .hint{color:var(--muted); font-size:0.9rem; margin:0 0 14px; max-width:42ch;}
+  .profile-toolbar{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    flex-wrap:wrap; margin-bottom:16px;
+  }
+  .profile-toolbar label{margin:0; font-size:0.8rem;}
+  .profile-toolbar .lang-select{max-width:160px;}
+  .cv-drop{
+    display:flex; flex-direction:column; align-items:flex-start; gap:10px;
+    border:1px dashed var(--border-strong); border-radius:10px;
+    padding:18px; background:var(--field-bg);
+  }
+  .guided-start{margin-top:4px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  .guided-q{
+    font-size:1rem; font-weight:500; color:var(--text); margin:10px 0 14px;
+    text-wrap:balance;
+  }
+  .guided-answers{
+    margin-top:16px; border-top:1px solid var(--border); padding-top:14px;
+  }
+  .guided-answers.hidden{display:none;}
+  .guided-answers h3{
+    margin:0 0 10px; font-size:0.72rem; text-transform:uppercase;
+    letter-spacing:0.06em; color:var(--muted); font-weight:600;
+  }
+  .guided-answer{
+    margin-bottom:10px; padding:10px 12px; border-radius:8px;
+    background:var(--field-bg); border:1px solid var(--border);
+    cursor:pointer; text-align:left; width:100%; font:inherit;
+    display:block; color:inherit;
+  }
+  .guided-answer:hover{border-color:var(--border-strong);}
+  .guided-answer.current{border-color:var(--accent); background:var(--accent-tint);}
+  .guided-answer .q{font-size:0.78rem; color:var(--muted); margin-bottom:4px;}
+  .guided-answer .a{font-size:0.9rem; color:var(--text);}
+  .guided-answer .a.muted{color:var(--muted); font-style:italic;}
+  .guided-nav{
+    display:flex; gap:8px; align-items:center; justify-content:flex-end;
+    margin-top:12px; flex-wrap:wrap;
+  }
+  .search-compose-row{
+    display:flex; gap:8px; align-items:center;
+  }
+  .search-compose-row input{
+    flex:1; background:transparent; border:none; padding:8px 4px;
+    color:var(--text); font-family:inherit; font-size:0.95rem; width:auto;
+  }
+  .search-compose-row input:focus{outline:none;}
+  .search-fields{display:flex; flex-direction:column; gap:12px; margin-top:4px;}
+  .search-field{
+    border:1px solid var(--border-strong); border-radius:10px;
+    background:var(--field-bg); padding:12px;
+  }
+  .search-field.active{
+    border-color:var(--accent);
+    box-shadow:0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+  }
+  .search-field .chip-list{margin-bottom:8px;}
+  .search-field .chip-list:empty{display:none; margin:0;}
+  .search-field-head{
+    display:flex; align-items:baseline; justify-content:space-between;
+    gap:8px; margin-bottom:8px;
+  }
+  .search-field-head label{margin:0; color:var(--text); font-weight:600; font-size:0.88rem;}
+  .search-field-head .hint{
+    margin:0; font-size:0.75rem; color:var(--muted); font-weight:400;
+  }
+  .voice-target{
+    display:grid; grid-template-columns:repeat(3, 1fr); gap:6px;
+    margin:0 0 12px;
+  }
+  .voice-target-btn{
+    background:var(--field-bg); color:var(--text); border:1px solid var(--border-strong);
+    border-radius:8px; padding:8px 6px; font-size:0.8rem; font-weight:600;
+  }
+  .voice-target-btn:hover:not(:disabled){
+    background:var(--field-bg); border-color:var(--accent); color:var(--text);
+  }
+  .voice-target-btn.active{
+    background:var(--accent-tint); border-color:var(--accent); color:var(--accent-strong);
+  }
+  .search-actions{
+    display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:16px;
+  }
+  .search-actions .status{margin:0;}
+  @media (max-width:520px){
+    .profile-methods{grid-template-columns:1fr;}
+    button.mic .mic-text .full{display:none;}
+    button.mic .mic-text .short{display:inline;}
+    button.mic{padding:9px 14px 9px 12px;}
+    .voice-target{gap:5px;}
+    .voice-target-btn{padding:8px 4px; font-size:0.75rem;}
+  }
 </style>
 </head>
 <body>
 
-<h1>Voice Job Radar</h1>
-<div class="sub">Find work by speaking, in your own language — no typing, no reading English required.</div>
+<header class="topbar">
+  <div class="topbar-brand">
+    <h1>Voice Job Radar</h1>
+    <div class="sub">Find work by speaking, in your own language.</div>
+  </div>
+  <nav class="nav" aria-label="Main">
+    <button type="button" class="nav-btn active" data-view="search" id="navSearch">Search</button>
+    <button type="button" class="nav-btn" data-view="profile" id="navProfile">Profile</button>
+    <button type="button" class="nav-btn needs-setup" data-view="setup" id="navSetup">
+      Setup<span class="dot" aria-hidden="true"></span>
+    </button>
+  </nav>
+</header>
 
-<details id="settingsPanel">
-  <summary id="settingsSummary">&#9881; settings — <span id="settingsSummaryStatus">no API keys set yet</span></summary>
-  <section id="keysSection" style="margin-top:10px;">
-    <label>API keys — stored only in this browser (localStorage), never sent anywhere but the two APIs below</label>
-    <label for="providerSelect" style="margin-top:4px;">Job search provider</label>
-    <select id="providerSelect" class="lang-select">
-      <option value="claude">Claude (direct from browser)</option>
-      <option value="openai">OpenAI (requires local proxy — see below)</option>
-    </select>
-    <div class="keys-grid" style="margin-top:12px;">
-      <div>
+<!-- ========== SETUP VIEW ========== -->
+<div class="view" id="view-setup">
+  <section>
+    <div class="setup-progress" aria-hidden="true">
+      <div class="pip on" id="pip1"></div>
+      <div class="pip" id="pip2"></div>
+      <div class="pip" id="pip3"></div>
+    </div>
+
+    <div class="setup-step active" id="setupStep1" data-step="1">
+      <div class="step-head">
+        <span class="step-num">1</span>
+        <p class="step-title">Voice</p>
+      </div>
+      <p class="hint">Sarvam handles speech in your language. Keys stay in this browser.</p>
+      <label for="sarvamKeyInput">Sarvam API key</label>
+      <input type="password" id="sarvamKeyInput" placeholder="sk_..." autocomplete="off">
+      <div class="setup-actions">
+        <span class="spacer"></span>
+        <button type="button" id="setupNext1">Next</button>
+      </div>
+    </div>
+
+    <div class="setup-step" id="setupStep2" data-step="2">
+      <div class="step-head">
+        <span class="step-num">2</span>
+        <p class="step-title">Job search</p>
+      </div>
+      <p class="hint">Pick a provider, then paste its key.</p>
+
+      <div class="provider-picks" role="radiogroup" aria-label="Job search provider">
+        <label class="provider-pick">
+          <input type="radio" name="provider" value="claude" id="providerClaude" checked>
+          <span class="name">Claude</span>
+          <span class="desc">Direct from browser</span>
+        </label>
+        <label class="provider-pick">
+          <input type="radio" name="provider" value="openai" id="providerOpenAI">
+          <span class="name">OpenAI</span>
+          <span class="desc">Local proxy only (not on Pages)</span>
+        </label>
+      </div>
+
+      <div id="claudeKeyRow">
         <label for="anthropicKeyInput">Claude API key</label>
-        <input type="password" id="anthropicKeyInput" placeholder="sk-ant-...">
+        <input type="password" id="anthropicKeyInput" placeholder="sk-ant-..." autocomplete="off">
       </div>
-      <div>
-        <label for="sarvamKeyInput">Sarvam API key</label>
-        <input type="password" id="sarvamKeyInput" placeholder="sk_...">
-      </div>
-    </div>
-    <div class="keys-grid" id="openaiKeyRow" style="margin-top:12px; display:none;">
-      <div>
+      <div id="openaiKeyRow" style="display:none;">
         <label for="openaiKeyInput">OpenAI API key</label>
-        <input type="password" id="openaiKeyInput" placeholder="sk-...">
+        <input type="password" id="openaiKeyInput" placeholder="sk-..." autocomplete="off">
+        <p class="status" id="openaiProxyNote" style="margin-top:8px;">
+          OpenAI’s API blocks browser CORS, so it needs the local proxy —
+          that does <strong>not</strong> work on GitHub Pages. Use Claude
+          on Pages, or run <code>node server.js</code> and open
+          <code>http://localhost:8788</code> for OpenAI.
+        </p>
       </div>
-    </div>
-    <div id="openaiProxyNote" class="status" style="display:none; margin-top:8px;">
-      OpenAI blocks direct browser calls, so this key is sent to the small
-      local proxy in <code>server.js</code>, which relays it straight to
-      OpenAI per request and never stores it. Run <code>node server.js</code>
-      and load this page from <code>http://localhost:8787</code> instead of
-      file:// for this to work.
-    </div>
-    <div class="row" style="margin-top:10px;">
-      <button id="saveKeysBtn">save keys</button>
+
+      <div class="setup-actions">
+        <button type="button" class="secondary" id="setupBack2">Back</button>
+        <span class="spacer"></span>
+        <button type="button" id="setupNext2">Save &amp; continue</button>
+      </div>
       <span class="status" id="keysStatus"></span>
     </div>
+
+    <div class="setup-step" id="setupStep3" data-step="3">
+      <div class="setup-done">
+        <div class="check" aria-hidden="true">✓</div>
+        <h2>You're set</h2>
+        <p id="setupReadySummary">Voice and job search keys saved.</p>
+        <button type="button" id="setupGoSearch">Start searching</button>
+        <div style="margin-top:14px;">
+          <button type="button" class="secondary" id="setupEditKeys">Edit keys</button>
+        </div>
+      </div>
+    </div>
   </section>
-</details>
+</div>
 
-<section>
-  <label for="langSelect">Language you'll speak in</label>
-  <select id="langSelect" class="lang-select">
-    <option value="hi-IN">Hindi</option>
-    <option value="en-IN">English</option>
-    <option value="kn-IN">Kannada</option>
-    <option value="ta-IN">Tamil</option>
-    <option value="te-IN">Telugu</option>
-    <option value="mr-IN">Marathi</option>
-    <option value="bn-IN">Bengali</option>
-    <option value="gu-IN">Gujarati</option>
-    <option value="ml-IN">Malayalam</option>
-    <option value="pa-IN">Punjabi</option>
-    <option value="unknown">Auto-detect</option>
-  </select>
-</section>
-
+<!-- ========== PROFILE VIEW ========== -->
+<div class="view" id="view-profile">
 <section>
   <div class="step-head">
-    <span class="step-num">1</span>
     <p class="step-title">Build your profile</p>
   </div>
-  <div class="sub" style="margin-bottom:16px;">
-    This helps us rank jobs for you specifically, not just match keywords.
+  <p class="hint" style="color:var(--muted); font-size:0.9rem; margin:4px 0 14px;">Ranks jobs for you — not just keyword matches.</p>
+
+  <div class="profile-toolbar">
+    <div>
+      <label for="langSelect">Language</label>
+      <select id="langSelect" class="lang-select">
+        <option value="hi-IN">Hindi</option>
+        <option value="en-IN">English</option>
+        <option value="kn-IN">Kannada</option>
+        <option value="ta-IN">Tamil</option>
+        <option value="te-IN">Telugu</option>
+        <option value="mr-IN">Marathi</option>
+        <option value="bn-IN">Bengali</option>
+        <option value="gu-IN">Gujarati</option>
+        <option value="ml-IN">Malayalam</option>
+        <option value="pa-IN">Punjabi</option>
+        <option value="unknown">Auto-detect</option>
+      </select>
+    </div>
   </div>
 
-  <div class="profile-tabs" role="tablist">
-    <button type="button" class="profile-tab active" data-tab="speak" role="tab">Speak it</button>
-    <button type="button" class="profile-tab" data-tab="cv" role="tab">Upload CV</button>
-    <button type="button" class="profile-tab" data-tab="guided" role="tab">Answer questions</button>
+  <div class="profile-methods" role="tablist" aria-label="How to build your profile">
+    <button type="button" class="method-pick active" data-tab="speak" role="tab" aria-selected="true">
+      Speak
+      <span class="desc">Say it out loud</span>
+    </button>
+    <button type="button" class="method-pick" data-tab="cv" role="tab" aria-selected="false">
+      Upload CV
+      <span class="desc">PDF or text</span>
+    </button>
+    <button type="button" class="method-pick" data-tab="guided" role="tab" aria-selected="false">
+      5 questions
+      <span class="desc">We write it for you</span>
+    </button>
   </div>
 
   <div class="profile-panel active" id="profilePanel-speak">
-    <div class="sub" style="margin-bottom:10px;">
-      Tell us about yourself and what you're looking for, in your own words —
-      speak as long as you like. We'll write it in English and read it back so
-      you can check we got it right.
-    </div>
-    <div class="row">
-      <button id="stanceMicBtn" class="mic">&#9679; hold to speak</button>
+    <p class="hint">Speak freely. We'll write it in English and read it back.</p>
+    <div class="mic-control">
+      <button id="stanceMicBtn" class="mic" type="button" aria-label="Hold to speak">
+        <span class="mic-ico" aria-hidden="true"></span>
+        <span class="mic-text"><span class="full">Hold to speak</span><span class="short">Hold</span></span>
+      </button>
       <span class="status" id="stanceMicStatus"></span>
     </div>
     <div class="transcript-box" id="stanceTranscriptBox">
-      <div class="label">heard (original)</div>
+      <div class="label">heard</div>
       <div id="stanceTranscriptOriginal"></div>
-      <div class="label" style="margin-top:8px;">written in English</div>
+      <div class="label" style="margin-top:8px;">in English</div>
       <div id="stanceTranscriptEnglish"></div>
     </div>
-    <textarea id="stanceText" rows="6" style="margin-top:8px; min-height:140px;" placeholder="e.g. I have 2 years of experience as a backend developer. I prefer remote work or Bangalore, don't want night shifts, and I'm open to fintech or e-commerce companies."></textarea>
-    <div class="row" style="margin-top:8px; justify-content:space-between;">
-      <span class="status" id="stanceReadbackStatus"></span>
-    </div>
+    <label for="stanceText" style="margin-top:16px;">Your profile</label>
+    <textarea id="stanceText" rows="5" style="min-height:120px;" placeholder="Experience, preferences, deal-breakers…"></textarea>
+    <span class="status" id="stanceReadbackStatus"></span>
   </div>
 
   <div class="profile-panel" id="profilePanel-cv">
-    <div class="sub" style="margin-bottom:10px;">
-      Upload your CV so we can tell you exactly which skills you're missing
-      for each job, and what to do about it — not just whether it's a match.
-    </div>
-    <div class="row">
-      <label for="cvFileInput" class="cv-upload-btn">&#128196; upload CV (PDF or text)</label>
+    <p class="hint">Used to spot skill gaps on each job match.</p>
+    <div class="cv-drop">
+      <label for="cvFileInput" class="cv-upload-btn">Choose file</label>
       <input type="file" id="cvFileInput" accept=".pdf,.txt" style="display:none;">
-      <span class="status" id="cvStatus"></span>
-      <button type="button" id="cvClearBtn" class="secondary" style="display:none;">remove CV</button>
+      <div class="row">
+        <span class="status" id="cvStatus" style="margin:0;"></span>
+        <button type="button" id="cvClearBtn" class="secondary" style="display:none;">Remove</button>
+      </div>
     </div>
   </div>
 
   <div class="profile-panel" id="profilePanel-guided">
-    <div class="sub" style="margin-bottom:10px;">
-      No CV, or want to build a better one? Answer a few quick spoken
-      questions — in your own language — and we'll write you a proper
-      profile from your answers.
-    </div>
-    <div class="row">
-      <button type="button" id="startGuidedBtn" class="secondary">&#128172; start the 5 questions</button>
+    <p class="hint">Five spoken questions. Skip any you want — we use what you answer.</p>
+    <div class="guided-start">
+      <button type="button" id="startGuidedBtn">Start</button>
+      <button type="button" id="resumeGuidedBtn" class="secondary" style="display:none;">Continue</button>
+      <button type="button" id="clearGuidedBtn" class="secondary" style="display:none;">Clear answers</button>
     </div>
 
-    <div id="guidedConvo" style="display:none; margin-top:14px; padding-top:14px; border-top:1px solid var(--border);">
+    <div id="guidedConvo" style="display:none; margin-top:4px;">
       <div class="row" style="justify-content:space-between;">
         <span class="status" id="guidedProgress" style="margin:0;"></span>
-        <button type="button" id="guidedCancelBtn" class="secondary">cancel</button>
+        <button type="button" id="guidedCancelBtn" class="secondary">Done for now</button>
       </div>
-      <div id="guidedQuestion" style="margin-top:8px; color:var(--text); font-size:0.95rem;"></div>
-      <div class="row" style="margin-top:10px;">
-        <button id="guidedMicBtn" class="mic">&#9679; hold to speak</button>
+      <div class="guided-q" id="guidedQuestion"></div>
+      <div class="mic-control">
+        <button id="guidedMicBtn" class="mic" type="button" aria-label="Hold to speak">
+          <span class="mic-ico" aria-hidden="true"></span>
+          <span class="mic-text"><span class="full">Hold to speak</span><span class="short">Hold</span></span>
+        </button>
         <span class="status" id="guidedMicStatus"></span>
       </div>
       <div class="transcript-box" id="guidedTranscriptBox">
-        <div class="label">heard (original)</div>
+        <div class="label">heard</div>
         <div id="guidedTranscriptOriginal"></div>
-        <div class="label" style="margin-top:8px;">written in English</div>
+        <div class="label" style="margin-top:8px;">in English</div>
         <div id="guidedTranscriptEnglish"></div>
       </div>
-      <div class="row" style="margin-top:10px; justify-content:flex-end;">
-        <button type="button" id="guidedNextBtn" style="display:none;">next question &rarr;</button>
+      <div class="guided-nav">
+        <button type="button" id="guidedSkipBtn" class="secondary">Skip</button>
+        <button type="button" id="guidedNextBtn" style="display:none;">Next</button>
       </div>
+    </div>
+
+    <div id="guidedAnswersReview" class="guided-answers hidden" aria-live="polite">
+      <h3>Your answers</h3>
+      <div id="guidedAnswersList"></div>
     </div>
   </div>
 </section>
+</div><!-- /view-profile -->
+
+<!-- ========== SEARCH VIEW ========== -->
+<div class="view active" id="view-search">
 
 <section>
   <div class="step-head">
-    <span class="step-num">2</span>
+    <span class="step-num">1</span>
     <p class="step-title">Search for jobs</p>
   </div>
-  <div class="sub" style="margin-bottom:16px;">
-    Add roles, companies, or keywords — speak one at a time, or type and
-    press Enter. Add as many as you like.
+  <p class="hint" style="color:var(--muted); font-size:0.9rem; margin:4px 0 14px;">
+    Add roles, companies, and keywords — speak or type.
+  </p>
+
+  <div class="voice-target" role="tablist" aria-label="Voice adds to">
+    <button type="button" class="voice-target-btn active" data-chip-cat="roles" role="tab" aria-selected="true">Roles</button>
+    <button type="button" class="voice-target-btn" data-chip-cat="companies" role="tab" aria-selected="false">Companies</button>
+    <button type="button" class="voice-target-btn" data-chip-cat="keywords" role="tab" aria-selected="false">Keywords</button>
   </div>
-  <div class="row">
-    <button id="micBtn" class="mic">&#9679; hold to speak</button>
+
+  <div class="mic-control">
+    <button id="micBtn" class="mic" type="button" aria-label="Hold to speak">
+      <span class="mic-ico" aria-hidden="true"></span>
+      <span class="mic-text"><span class="full">Hold to speak</span><span class="short">Hold</span></span>
+    </button>
     <span class="status" id="micStatus"></span>
   </div>
 
+  <div class="search-fields" id="chipInput">
+    <div class="search-field active" data-chip-cat="roles" id="chipField-roles">
+      <div class="search-field-head">
+        <label for="chipTextInput-roles">Roles</label>
+        <span class="hint">job titles</span>
+      </div>
+      <div class="chip-list" id="chipList-roles"></div>
+      <div class="search-compose-row">
+        <input type="text" id="chipTextInput-roles" data-chip-cat="roles" placeholder="e.g. robotics engineer" autocomplete="off">
+      </div>
+    </div>
+
+    <div class="search-field" data-chip-cat="companies" id="chipField-companies">
+      <div class="search-field-head">
+        <label for="chipTextInput-companies">Companies</label>
+        <span class="hint">employers to target</span>
+      </div>
+      <div class="chip-list" id="chipList-companies"></div>
+      <div class="search-compose-row">
+        <input type="text" id="chipTextInput-companies" data-chip-cat="companies" placeholder="e.g. Tesla" autocomplete="off">
+      </div>
+    </div>
+
+    <div class="search-field" data-chip-cat="keywords" id="chipField-keywords">
+      <div class="search-field-head">
+        <label for="chipTextInput-keywords">Keywords</label>
+        <span class="hint">topics, skills, places</span>
+      </div>
+      <div class="chip-list" id="chipList-keywords"></div>
+      <div class="search-compose-row">
+        <input type="text" id="chipTextInput-keywords" data-chip-cat="keywords" placeholder="e.g. deep tech, Bangalore" autocomplete="off">
+      </div>
+    </div>
+  </div>
+
   <div class="transcript-box" id="transcriptBox">
-    <div class="label">heard (original)</div>
+    <div class="label">heard</div>
     <div id="transcriptOriginal"></div>
     <div class="label" style="margin-top:8px;">added as</div>
     <div id="transcriptEnglish"></div>
   </div>
 
-  <div class="chip-input" id="chipInput" style="margin-top:14px;">
-    <div class="chip-list" id="chipList"></div>
-    <input type="text" id="chipTextInput" placeholder="e.g. Backend Engineer, Razorpay, Bangalore — press Enter to add">
-  </div>
-
-  <div class="row" style="margin-top:14px;">
-    <button id="searchBtn">search jobs</button>
+  <div class="search-actions">
+    <button id="searchBtn" type="button">Search jobs</button>
     <span class="status" id="searchStatus"></span>
   </div>
 </section>
 
 <section id="resultsSection" style="display:none;">
-  <div class="step-head" style="margin-bottom:16px;">
-    <span class="step-num">3</span>
+  <div class="step-head">
+    <span class="step-num">2</span>
     <p class="step-title">Your matches</p>
   </div>
+  <p class="hint" style="color:var(--muted); font-size:0.9rem; margin:4px 0 16px;">
+    Ranked for your profile.
+  </p>
   <div id="resultsList"></div>
 </section>
 
@@ -349,8 +663,10 @@
   <pre id="debugLog" style="font-size:0.75rem; color:var(--muted); white-space:pre-wrap;"></pre>
 </details>
 
+</div><!-- /view-search -->
+
 <script>
-// ---------- keys ----------
+// ---------- keys + setup wizard ----------
 function getAnthropicKey(){ return localStorage.getItem('vjr_anthropic_key') || ''; }
 function getSarvamKey(){ return localStorage.getItem('vjr_sarvam_key') || ''; }
 function getOpenAIKey(){ return localStorage.getItem('vjr_openai_key') || ''; }
@@ -358,37 +674,73 @@ function getOpenAIKey(){ return localStorage.getItem('vjr_openai_key') || ''; }
 function getProvider(){ return localStorage.getItem('vjr_provider') || 'claude'; }
 function setProvider(p){ localStorage.setItem('vjr_provider', p === 'openai' ? 'openai' : 'claude'); }
 
-function updateProviderNoteVisibility(){
-  const isOpenAI = document.getElementById('providerSelect').value === 'openai';
-  document.getElementById('openaiProxyNote').style.display = isOpenAI ? 'block' : 'none';
-  document.getElementById('openaiKeyRow').style.display = isOpenAI ? 'grid' : 'none';
-}
-
-function updateSettingsSummary(){
+function keysReady(){
   const provider = getProvider();
   const providerKeyOk = provider === 'openai' ? !!getOpenAIKey() : !!getAnthropicKey();
-  const sarvamOk = !!getSarvamKey();
-  const el = document.getElementById('settingsSummaryStatus');
-  if(providerKeyOk && sarvamOk){
-    el.textContent = `ready — ${provider} + Sarvam`;
-    el.className = 'ready';
-  }else{
-    const missing = [];
-    if(!providerKeyOk) missing.push(provider === 'openai' ? 'OpenAI' : 'Claude');
-    if(!sarvamOk) missing.push('Sarvam');
-    el.textContent = `missing: ${missing.join(', ')} key`;
-    el.className = '';
+  return providerKeyOk && !!getSarvamKey();
+}
+
+function getSelectedProvider(){
+  const checked = document.querySelector('input[name="provider"]:checked');
+  return checked ? checked.value : getProvider();
+}
+
+function updateProviderFields(){
+  const isOpenAI = getSelectedProvider() === 'openai';
+  document.getElementById('openaiKeyRow').style.display = isOpenAI ? 'block' : 'none';
+  document.getElementById('claudeKeyRow').style.display = isOpenAI ? 'none' : 'block';
+}
+
+function updateSetupNav(){
+  const nav = document.getElementById('navSetup');
+  if(keysReady()) nav.classList.remove('needs-setup');
+  else nav.classList.add('needs-setup');
+}
+
+function showView(name){
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`view-${name}`).classList.add('active');
+  const btn = document.querySelector(`.nav-btn[data-view="${name}"]`);
+  if(btn) btn.classList.add('active');
+}
+
+function showSetupStep(n){
+  document.querySelectorAll('.setup-step').forEach(s => s.classList.remove('active'));
+  document.getElementById(`setupStep${n}`).classList.add('active');
+  for(let i = 1; i <= 3; i++){
+    const pip = document.getElementById(`pip${i}`);
+    pip.classList.remove('on', 'done');
+    if(i < n) pip.classList.add('done');
+    else if(i === n) pip.classList.add('on');
+  }
+  if(n === 3){
+    const provider = getProvider();
+    document.getElementById('setupReadySummary').textContent =
+      `Sarvam + ${provider === 'openai' ? 'OpenAI' : 'Claude'} ready.`;
   }
 }
+
+function updateSettingsSummary(){ updateSetupNav(); }
 
 function loadKeyInputs(){
   document.getElementById('anthropicKeyInput').value = getAnthropicKey();
   document.getElementById('sarvamKeyInput').value = getSarvamKey();
   document.getElementById('openaiKeyInput').value = getOpenAIKey();
-  document.getElementById('providerSelect').value = getProvider();
-  updateProviderNoteVisibility();
-  updateSettingsSummary();
-  document.getElementById('settingsPanel').open = !(getSarvamKey() && (getProvider() === 'openai' ? getOpenAIKey() : getAnthropicKey()));
+  const provider = getProvider();
+  document.getElementById(provider === 'openai' ? 'providerOpenAI' : 'providerClaude').checked = true;
+  updateProviderFields();
+  updateSetupNav();
+
+  if(keysReady()){
+    showSetupStep(3);
+    showView('search');
+  }else{
+    // Land on the first incomplete step
+    if(!getSarvamKey()) showSetupStep(1);
+    else showSetupStep(2);
+    showView('setup');
+  }
 }
 
 // ---------- profile / stance persistence ----------
@@ -458,33 +810,83 @@ document.getElementById('cvClearBtn').addEventListener('click', () => {
   document.getElementById('cvClearBtn').style.display = 'none';
 });
 
-document.getElementById('providerSelect').addEventListener('change', (e) => {
-  setProvider(e.target.value);
-  updateProviderNoteVisibility();
-  updateSettingsSummary();
+// ---------- setup wizard events ----------
+document.querySelectorAll('.nav-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const view = btn.dataset.view;
+    showView(view);
+    if(view === 'setup' && keysReady()) showSetupStep(3);
+  });
 });
-document.getElementById('saveKeysBtn').addEventListener('click', ()=>{
+
+document.querySelectorAll('input[name="provider"]').forEach(radio => {
+  radio.addEventListener('change', () => {
+    setProvider(radio.value);
+    updateProviderFields();
+    updateSetupNav();
+  });
+});
+
+document.getElementById('setupNext1').addEventListener('click', () => {
+  const s = document.getElementById('sarvamKeyInput').value.trim();
+  if(!s && !getSarvamKey()){
+    setStatus('keysStatus', 'Add a Sarvam key to continue', 'err');
+    // keysStatus lives on step 2 — briefly flash via alert-style on step 1
+    const input = document.getElementById('sarvamKeyInput');
+    input.focus();
+    input.style.outline = '2px solid var(--danger)';
+    setTimeout(() => { input.style.outline = ''; }, 1200);
+    return;
+  }
+  if(s) localStorage.setItem('vjr_sarvam_key', s);
+  updateSetupNav();
+  showSetupStep(2);
+});
+
+document.getElementById('setupBack2').addEventListener('click', () => showSetupStep(1));
+
+document.getElementById('setupNext2').addEventListener('click', () => {
+  const provider = getSelectedProvider();
+  setProvider(provider);
   const a = document.getElementById('anthropicKeyInput').value.trim();
   const s = document.getElementById('sarvamKeyInput').value.trim();
   const o = document.getElementById('openaiKeyInput').value.trim();
-  if(a) localStorage.setItem('vjr_anthropic_key', a);
   if(s) localStorage.setItem('vjr_sarvam_key', s);
+  if(a) localStorage.setItem('vjr_anthropic_key', a);
   if(o) localStorage.setItem('vjr_openai_key', o);
-  const status = document.getElementById('keysStatus');
-  status.textContent = 'saved — stored in this browser only';
-  status.className = 'status ok';
-  updateSettingsSummary();
+
+  const providerKeyOk = provider === 'openai' ? !!(o || getOpenAIKey()) : !!(a || getAnthropicKey());
+  const sarvamOk = !!(s || getSarvamKey());
+  if(!providerKeyOk || !sarvamOk){
+    const missing = [];
+    if(!sarvamOk) missing.push('Sarvam');
+    if(!providerKeyOk) missing.push(provider === 'openai' ? 'OpenAI' : 'Claude');
+    setStatus('keysStatus', `Need ${missing.join(' + ')} key`, 'err');
+    return;
+  }
+  setStatus('keysStatus', '', '');
+  updateSetupNav();
+  showSetupStep(3);
 });
+
+document.getElementById('setupGoSearch').addEventListener('click', () => showView('search'));
+document.getElementById('setupEditKeys').addEventListener('click', () => showSetupStep(1));
+
 loadKeyInputs();
 
-// ---------- profile tabs ----------
-document.querySelectorAll('.profile-tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('.profile-tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.profile-panel').forEach(p => p.classList.remove('active'));
-    tab.classList.add('active');
-    document.getElementById(`profilePanel-${tab.dataset.tab}`).classList.add('active');
+// ---------- profile methods ----------
+function showProfileMethod(tab){
+  document.querySelectorAll('.method-pick').forEach(t => {
+    const on = t.dataset.tab === tab;
+    t.classList.toggle('active', on);
+    t.setAttribute('aria-selected', on ? 'true' : 'false');
   });
+  document.querySelectorAll('.profile-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(`profilePanel-${tab}`).classList.add('active');
+}
+
+document.querySelectorAll('.method-pick').forEach(tab => {
+  tab.addEventListener('click', () => showProfileMethod(tab.dataset.tab));
 });
 
 function log(msg){
@@ -552,12 +954,18 @@ async function sarvamSpeak(texts, languageCode){
 // ---------- Claude: web-search job scan ----------
 const JOB_SEARCH_PROMPT = (query, stance, cv) => `You are a job search assistant for someone who does not search or read confidently in English — they just spoke this search out loud in their own language, and it was transcribed and translated to reach you. They cannot easily double-check an English job posting themselves, so your accuracy and honesty here directly determines whether they can act on what you find. Do not invent, embellish, or guess at anything — a wrong or fabricated detail wastes a real trip or application for someone who cannot easily verify it.
 
-Search the web right now for CURRENT, REAL, live job openings (not generic listing-site search pages) that match this search and this candidate's stated profile.
+Search the web right now for CURRENT, REAL, live job openings (not generic listing-site search pages) that match this structured search and this candidate's stated profile.
 
-What the candidate is searching for (spoken originally in their own language, translated to English): "${query}"
+The candidate's search is organized into labeled parts (some may be empty — ignore empty parts). Treat each label with its intended meaning; do NOT smash them into one undifferentiated bag of words:
+${query}
+
+How to weight the parts:
+- Roles: preferred job titles / role names — primary match signal for the position title.
+- Companies: named employers to prioritize or restrict to — search those companies' career pages first when present.
+- Keywords: topics, domains, skills, industries, or locations (e.g. robotics, deep tech, Bangalore) — use for topical and location fit, not as job titles unless a role is also listed.
 
 Prioritize these sources, in order, over generic search results:
-1. Company career pages directly (search "site:[company].com careers" style or the company's own jobs page)
+1. Company career pages directly (search "site:[company].com careers" style or the company's own jobs page) — especially for any Companies listed above
 2. Naukri, Indeed, Instahyre, Cutshort, Wellfound (AngelList Talent) — weight Indian job boards heavily unless the query clearly wants a different region
 3. LinkedIn Jobs and other structured job boards via regular web search
 4. Company-specific career pages for any companies the candidate explicitly names
@@ -567,7 +975,7 @@ Who this candidate is and what they're looking for, in their own words:
 ${stance || '(not given — rank generically on relevance to the search query alone, and do not assume seniority, background, or requirements you were not told)'}
 ${cv ? `\nThe candidate's actual CV/resume text, extracted from an uploaded file (this is the authoritative source of their real skills and experience — trust this over the spoken profile above for anything factual, like years of experience, specific tools used, or past job titles):\n${cv}\n` : ''}
 
-Score each role 0-100 on: how well it matches the search query and location intent (up to 50 points), how well it fits the stated profile/stance if given (up to 40 points), and how current/legitimate the listing looks (up to 10 points). Do not inflate scores to make results look better than they are — a mediocre match should score low, not be flattered.
+Score each role 0-100 on: how well it matches the labeled search parts (roles / companies / keywords) and location intent (up to 50 points), how well it fits the stated profile/stance if given (up to 40 points), and how current/legitimate the listing looks (up to 10 points). Do not inflate scores to make results look better than they are — a mediocre match should score low, not be flattered.
 
 Find up to 5 real, specific, currently-open roles at named companies. For each, give:
 - title
@@ -597,16 +1005,23 @@ async function callClaude(prompt, { webSearch = false, maxTokens = 4000 } = {}){
     messages: [{ role: 'user', content: prompt }]
   };
   if(webSearch) body.tools = [{ type: 'web_search_20250305', name: 'web_search', max_uses: 5 }];
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': key,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
-    },
-    body: JSON.stringify(body)
-  });
+  let response;
+  try{
+    response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify(body)
+    });
+  }catch(err){
+    throw new Error(
+      'Could not reach Anthropic (network/CORS). Check connectivity, or switch to OpenAI with the local proxy at http://localhost:8788'
+    );
+  }
   const data = await response.json().catch(()=>({}));
   if(!response.ok){
     throw new Error(data.error?.message || `Anthropic HTTP ${response.status}`);
@@ -620,11 +1035,28 @@ async function callClaude(prompt, { webSearch = false, maxTokens = 4000 } = {}){
 async function callOpenAI(prompt){
   const key = getOpenAIKey();
   if(!key) throw new Error('add your OpenAI API key first');
-  const response = await fetch('/api/openai-search', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt, apiKey: key })
-  });
+  // Same-origin relative URL — only works when this page is served by server.js
+  // (http://localhost:8788). file:// or a different host/port yields "Failed to fetch".
+  let response;
+  try{
+    response = await fetch('/api/openai-search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, apiKey: key })
+    });
+  }catch(err){
+    const onPages = /\.github\.io$/i.test(location.hostname);
+    const where = location.protocol === 'file:'
+      ? 'this page was opened as a file'
+      : onPages
+        ? 'GitHub Pages has no OpenAI proxy — switch to Claude, or run locally'
+        : `this page is at ${location.origin}`;
+    throw new Error(
+      onPages
+        ? `OpenAI proxy unavailable on GitHub Pages (${where}). Use Claude, or run node server.js and open http://localhost:8788`
+        : `OpenAI proxy unreachable (${where}). Run node server.js and open http://localhost:8788`
+    );
+  }
   const data = await response.json().catch(()=>({}));
   if(!response.ok){
     throw new Error(data.error?.message || data.error || `proxy HTTP ${response.status}`);
@@ -717,8 +1149,11 @@ function renderResults(jobs){
         <button type="button" class="secondary job-chat-toggle" data-job-index="${index}">&#128172; ask a question about this job</button>
         <div class="job-chat-panel" id="jobChatPanel-${index}" style="display:none;">
           <div class="job-chat-history" id="jobChatHistory-${index}"></div>
-          <div class="row" style="margin-top:8px;">
-            <button class="mic job-chat-mic" data-job-index="${index}">&#9679; hold to ask</button>
+          <div class="mic-control">
+            <button class="mic job-chat-mic" data-job-index="${index}" type="button" aria-label="Hold to speak">
+              <span class="mic-ico" aria-hidden="true"></span>
+              <span class="mic-text"><span class="full">Hold to speak</span><span class="short">Hold</span></span>
+            </button>
             <span class="status" id="jobChatMicStatus-${index}"></span>
           </div>
         </div>
@@ -743,53 +1178,130 @@ function setStatus(id, msg, cls){
   el.className = 'status' + (cls ? ' ' + cls : '');
 }
 
-// ---------- chip-based keyword search ----------
-let searchChips = [];
+// ---------- chip-based keyword search (roles / companies / keywords) ----------
+const CHIP_CATS = ['roles', 'companies', 'keywords'];
+const CHIP_STORAGE_KEYS = {
+  roles: 'vjr_chips_roles',
+  companies: 'vjr_chips_companies',
+  keywords: 'vjr_chips_keywords'
+};
+const CHIP_LABELS = {
+  roles: 'Roles',
+  companies: 'Companies',
+  keywords: 'Keywords'
+};
 
-function renderChips(){
-  const list = document.getElementById('chipList');
-  list.innerHTML = '';
-  searchChips.forEach((chip, i) => {
-    const el = document.createElement('span');
-    el.className = 'chip';
-    el.innerHTML = `${escapeHtml(chip)} <button type="button" aria-label="remove">&times;</button>`;
-    el.querySelector('button').addEventListener('click', () => {
-      searchChips.splice(i, 1);
-      renderChips();
-    });
-    list.appendChild(el);
+let searchChips = { roles: [], companies: [], keywords: [] };
+let activeChipCat = 'roles';
+
+function loadSearchChips(){
+  CHIP_CATS.forEach((cat) => {
+    try{
+      const raw = JSON.parse(localStorage.getItem(CHIP_STORAGE_KEYS[cat]) || '[]');
+      searchChips[cat] = Array.isArray(raw)
+        ? raw.map(t => String(t).trim()).filter(Boolean)
+        : [];
+    }catch{
+      searchChips[cat] = [];
+    }
   });
 }
 
-function addChip(text){
+function saveSearchChips(cat){
+  localStorage.setItem(CHIP_STORAGE_KEYS[cat], JSON.stringify(searchChips[cat]));
+}
+
+function setActiveChipCat(cat){
+  if(!CHIP_CATS.includes(cat)) return;
+  activeChipCat = cat;
+  document.querySelectorAll('.voice-target-btn').forEach((btn) => {
+    const on = btn.dataset.chipCat === cat;
+    btn.classList.toggle('active', on);
+    btn.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  document.querySelectorAll('.search-field').forEach((field) => {
+    field.classList.toggle('active', field.dataset.chipCat === cat);
+  });
+}
+
+function renderChips(cat){
+  const cats = cat ? [cat] : CHIP_CATS;
+  cats.forEach((c) => {
+    const list = document.getElementById(`chipList-${c}`);
+    if(!list) return;
+    list.innerHTML = '';
+    searchChips[c].forEach((chip, i) => {
+      const el = document.createElement('span');
+      el.className = 'chip';
+      el.innerHTML = `${escapeHtml(chip)} <button type="button" aria-label="remove">&times;</button>`;
+      el.querySelector('button').addEventListener('click', () => {
+        searchChips[c].splice(i, 1);
+        saveSearchChips(c);
+        renderChips(c);
+      });
+      list.appendChild(el);
+    });
+  });
+}
+
+function addChip(text, cat = activeChipCat){
   const trimmed = (text || '').trim();
-  if(!trimmed) return;
-  searchChips.push(trimmed);
-  renderChips();
+  if(!trimmed || !CHIP_CATS.includes(cat)) return;
+  if(searchChips[cat].some(c => c.toLowerCase() === trimmed.toLowerCase())) return;
+  searchChips[cat].push(trimmed);
+  saveSearchChips(cat);
+  renderChips(cat);
 }
 
 function getChipQuery(){
-  return searchChips.join(', ');
+  const lines = [];
+  CHIP_CATS.forEach((cat) => {
+    if(searchChips[cat].length){
+      lines.push(`${CHIP_LABELS[cat]}: ${searchChips[cat].join(', ')}`);
+    }
+  });
+  return lines.join('\n');
 }
 
-const chipTextInput = document.getElementById('chipTextInput');
-chipTextInput.addEventListener('keydown', (e) => {
-  if(e.key === 'Enter'){
-    e.preventDefault();
-    addChip(chipTextInput.value);
-    chipTextInput.value = '';
-  }else if(e.key === 'Backspace' && !chipTextInput.value && searchChips.length){
-    searchChips.pop();
-    renderChips();
-  }
+function hasAnyChips(){
+  return CHIP_CATS.some((cat) => searchChips[cat].length > 0);
+}
+
+loadSearchChips();
+renderChips();
+setActiveChipCat('roles');
+
+document.querySelectorAll('.voice-target-btn').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    setActiveChipCat(btn.dataset.chipCat);
+    const input = document.getElementById(`chipTextInput-${btn.dataset.chipCat}`);
+    if(input) input.focus();
+  });
+});
+
+CHIP_CATS.forEach((cat) => {
+  const input = document.getElementById(`chipTextInput-${cat}`);
+  if(!input) return;
+  input.addEventListener('focus', () => setActiveChipCat(cat));
+  input.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter'){
+      e.preventDefault();
+      addChip(input.value, cat);
+      input.value = '';
+    }else if(e.key === 'Backspace' && !input.value && searchChips[cat].length){
+      searchChips[cat].pop();
+      saveSearchChips(cat);
+      renderChips(cat);
+    }
+  });
 });
 
 // ---------- search flow ----------
 document.getElementById('searchBtn').addEventListener('click', async () => {
   const query = getChipQuery();
   const stance = document.getElementById('stanceText').value.trim();
-  if(!query){
-    setStatus('searchStatus', 'add at least one role, company, or keyword first', 'err');
+  if(!hasAnyChips()){
+    setStatus('searchStatus', 'Add at least one term first', 'err');
     return;
   }
   const btn = document.getElementById('searchBtn');
@@ -797,7 +1309,7 @@ document.getElementById('searchBtn').addEventListener('click', async () => {
   setStatus('searchStatus', '', '');
   document.getElementById('searchStatus').innerHTML = '<span class="spinner"></span>searching live job postings…';
   try{
-    log(`calling ${getProvider()} web search for: "${query}"${cvText ? ' (with CV)' : ''}`);
+    log(`calling ${getProvider()} web search for:\n${query}${cvText ? ' (with CV)' : ''}`);
     const raw = await callJobSearch(query, stance, cvText);
     log(`raw response length: ${raw.length}`);
     const jobs = parseJobsJson(raw);
@@ -813,8 +1325,34 @@ document.getElementById('searchBtn').addEventListener('click', async () => {
 });
 
 // ---------- mic recording ----------
+const MAX_RECORD_SECONDS = 30;
+const MAX_RECORD_MS = 29500; // stop just under Sarvam's 30s limit
 let mediaRecorder = null;
 let audioChunks = [];
+let recordTickInterval = null;
+let recordHardStop = null;
+
+function clearRecordTimer(){
+  if(recordTickInterval){ clearInterval(recordTickInterval); recordTickInterval = null; }
+  if(recordHardStop){ clearTimeout(recordHardStop); recordHardStop = null; }
+}
+
+function startRecordTimer(statusId, onLimit){
+  clearRecordTimer();
+  const startedAt = Date.now();
+  const tick = () => {
+    const elapsed = Date.now() - startedAt;
+    const left = Math.max(0, Math.ceil((MAX_RECORD_MS - elapsed) / 1000));
+    setStatus(statusId, `listening… ${left}s left`, '');
+  };
+  tick();
+  recordTickInterval = setInterval(tick, 200);
+  recordHardStop = setTimeout(() => {
+    clearRecordTimer();
+    setStatus(statusId, `hit ${MAX_RECORD_SECONDS}s limit — stopping`, '');
+    onLimit();
+  }, MAX_RECORD_MS);
+}
 
 async function startRecording(){
   const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -825,6 +1363,7 @@ async function startRecording(){
 }
 
 function stopRecording(){
+  clearRecordTimer();
   return new Promise((resolve) => {
     mediaRecorder.onstop = () => {
       const blob = new Blob(audioChunks, { type: 'audio/webm' });
@@ -872,20 +1411,23 @@ function bindMicButton({ buttonId, statusId, onResult, originalBoxId, englishBox
       isRecording = true;
       activeMicButton = btn;
       btn.classList.add('recording');
-      setStatus(statusId, 'listening… release to stop', '');
+      startRecordTimer(statusId, () => handleMicUp({ preventDefault(){} }, { hitLimit: true }));
     }catch(err){
+      clearRecordTimer();
       setStatus(statusId, `mic error: ${err.message}`, 'err');
     }
   }
 
-  async function handleMicUp(e){
+  async function handleMicUp(e, opts = {}){
     e.preventDefault();
     if(!isRecording) return;
     isRecording = false;
     activeMicButton = null;
     btn.classList.remove('recording');
+    clearRecordTimer();
     setStatus(statusId, '', '');
-    document.getElementById(statusId).innerHTML = '<span class="spinner"></span>transcribing…';
+    document.getElementById(statusId).innerHTML =
+      `<span class="spinner"></span>${opts.hitLimit ? '30s limit — transcribing…' : 'transcribing…'}`;
     try{
       const blob = await stopRecording();
       const selectedLang = document.getElementById('langSelect').value;
@@ -922,7 +1464,9 @@ function bindMicButton({ buttonId, statusId, onResult, originalBoxId, englishBox
       if(langMismatch){
         setStatus(statusId, `heard you — but this sounded like ${detectedLang}, not the ${selectedLang} you selected. Review below.`, 'err');
       }else{
-        setStatus(statusId, 'heard you — review below', 'ok');
+        setStatus(statusId, opts.hitLimit
+          ? 'stopped at 30s — review below (or speak again in shorter pieces)'
+          : 'heard you — review below', 'ok');
       }
 
       if(speakBackAfter && !langMismatch){
@@ -947,7 +1491,10 @@ bindMicButton({
 });
 bindMicButton({
   buttonId: 'stanceMicBtn', statusId: 'stanceMicStatus',
-  onResult: (text) => { document.getElementById('stanceText').value = text; },
+  onResult: (text) => {
+    document.getElementById('stanceText').value = text;
+    localStorage.setItem('vjr_stance', text);
+  },
   originalBoxId: 'stanceTranscriptOriginal', englishBoxId: 'stanceTranscriptEnglish', transcriptBoxId: 'stanceTranscriptBox',
   speakBackAfter: true, readbackStatusId: 'stanceReadbackStatus'
 });
@@ -960,70 +1507,292 @@ const GUIDED_QUESTIONS = [
   "Tell us about a piece of work you're genuinely proud of.",
   "What kind of role are you focused on finding right now?"
 ];
+const GUIDED_STORAGE_KEY = 'vjr_guided_answers';
 
 let guidedAnswers = [];
 let guidedQuestionIndex = 0;
 let guidedAnswerReady = false;
+let guidedConvoActive = false;
+
+function loadGuidedAnswers(){
+  try{
+    const raw = JSON.parse(localStorage.getItem(GUIDED_STORAGE_KEY) || '{}');
+    const out = [];
+    if(Array.isArray(raw)){
+      // Older format: string answers only (empties ignored)
+      raw.forEach((a, i) => {
+        if(i >= GUIDED_QUESTIONS.length) return;
+        if(a === null) out[i] = null;
+        else if(typeof a === 'string' && a.trim()) out[i] = a;
+      });
+    }else if(raw && typeof raw === 'object'){
+      Object.keys(raw).forEach(k => {
+        const i = Number(k);
+        if(Number.isNaN(i) || i < 0 || i >= GUIDED_QUESTIONS.length) return;
+        const a = raw[k];
+        if(a === null) out[i] = null;
+        else if(typeof a === 'string') out[i] = a;
+      });
+    }
+    return out;
+  }catch{
+    return [];
+  }
+}
+
+function saveGuidedAnswers(){
+  // Object map keeps pending vs skipped distinct (JSON arrays turn holes into null)
+  const map = {};
+  for(let i = 0; i < GUIDED_QUESTIONS.length; i++){
+    if(Object.prototype.hasOwnProperty.call(guidedAnswers, i)) map[i] = guidedAnswers[i];
+  }
+  localStorage.setItem(GUIDED_STORAGE_KEY, JSON.stringify(map));
+  renderGuidedAnswersReview();
+  updateGuidedStartUI();
+}
+
+function isGuidedAnswered(a){
+  return typeof a === 'string' && a.trim().length > 0;
+}
+
+function answeredCount(answers = guidedAnswers){
+  return answers.filter(isGuidedAnswered).length;
+}
+
+function visitedCount(answers = guidedAnswers){
+  let n = 0;
+  for(let i = 0; i < GUIDED_QUESTIONS.length; i++){
+    if(Object.prototype.hasOwnProperty.call(answers, i)) n++;
+  }
+  return n;
+}
+
+function allQuestionsVisited(answers = guidedAnswers){
+  return visitedCount(answers) >= GUIDED_QUESTIONS.length;
+}
+
+function firstUnansweredIndex(answers = guidedAnswers){
+  for(let i = 0; i < GUIDED_QUESTIONS.length; i++){
+    if(!Object.prototype.hasOwnProperty.call(answers, i)) return i;
+  }
+  return GUIDED_QUESTIONS.length;
+}
+
+function renderGuidedAnswersReview(){
+  const review = document.getElementById('guidedAnswersReview');
+  const list = document.getElementById('guidedAnswersList');
+  const hasAny = visitedCount() > 0 || guidedConvoActive;
+  if(!hasAny){
+    review.classList.add('hidden');
+    list.innerHTML = '';
+    return;
+  }
+
+  list.innerHTML = GUIDED_QUESTIONS.map((q, i) => {
+    const has = Object.prototype.hasOwnProperty.call(guidedAnswers, i);
+    const val = guidedAnswers[i];
+    let body;
+    if(isGuidedAnswered(val)) body = `<div class="a">${escapeHtml(val.trim())}</div>`;
+    else if(val === null) body = `<div class="a muted">Skipped</div>`;
+    else if(guidedConvoActive && i === guidedQuestionIndex) body = `<div class="a muted">Answering now…</div>`;
+    else body = `<div class="a muted">Not answered yet</div>`;
+
+    const current = guidedConvoActive && i === guidedQuestionIndex ? ' current' : '';
+    return `<button type="button" class="guided-answer${current}" data-guided-index="${i}">
+      <div class="q">${i + 1}. ${escapeHtml(q)}</div>
+      ${body}
+    </button>`;
+  }).join('');
+
+  review.classList.remove('hidden');
+}
+
+function updateGuidedStartUI(){
+  if(guidedConvoActive) return;
+  const startBtn = document.getElementById('startGuidedBtn');
+  const resumeBtn = document.getElementById('resumeGuidedBtn');
+  const clearBtn = document.getElementById('clearGuidedBtn');
+  const n = answeredCount();
+  const visited = visitedCount();
+
+  clearBtn.style.display = visited ? 'inline-block' : 'none';
+  if(!visited){
+    startBtn.textContent = 'Start';
+    startBtn.style.display = 'inline-block';
+    resumeBtn.style.display = 'none';
+  }else if(allQuestionsVisited() && n > 0){
+    startBtn.textContent = 'Rewrite profile';
+    startBtn.style.display = 'inline-block';
+    resumeBtn.textContent = 'Review & edit';
+    resumeBtn.style.display = 'inline-block';
+  }else if(allQuestionsVisited() && n === 0){
+    startBtn.textContent = 'Start over';
+    startBtn.style.display = 'inline-block';
+    resumeBtn.style.display = 'none';
+  }else{
+    startBtn.textContent = 'Start over';
+    startBtn.style.display = 'inline-block';
+    resumeBtn.textContent = `Continue (${n} answered)`;
+    resumeBtn.style.display = 'inline-block';
+  }
+}
+
+function beginGuidedAt(index){
+  guidedConvoActive = true;
+  guidedQuestionIndex = Math.max(0, Math.min(index, GUIDED_QUESTIONS.length - 1));
+  document.getElementById('guidedConvo').style.display = 'block';
+  document.getElementById('startGuidedBtn').style.display = 'none';
+  document.getElementById('resumeGuidedBtn').style.display = 'none';
+  document.getElementById('clearGuidedBtn').style.display = 'none';
+  document.getElementById('guidedMicBtn').style.display = 'inline-block';
+  document.getElementById('guidedSkipBtn').style.display = 'inline-block';
+  showGuidedQuestion();
+  renderGuidedAnswersReview();
+}
+
+function advanceGuided(){
+  if(guidedQuestionIndex >= GUIDED_QUESTIONS.length - 1){
+    if(answeredCount() === 0){
+      setStatus('guidedMicStatus', 'Answer at least one question first', 'err');
+      return;
+    }
+    synthesizeGuidedProfile();
+    return;
+  }
+  guidedQuestionIndex++;
+  showGuidedQuestion();
+  renderGuidedAnswersReview();
+}
 
 function showGuidedQuestion(){
-  document.getElementById('guidedQuestion').textContent =
-    `Question ${guidedQuestionIndex + 1} of ${GUIDED_QUESTIONS.length}: ${GUIDED_QUESTIONS[guidedQuestionIndex]}`;
-  document.getElementById('guidedProgress').textContent = `${guidedQuestionIndex + 1} / ${GUIDED_QUESTIONS.length}`;
+  document.getElementById('guidedQuestion').textContent = GUIDED_QUESTIONS[guidedQuestionIndex];
+  document.getElementById('guidedProgress').textContent =
+    `Question ${guidedQuestionIndex + 1} of ${GUIDED_QUESTIONS.length}`;
   document.getElementById('guidedTranscriptBox').classList.remove('show');
   document.getElementById('guidedNextBtn').style.display = 'none';
+  document.getElementById('guidedSkipBtn').style.display = 'inline-block';
   setStatus('guidedMicStatus', '', '');
   guidedAnswerReady = false;
+
+  const existing = guidedAnswers[guidedQuestionIndex];
+  if(isGuidedAnswered(existing)){
+    document.getElementById('guidedTranscriptEnglish').textContent = existing.trim();
+    document.getElementById('guidedTranscriptOriginal').textContent = '(saved answer)';
+    document.getElementById('guidedTranscriptBox').classList.add('show');
+    document.getElementById('guidedNextBtn').style.display = 'inline-block';
+    document.getElementById('guidedNextBtn').textContent =
+      guidedQuestionIndex === GUIDED_QUESTIONS.length - 1 ? 'Finish' : 'Next';
+    guidedAnswerReady = true;
+    setStatus('guidedMicStatus', 'saved — speak again to replace, or skip', 'ok');
+  }else if(existing === null){
+    setStatus('guidedMicStatus', 'previously skipped — speak to answer, or skip again', '');
+    document.getElementById('guidedNextBtn').style.display = 'inline-block';
+    document.getElementById('guidedNextBtn').textContent =
+      guidedQuestionIndex === GUIDED_QUESTIONS.length - 1 ? 'Finish' : 'Next';
+  }
 }
 
 document.getElementById('startGuidedBtn').addEventListener('click', () => {
+  const n = answeredCount();
+  if(allQuestionsVisited() && n > 0){
+    synthesizeGuidedProfile();
+    return;
+  }
+  if(visitedCount() > 0 && !confirm('Start over and clear saved answers?')) return;
   guidedAnswers = [];
-  guidedQuestionIndex = 0;
-  document.getElementById('guidedConvo').style.display = 'block';
-  document.getElementById('startGuidedBtn').style.display = 'none';
-  showGuidedQuestion();
+  saveGuidedAnswers();
+  beginGuidedAt(0);
+});
+
+document.getElementById('resumeGuidedBtn').addEventListener('click', () => {
+  const idx = allQuestionsVisited() ? 0 : firstUnansweredIndex();
+  beginGuidedAt(idx === GUIDED_QUESTIONS.length ? 0 : idx);
+});
+
+document.getElementById('clearGuidedBtn').addEventListener('click', () => {
+  if(!confirm('Clear all saved answers?')) return;
+  guidedAnswers = [];
+  guidedConvoActive = false;
+  saveGuidedAnswers();
+  document.getElementById('guidedConvo').style.display = 'none';
 });
 
 document.getElementById('guidedCancelBtn').addEventListener('click', () => {
+  guidedConvoActive = false;
   document.getElementById('guidedConvo').style.display = 'none';
-  document.getElementById('startGuidedBtn').style.display = 'inline-block';
-  guidedAnswers = [];
+  renderGuidedAnswersReview();
+  updateGuidedStartUI();
 });
 
-document.getElementById('guidedNextBtn').addEventListener('click', async () => {
-  guidedQuestionIndex++;
-  if(guidedQuestionIndex >= GUIDED_QUESTIONS.length){
-    await synthesizeGuidedProfile();
-    return;
+document.getElementById('guidedNextBtn').addEventListener('click', () => advanceGuided());
+
+document.getElementById('guidedSkipBtn').addEventListener('click', () => {
+  guidedAnswers[guidedQuestionIndex] = null;
+  saveGuidedAnswers();
+  advanceGuided();
+});
+
+document.getElementById('guidedAnswersList').addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-guided-index]');
+  if(!btn) return;
+  const index = Number(btn.dataset.guidedIndex);
+  if(Number.isNaN(index)) return;
+  if(!guidedConvoActive) beginGuidedAt(index);
+  else {
+    guidedQuestionIndex = index;
+    showGuidedQuestion();
+    renderGuidedAnswersReview();
   }
-  showGuidedQuestion();
 });
 
 async function synthesizeGuidedProfile(){
+  if(answeredCount() === 0){
+    setStatus('guidedMicStatus', 'Answer at least one question first', 'err');
+    return;
+  }
+  guidedConvoActive = true;
+  document.getElementById('guidedConvo').style.display = 'block';
   document.getElementById('guidedQuestion').textContent = 'Writing your profile…';
   document.getElementById('guidedProgress').textContent = '';
   document.getElementById('guidedMicBtn').style.display = 'none';
   document.getElementById('guidedNextBtn').style.display = 'none';
+  document.getElementById('guidedSkipBtn').style.display = 'none';
+  document.getElementById('startGuidedBtn').style.display = 'none';
+  document.getElementById('resumeGuidedBtn').style.display = 'none';
+  document.getElementById('clearGuidedBtn').style.display = 'none';
   try{
-    const answersText = guidedAnswers.map((a, i) => `Q: ${GUIDED_QUESTIONS[i]}\nA: ${a}`).join('\n\n');
-    const prompt = `You are helping someone build a short, honest CV-style profile from their spoken answers to a few questions. Their answers were spoken in their own language and translated to English, so phrasing may be a little rough — clean it up, but do not invent anything they didn't say.
+    const answersText = guidedAnswers
+      .map((a, i) => isGuidedAnswered(a) ? `Q: ${GUIDED_QUESTIONS[i]}\nA: ${a.trim()}` : null)
+      .filter(Boolean)
+      .join('\n\n');
+    const prompt = `You are helping someone build a short, honest CV-style profile from their spoken answers to a few questions. They may have skipped some questions — only use what they answered. Their answers were spoken in their own language and translated to English, so phrasing may be a little rough — clean it up, but do not invent anything they didn't say.
 
 ${answersText}
 
-Write a concise, well-organized profile covering: their strongest skills/areas, areas they're still developing (frame constructively, not as weaknesses), any past professional skills they've moved on from but still hold, one concrete highlight of work they're proud of, and what kind of role they're focused on now. Write it in plain first-person prose, not bullet points, suitable to drop directly into a job search profile field. Keep it under 150 words.
+Write a concise, well-organized profile covering what they shared: skills/areas, development areas, past skills, highlights, and role focus — only where they gave an answer. Write it in plain first-person prose, not bullet points, suitable to drop directly into a job search profile field. Keep it under 150 words.
 
 Respond with ONLY the profile text, no preamble, no headers.`;
     const provider = getProvider();
     const profile = provider === 'openai' ? await callOpenAI(prompt) : await callClaude(prompt, { webSearch: false, maxTokens: 500 });
     document.getElementById('stanceText').value = profile.trim();
     localStorage.setItem('vjr_stance', profile.trim());
+    saveGuidedAnswers();
     log(`guided profile synthesized: ${profile.trim().length} chars`);
+    guidedConvoActive = false;
+    showProfileMethod('speak');
+    setStatus('stanceReadbackStatus', 'Profile written from your answers — edit if needed.', 'ok');
   }catch(err){
     log(`guided profile ERROR: ${err.message}`);
-    document.getElementById('guidedQuestion').textContent = `Something went wrong writing your profile: ${err.message}`;
-  }finally{
+    document.getElementById('guidedQuestion').textContent = `Something went wrong: ${err.message}`;
     document.getElementById('guidedMicBtn').style.display = 'inline-block';
-    document.getElementById('guidedConvo').style.display = 'none';
-    document.getElementById('startGuidedBtn').style.display = 'inline-block';
+    document.getElementById('guidedSkipBtn').style.display = 'inline-block';
+  }finally{
+    if(!guidedConvoActive){
+      document.getElementById('guidedMicBtn').style.display = 'inline-block';
+      document.getElementById('guidedConvo').style.display = 'none';
+      renderGuidedAnswersReview();
+      updateGuidedStartUI();
+    }
   }
 }
 
@@ -1031,13 +1800,19 @@ bindMicButton({
   buttonId: 'guidedMicBtn', statusId: 'guidedMicStatus',
   onResult: (text) => {
     guidedAnswers[guidedQuestionIndex] = text;
+    saveGuidedAnswers();
     guidedAnswerReady = true;
     document.getElementById('guidedNextBtn').style.display = 'inline-block';
     document.getElementById('guidedNextBtn').textContent =
-      guidedQuestionIndex === GUIDED_QUESTIONS.length - 1 ? 'finish & write my profile' : 'next question →';
+      guidedQuestionIndex === GUIDED_QUESTIONS.length - 1 ? 'Finish' : 'Next';
   },
   originalBoxId: 'guidedTranscriptOriginal', englishBoxId: 'guidedTranscriptEnglish', transcriptBoxId: 'guidedTranscriptBox'
 });
+
+// Restore saved guided answers on load
+guidedAnswers = loadGuidedAnswers();
+renderGuidedAnswersReview();
+updateGuidedStartUI();
 
 // ---------- TTS readback, one job at a time ----------
 function buildJobReadbackText(job){
@@ -1186,6 +1961,24 @@ async function handleJobChatQuestion(index, blob){
 
 // Event delegation: chat mic buttons are created dynamically per card.
 let jobChatRecording = false;
+
+async function finishJobChatRecording(btn){
+  if(!jobChatRecording || !btn) return;
+  const index = btn.dataset.jobIndex;
+  const hitLimit = btn.dataset.hitLimit === '1';
+  delete btn.dataset.hitLimit;
+  jobChatRecording = false;
+  activeMicButton = null;
+  btn.classList.remove('recording');
+  clearRecordTimer();
+  if(hitLimit){
+    document.getElementById(`jobChatMicStatus-${index}`).innerHTML =
+      '<span class="spinner"></span>30s limit — transcribing…';
+  }
+  const blob = await stopRecording();
+  await handleJobChatQuestion(index, blob);
+}
+
 document.getElementById('resultsList').addEventListener('mousedown', async (e) => {
   const btn = e.target.closest('.job-chat-mic');
   if(!btn || jobChatRecording || activeMicButton) return;
@@ -1196,8 +1989,12 @@ document.getElementById('resultsList').addEventListener('mousedown', async (e) =
     jobChatRecording = true;
     activeMicButton = btn;
     btn.classList.add('recording');
-    setStatus(`jobChatMicStatus-${index}`, 'listening… release to stop', '');
+    startRecordTimer(`jobChatMicStatus-${index}`, () => {
+      btn.dataset.hitLimit = '1';
+      finishJobChatRecording(btn);
+    });
   }catch(err){
+    clearRecordTimer();
     setStatus(`jobChatMicStatus-${index}`, `mic error: ${err.message}`, 'err');
   }
 });
@@ -1205,23 +2002,13 @@ document.getElementById('resultsList').addEventListener('mouseup', async (e) => 
   const btn = e.target.closest('.job-chat-mic');
   if(!btn || !jobChatRecording) return;
   e.preventDefault();
-  const index = btn.dataset.jobIndex;
-  jobChatRecording = false;
-  activeMicButton = null;
-  btn.classList.remove('recording');
-  const blob = await stopRecording();
-  await handleJobChatQuestion(index, blob);
+  await finishJobChatRecording(btn);
 });
 document.getElementById('resultsList').addEventListener('mouseleave', async (e) => {
   if(!jobChatRecording) return;
   const btn = document.querySelector('.job-chat-mic.recording');
   if(!btn) return;
-  const index = btn.dataset.jobIndex;
-  jobChatRecording = false;
-  activeMicButton = null;
-  btn.classList.remove('recording');
-  const blob = await stopRecording();
-  await handleJobChatQuestion(index, blob);
+  await finishJobChatRecording(btn);
 }, true);
 
 function playBase64Wav(b64){

@@ -113,6 +113,14 @@ product: the customization is structural, not decorative.
   the build. Untested, not the demo path.
 - HTML/JS frontend, no auth, no database — session-only.
 
+## GitHub Pages
+
+Live site: https://shilpi1958.github.io/voice-job-radar/
+
+On Pages, use **Claude** (direct from the browser). OpenAI needs the local
+proxy in `server.js`, which does not run on Pages — for OpenAI, run
+`node server.js` and open `http://localhost:8788`.
+
 ## Status
 
 See [`docs/plan.md`](./docs/plan.md) for the build plan and current state.

@@ -8,7 +8,8 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const PORT = process.env.PORT || 8787;
+// 8788 avoids a common Cursor conflict on 8787 (EADDRINUSE / wrong process).
+const PORT = process.env.PORT || 8788;
 
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css' };
 
