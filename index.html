@@ -85,6 +85,16 @@
   button:focus-visible{outline:2px solid var(--accent-strong); outline-offset:2px;}
   button.secondary{background:transparent; color:var(--secondary); border:1px solid var(--border-strong);}
   button.secondary:hover:not(:disabled){background:var(--secondary-tint); border-color:var(--secondary);}
+  button.secondary.tts-speaking{
+    color:var(--danger);
+    border-color:color-mix(in srgb, var(--danger) 40%, var(--border-strong));
+    background:var(--danger-tint);
+  }
+  button.secondary.tts-speaking:hover:not(:disabled){
+    background:color-mix(in srgb, var(--danger-tint) 70%, #fff);
+    border-color:var(--danger);
+    color:var(--danger);
+  }
   button.mic{
     display:inline-flex; align-items:center; justify-content:center; gap:8px;
     background:var(--danger-tint); color:var(--danger);
@@ -124,7 +134,10 @@
     display:flex; align-items:center; gap:10px; flex-wrap:wrap;
     margin:0 0 12px;
   }
-  .mic-control .status{margin:0; min-height:0;}
+  .mic-control .status{
+    margin:0; min-height:0; flex:1 1 140px; min-width:0;
+    line-height:1.35;
+  }
   .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
   .status{font-size:0.85rem; color:var(--muted); margin-top:8px; min-height:1.2em;}
   .status.err{color:var(--danger);}
@@ -223,6 +236,7 @@
   .cv-upload-btn{background:transparent; color:var(--secondary); border:1px solid var(--border-strong); border-radius:8px; padding:9px 16px; font-family:inherit; font-weight:600; cursor:pointer; font-size:0.9rem; display:inline-block;}
   .cv-upload-btn:hover{border-color:var(--secondary); background:var(--secondary-tint);}
   .skill-gap{margin-top:12px; padding-top:12px; border-top:1px solid var(--border);}
+  .skill-gap .job-section{margin-bottom:12px;}
   .skill-gap .row-label{font-size:0.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; font-weight:600; margin-bottom:5px;}
   .skill-gap .skills{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;}
   .skill-gap .skills span{border-radius:12px; padding:3px 10px; font-size:0.78rem; font-weight:500;}
@@ -237,6 +251,8 @@
   .job-chat-msg.user{background:var(--accent-tint); color:var(--accent-strong); align-self:flex-end;}
   .job-chat-msg.assistant{background:var(--field-bg); border:1px solid var(--border); color:var(--text); align-self:flex-start;}
   .job-chat-msg .msg-label{font-size:0.68rem; text-transform:uppercase; letter-spacing:0.06em; opacity:0.7; margin-bottom:2px; font-weight:600;}
+  .job-chat-msg .text-actions{margin-top:6px;}
+  .job-chat-msg .native-peek{margin-top:6px; padding:8px 10px; font-size:0.85rem;}
   .job-chat-mic{padding:7px 14px 7px 11px; font-size:0.82rem;}
   .job-chat .mic-control{margin:8px 0 0;}
   .profile-methods{
@@ -287,24 +303,37 @@
     text-align:left; width:100%; font:inherit;
     display:block; color:inherit;
   }
-  .guided-answer:hover{border-color:var(--border-strong);}
   .guided-answer.current{border-color:var(--accent); background:var(--accent-tint);}
   .guided-answer .guided-answer-main{
     background:transparent; border:none; padding:0; margin:0;
     cursor:pointer; text-align:left; width:100%; font:inherit; color:inherit;
+    border-radius:6px;
+  }
+  .guided-answer .guided-answer-main:hover .a:not(.muted){
+    text-decoration:underline; text-underline-offset:2px;
+  }
+  .guided-answer .guided-answer-main:focus-visible{
+    outline:2px solid var(--accent); outline-offset:2px;
   }
   .guided-answer .q{font-size:0.78rem; color:var(--muted); margin-bottom:4px;}
   .guided-answer .a{font-size:0.9rem; color:var(--text);}
   .guided-answer .a.muted{color:var(--muted); font-style:italic;}
-  .job-section{margin-bottom:12px;}
+  .guided-answer .text-actions{
+    margin-top:10px; padding-top:8px;
+    border-top:1px solid var(--border);
+  }
+  .job-section{margin-bottom:14px;}
   .job-section > .fit,
   .job-section > .gate,
   .job-section > .next-step,
   .job-section > .meta,
   .job-section > .skills{margin-bottom:0;}
+  .job-section .text-actions{margin-top:6px;}
+  .job-section .native-peek{margin-top:6px;}
   .cv-notes-list .note-body{margin:0;}
+  .cv-notes-list .text-actions{margin-top:6px;}
   .guided-answer-input{
-    width:100%; margin-top:12px; min-height:72px;
+    width:100%; margin-top:0; min-height:72px;
     font-size:0.95rem; line-height:1.45;
   }
   .guided-nav{
@@ -331,10 +360,16 @@
   .cv-notes .status{margin:0 0 8px;}
   .cv-notes .status:empty{display:none; margin:0;}
   .text-actions{
-    display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+    display:flex; gap:6px; flex-wrap:wrap; align-items:center;
     margin:8px 0 0;
   }
-  .text-actions .status{margin:0;}
+  .text-actions .status{margin:0; min-height:0; flex:1 1 auto; min-width:0;}
+  .text-actions .status:empty{display:none;}
+  /* Compact secondary actions — keep hierarchy under primary content */
+  .text-actions button.secondary{
+    padding:5px 10px; font-size:0.78rem; font-weight:600;
+    border-radius:6px; line-height:1.2;
+  }
   .field-head{
     display:flex; align-items:baseline; justify-content:space-between;
     gap:10px; margin:8px 0 6px;
@@ -347,6 +382,9 @@
   }
   button.field-clear:hover:not(:disabled){
     color:var(--danger); background:transparent; filter:none;
+  }
+  button.field-clear:focus-visible{
+    outline:2px solid var(--accent-strong); outline-offset:2px;
   }
   button.field-clear[hidden]{display:none;}
   .native-peek{
@@ -414,6 +452,9 @@
     button.mic .mic-text .full{display:none;}
     button.mic .mic-text .short{display:inline;}
     button.mic{padding:9px 14px 9px 12px;}
+    .mic-control{gap:8px;}
+    .text-actions{gap:5px;}
+    .text-actions button.secondary{padding:5px 9px; font-size:0.76rem;}
     .voice-target{gap:5px;}
     .voice-target-btn{padding:8px 4px; font-size:0.75rem;}
   }
@@ -562,7 +603,7 @@
   <div class="profile-panel active" id="profilePanel-speak">
     <p class="hint">Speak freely — tap Speak, then Stop when you're done. No time limit.</p>
     <div class="mic-control">
-      <button id="stanceMicBtn" class="mic" type="button" aria-label="Speak">
+      <button id="stanceMicBtn" class="mic" type="button" aria-label="Speak" aria-pressed="false">
         <span class="mic-ico" aria-hidden="true"></span>
         <span class="mic-text"><span class="full">Speak</span><span class="short">Speak</span></span>
       </button>
@@ -570,12 +611,12 @@
     </div>
     <div class="field-head">
       <label for="stanceText">Your profile</label>
-      <button type="button" class="field-clear" id="stanceClearBtn" hidden>Clear</button>
+      <button type="button" class="field-clear" id="stanceClearBtn" hidden aria-label="Clear profile">Clear</button>
     </div>
     <textarea id="stanceText" rows="5" style="min-height:120px;" placeholder="Experience, preferences, deal-breakers…"></textarea>
     <div class="text-actions">
-      <button type="button" id="stanceTranslateBtn" class="secondary">Translate</button>
-      <button type="button" id="stanceSpeakBtn" class="secondary">Speak</button>
+      <button type="button" id="stanceTranslateBtn" class="secondary" aria-label="Translate profile">Translate</button>
+      <button type="button" id="stanceSpeakBtn" class="secondary" aria-label="Speak" aria-pressed="false">Speak</button>
       <span class="status" id="stanceReadbackStatus"></span>
     </div>
     <div class="native-peek" id="stanceNativePeek" aria-live="polite">
@@ -605,7 +646,7 @@
   </div>
 
   <div class="profile-panel" id="profilePanel-guided">
-    <p class="hint">Five questions — speak or type. Skip any you want.</p>
+    <p class="hint">Five questions — speak or type. Tap a question to start; skip any you want.</p>
     <div class="guided-start">
       <button type="button" id="clearGuidedBtn" class="secondary" style="display:none;">Clear answers</button>
     </div>
@@ -617,7 +658,7 @@
       </div>
       <div class="guided-q" id="guidedQuestion"></div>
       <div class="mic-control">
-        <button id="guidedMicBtn" class="mic" type="button" aria-label="Speak">
+        <button id="guidedMicBtn" class="mic" type="button" aria-label="Speak" aria-pressed="false">
           <span class="mic-ico" aria-hidden="true"></span>
           <span class="mic-text"><span class="full">Speak</span><span class="short">Speak</span></span>
         </button>
@@ -625,12 +666,12 @@
       </div>
       <div class="field-head">
         <label for="guidedAnswerInput">Your answer</label>
-        <button type="button" class="field-clear" id="guidedClearBtn" hidden>Clear</button>
+        <button type="button" class="field-clear" id="guidedClearBtn" hidden aria-label="Clear answer">Clear</button>
       </div>
       <textarea id="guidedAnswerInput" class="guided-answer-input" rows="3" placeholder="Speak or type your answer" aria-label="Your answer" autocomplete="off"></textarea>
       <div class="text-actions">
-        <button type="button" id="guidedTranslateBtn" class="secondary">Translate</button>
-        <button type="button" id="guidedSpeakBtn" class="secondary">Speak</button>
+        <button type="button" id="guidedTranslateBtn" class="secondary" aria-label="Translate answer">Translate</button>
+        <button type="button" id="guidedSpeakBtn" class="secondary" aria-label="Speak" aria-pressed="false">Speak</button>
         <span class="status" id="guidedLangStatus"></span>
       </div>
       <div class="native-peek" id="guidedNativePeek" aria-live="polite">
@@ -670,7 +711,7 @@
   </div>
 
   <div class="mic-control">
-    <button id="micBtn" class="mic" type="button" aria-label="Speak">
+    <button id="micBtn" class="mic" type="button" aria-label="Speak" aria-pressed="false">
       <span class="mic-ico" aria-hidden="true"></span>
       <span class="mic-text"><span class="full">Speak</span><span class="short">Speak</span></span>
     </button>
@@ -1228,8 +1269,8 @@ function setLangActionText(idPrefix, text){
 function langActionsHtml(idPrefix){
   return `
     <div class="text-actions">
-      <button type="button" class="secondary" data-lang-translate="${idPrefix}">Translate</button>
-      <button type="button" class="secondary" data-lang-speak="${idPrefix}">Speak</button>
+      <button type="button" class="secondary" data-lang-translate="${idPrefix}" aria-label="Translate">Translate</button>
+      <button type="button" class="secondary" data-lang-speak="${idPrefix}" aria-label="Speak" aria-pressed="false">Speak</button>
       <span class="status" id="langStatus-${idPrefix}"></span>
     </div>
     <div class="native-peek" id="langPeek-${idPrefix}" aria-live="polite">
@@ -1268,11 +1309,86 @@ async function peekNativeTranslation(englishText, peekId, textId, statusId){
   }
 }
 
-async function speakEnglishAloud(englishText, statusId){
+/** Single-flight TTS: only one Speak utterance (and its chunk queue) at a time. */
+const ttsPlayback = {
+  generation: 0,
+  audio: null,
+  speakKey: null,
+  statusId: null,
+  speakBtn: null,
+  cancelPlay: null
+};
+
+function setTtsSpeakButtonLabel(btn, speaking){
+  if(!btn) return;
+  const label = speaking ? 'Stop' : 'Speak';
+  btn.textContent = label;
+  btn.setAttribute('aria-label', label);
+  btn.setAttribute('aria-pressed', speaking ? 'true' : 'false');
+  btn.classList.toggle('tts-speaking', speaking);
+}
+
+function clearTtsSpeakButton(){
+  if(ttsPlayback.speakBtn){
+    setTtsSpeakButtonLabel(ttsPlayback.speakBtn, false);
+    ttsPlayback.speakBtn = null;
+  }
+}
+
+function stopTtsPlayback(){
+  ttsPlayback.generation += 1;
+  const cancel = ttsPlayback.cancelPlay;
+  ttsPlayback.cancelPlay = null;
+  const audio = ttsPlayback.audio;
+  ttsPlayback.audio = null;
+  const prevStatus = ttsPlayback.statusId;
+  ttsPlayback.speakKey = null;
+  ttsPlayback.statusId = null;
+  clearTtsSpeakButton();
+  if(typeof cancel === 'function'){
+    try{ cancel(); }catch(_){}
+  }
+  if(audio){
+    try{
+      audio.pause();
+      audio.removeAttribute('src');
+      audio.load();
+    }catch(_){}
+  }
+  if(prevStatus){
+    const el = document.getElementById(prevStatus);
+    if(el && el.querySelector('.spinner')) setStatus(prevStatus, '', '');
+  }
+}
+
+function isTtsActive(speakKey){
+  return Boolean(speakKey) && ttsPlayback.speakKey === speakKey;
+}
+
+async function speakEnglishAloud(englishText, statusId, speakKey, speakBtn){
+  const key = speakKey || statusId || 'default';
+  // Same Speak control while active → Stop (toggle).
+  if(isTtsActive(key)){
+    stopTtsPlayback();
+    return;
+  }
+  // Any new Speak cancels the previous one (and its queued chunks / Stop label).
+  stopTtsPlayback();
+  const myGen = ttsPlayback.generation;
+  ttsPlayback.speakKey = key;
+  ttsPlayback.statusId = statusId || null;
+  ttsPlayback.speakBtn = speakBtn || null;
+  if(speakBtn) setTtsSpeakButtonLabel(speakBtn, true);
+
   const english = String(englishText || '').trim();
   const statusEl = document.getElementById(statusId);
   if(!english){
     if(statusEl) setStatus(statusId, 'nothing to speak yet', 'err');
+    if(ttsPlayback.generation === myGen){
+      ttsPlayback.speakKey = null;
+      ttsPlayback.statusId = null;
+      clearTtsSpeakButton();
+    }
     return;
   }
   const lang = getPreferredLanguage();
@@ -1282,14 +1398,27 @@ async function speakEnglishAloud(englishText, statusId){
     let textToSpeak = english;
     if(!isEnglishLang(lang)){
       textToSpeak = await sarvamTranslate(english, 'en-IN', lang);
+      if(ttsPlayback.generation !== myGen) return;
     }
     const audios = await sarvamSpeak([textToSpeak], lang);
+    if(ttsPlayback.generation !== myGen) return;
     for(const b64 of audios){
+      if(ttsPlayback.generation !== myGen) return;
       await playBase64Wav(b64);
+      if(ttsPlayback.generation !== myGen) return;
     }
     setStatus(statusId, '', '');
   }catch(err){
+    if(ttsPlayback.generation !== myGen) return;
     setStatus(statusId, err.message, 'err');
+  }finally{
+    if(ttsPlayback.generation === myGen){
+      ttsPlayback.speakKey = null;
+      ttsPlayback.statusId = null;
+      ttsPlayback.audio = null;
+      ttsPlayback.cancelPlay = null;
+      clearTtsSpeakButton();
+    }
   }
 }
 
@@ -1308,7 +1437,7 @@ document.addEventListener('click', async (e) => {
   if(translateBtn){
     peekNativeTranslation(text, `langPeek-${idPrefix}`, `langPeekText-${idPrefix}`, statusId);
   }else{
-    speakEnglishAloud(text, statusId);
+    speakEnglishAloud(text, statusId, idPrefix, speakBtn);
   }
 });
 
@@ -1525,12 +1654,12 @@ function renderResults(jobs){
         ${job.next_step ? `<div class="job-section"><div class="row-label">what to do next</div><div class="next-step">${escapeHtml(job.next_step)}</div>${langActionsHtml(nextId)}</div>` : ''}
       </div>` : ''}
       <div class="job-chat">
-        <button type="button" class="secondary job-chat-toggle" data-job-index="${index}">&#128172; ask a question about this job</button>
+        <button type="button" class="secondary job-chat-toggle" data-job-index="${index}">Ask a question about this job</button>
         <div class="job-chat-panel" id="jobChatPanel-${index}" style="display:none;">
           <div class="job-chat-history" id="jobChatHistory-${index}"></div>
           <p class="hint" style="margin:0 0 8px; font-size:0.85rem;">Tap Speak, then Stop when you're done.</p>
           <div class="mic-control">
-            <button class="mic job-chat-mic" data-job-index="${index}" type="button" aria-label="Speak">
+            <button class="mic job-chat-mic" data-job-index="${index}" type="button" aria-label="Speak" aria-pressed="false">
               <span class="mic-ico" aria-hidden="true"></span>
               <span class="mic-text"><span class="full">Speak</span><span class="short">Speak</span></span>
             </button>
@@ -1791,6 +1920,7 @@ function setMicButtonRecording(btn, recording){
   if(!btn) return;
   btn.classList.toggle('recording', recording);
   btn.setAttribute('aria-label', recording ? 'Stop recording' : 'Speak');
+  btn.setAttribute('aria-pressed', recording ? 'true' : 'false');
   const full = btn.querySelector('.mic-text .full');
   const short = btn.querySelector('.mic-text .short');
   if(full) full.textContent = recording ? 'Stop' : 'Speak';
@@ -2010,7 +2140,8 @@ document.getElementById('stanceTranslateBtn').addEventListener('click', () => {
   );
 });
 document.getElementById('stanceSpeakBtn').addEventListener('click', () => {
-  speakEnglishAloud(document.getElementById('stanceText').value, 'stanceReadbackStatus');
+  const btn = document.getElementById('stanceSpeakBtn');
+  speakEnglishAloud(document.getElementById('stanceText').value, 'stanceReadbackStatus', 'stance', btn);
 });
 
 // ---------- guided CV-building conversation ----------
@@ -2099,8 +2230,11 @@ function renderGuidedAnswersReview(){
     else body = `<div class="a muted">Tap to answer</div>`;
 
     const current = guidedConvoActive && i === guidedQuestionIndex ? ' current' : '';
+    const editLabel = isGuidedAnswered(val) || val === null
+      ? `Edit question ${i + 1}`
+      : `Answer question ${i + 1}`;
     return `<div class="guided-answer${current}">
-      <button type="button" class="guided-answer-main" data-guided-index="${i}">
+      <button type="button" class="guided-answer-main" data-guided-index="${i}" aria-label="${editLabel}">
         <div class="q">${i + 1}. ${escapeHtml(q)}</div>
         ${body}
       </button>
@@ -2256,7 +2390,8 @@ document.getElementById('guidedTranslateBtn').addEventListener('click', () => {
   );
 });
 document.getElementById('guidedSpeakBtn').addEventListener('click', () => {
-  speakEnglishAloud(document.getElementById('guidedAnswerInput').value, 'guidedLangStatus');
+  const btn = document.getElementById('guidedSpeakBtn');
+  speakEnglishAloud(document.getElementById('guidedAnswerInput').value, 'guidedLangStatus', 'guided', btn);
 });
 
 document.getElementById('guidedSkipBtn').addEventListener('click', () => {
@@ -2266,6 +2401,8 @@ document.getElementById('guidedSkipBtn').addEventListener('click', () => {
 });
 
 document.getElementById('guidedAnswersList').addEventListener('click', (e) => {
+  // Translate / Speak sit beside the edit control — never treat them as "tap to edit".
+  if(e.target.closest('[data-lang-translate], [data-lang-speak], .native-peek')) return;
   const btn = e.target.closest('[data-guided-index]');
   if(!btn) return;
   const index = Number(btn.dataset.guidedIndex);
@@ -2529,15 +2666,38 @@ document.getElementById('resultsList').addEventListener('click', async (e) => {
 
 function playBase64Wav(b64){
   return new Promise((resolve, reject) => {
+    const gen = ttsPlayback.generation;
+    if(ttsPlayback.generation !== gen){
+      resolve();
+      return;
+    }
+    // Only one Audio element may play; drop any stray previous handle.
+    if(ttsPlayback.audio){
+      try{
+        ttsPlayback.audio.pause();
+        ttsPlayback.audio.removeAttribute('src');
+        ttsPlayback.audio.load();
+      }catch(_){}
+      ttsPlayback.audio = null;
+    }
     // Strip whitespace — some APIs insert newlines in base64 that break later chunks.
     const audio = new Audio('data:audio/wav;base64,' + String(b64 || '').replace(/\s+/g, ''));
+    ttsPlayback.audio = audio;
     let settled = false;
     const done = (err) => {
       if(settled) return;
       settled = true;
+      if(ttsPlayback.cancelPlay) ttsPlayback.cancelPlay = null;
+      if(ttsPlayback.audio === audio) ttsPlayback.audio = null;
+      // Cancelled mid-play: resolve so chunk loops can exit on generation check.
+      if(ttsPlayback.generation !== gen){
+        resolve();
+        return;
+      }
       if(err) reject(err);
       else resolve();
     };
+    ttsPlayback.cancelPlay = () => done();
     audio.onended = () => done();
     audio.onerror = () => done(new Error('audio playback failed'));
     audio.play().catch(err => done(err));
