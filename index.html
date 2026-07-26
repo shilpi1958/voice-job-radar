@@ -295,10 +295,6 @@
   }
   .guided-q-actions .status{margin:0; min-height:0;}
   .guided-q-actions .status:empty{display:none;}
-  .voice-profile-summary{
-    margin-top:18px; border-top:1px solid var(--border); padding-top:14px;
-  }
-  .voice-profile-summary > label{margin-top:0;}
   .guided-answers{
     margin-top:16px; border-top:1px solid var(--border); padding-top:14px;
   }
@@ -607,7 +603,7 @@
   </div>
 
   <div class="profile-panel active" id="profilePanel-voice">
-    <p class="hint">A voice agent asks a few questions to profile you. Answer by speaking or typing — English answers are kept for search.</p>
+    <p class="hint">An AI interviewer asks follow-ups based on your answers. Speak or type — English answers are kept for search.</p>
     <div class="guided-start">
       <button type="button" id="startGuidedBtn">Start</button>
       <button type="button" id="clearGuidedBtn" class="secondary" style="display:none;">Clear answers</button>
@@ -650,27 +646,9 @@
       </div>
     </div>
 
-    <div id="guidedAnswersReview" class="guided-answers" aria-live="polite">
+    <div id="guidedAnswersReview" class="guided-answers hidden" aria-live="polite">
       <h3>Your answers</h3>
       <div id="guidedAnswersList"></div>
-    </div>
-
-    <div class="voice-profile-summary">
-      <div class="field-head">
-        <label for="stanceText">Your profile</label>
-        <button type="button" class="field-clear" id="stanceClearBtn" hidden aria-label="Clear profile">Clear</button>
-      </div>
-      <p class="hint" style="margin:0 0 8px;">Built from your answers — edit anytime. Used when searching for jobs.</p>
-      <textarea id="stanceText" rows="5" style="min-height:120px;" placeholder="Your answers will appear here as a profile for job search…"></textarea>
-      <div class="text-actions">
-        <button type="button" id="stanceTranslateBtn" class="secondary" aria-label="Translate profile">Translate</button>
-        <button type="button" id="stanceSpeakBtn" class="secondary" aria-label="Speak" aria-pressed="false">Speak</button>
-        <span class="status" id="stanceReadbackStatus"></span>
-      </div>
-      <div class="native-peek" id="stanceNativePeek" aria-live="polite">
-        <div class="label">in your language</div>
-        <div id="stanceNativePeekText"></div>
-      </div>
     </div>
   </div>
 
@@ -912,30 +890,19 @@ function loadKeyInputs(){
 }
 
 // ---------- profile / stance persistence ----------
+// Stance is built from the voice interview (no separate profile textarea).
 function syncClearButton(inputEl, clearBtn){
   if(!inputEl || !clearBtn) return;
   clearBtn.hidden = !String(inputEl.value || '').trim();
 }
 
-function loadStance(){
-  document.getElementById('stanceText').value = localStorage.getItem('vjr_stance') || '';
-  syncClearButton(document.getElementById('stanceText'), document.getElementById('stanceClearBtn'));
+function getStanceText(){
+  return localStorage.getItem('vjr_stance') || '';
 }
-document.getElementById('stanceText').addEventListener('input', (e)=>{
-  localStorage.setItem('vjr_stance', e.target.value);
-  syncClearButton(e.target, document.getElementById('stanceClearBtn'));
-  document.getElementById('stanceNativePeek').classList.remove('show');
-});
-document.getElementById('stanceClearBtn').addEventListener('click', () => {
-  const el = document.getElementById('stanceText');
-  el.value = '';
-  localStorage.setItem('vjr_stance', '');
-  syncClearButton(el, document.getElementById('stanceClearBtn'));
-  document.getElementById('stanceNativePeek').classList.remove('show');
-  setStatus('stanceReadbackStatus', '', '');
-  el.focus();
-});
-loadStance();
+
+function setStanceText(text){
+  localStorage.setItem('vjr_stance', text || '');
+}
 
 // ---------- CV upload (session-only, never persisted to localStorage) ----------
 let cvText = '';
@@ -1903,7 +1870,7 @@ function startSearchProgress(statusEl){
 
 document.getElementById('searchBtn').addEventListener('click', async () => {
   const query = getChipQuery();
-  const stance = document.getElementById('stanceText').value.trim();
+  const stance = getStanceText().trim();
   if(!hasAnySearchFields()){
     setStatus('searchStatus', 'Fill in at least one field first', 'err');
     return;
@@ -2161,124 +2128,321 @@ bindMicButton({
   onResult: (english, meta) => appendSearchDictation(english, meta)
 });
 
-document.getElementById('stanceTranslateBtn').addEventListener('click', () => {
-  peekNativeTranslation(
-    document.getElementById('stanceText').value,
-    'stanceNativePeek', 'stanceNativePeekText', 'stanceReadbackStatus'
-  );
-});
-document.getElementById('stanceSpeakBtn').addEventListener('click', () => {
-  const btn = document.getElementById('stanceSpeakBtn');
-  speakEnglishAloud(document.getElementById('stanceText').value, 'stanceReadbackStatus', 'stance', btn);
-});
-
-// ---------- voice profile agent (guided questions) ----------
-const GUIDED_QUESTIONS = [
+// ---------- voice profile agent (AI interviewer) ----------
+const GUIDED_OPENING_QUESTION =
+  "Let's build your profile for job search. To start — what kind of role are you looking for, and what are you strongest at?";
+const GUIDED_MAX_QUESTIONS = 8;
+const GUIDED_STORAGE_KEY = 'vjr_guided_answers';
+// Used only to migrate older fixed-question saves.
+const LEGACY_GUIDED_QUESTIONS = [
   "What are you really good at? Tell us your strongest skills or the work you do best.",
   "What's something you're still learning, or could use a bit of coaching or practice on?",
   "Is there something you used to do professionally that you don't really do anymore, but still know how to do?",
   "Tell us about a piece of work you're genuinely proud of.",
   "What kind of role are you focused on finding right now?"
 ];
-const GUIDED_STORAGE_KEY = 'vjr_guided_answers';
 
-let guidedAnswers = [];
+let guidedTurns = []; // { question: string, answer?: string|null }
 let guidedQuestionIndex = 0;
 let guidedAnswerReady = false;
 let guidedConvoActive = false;
+let guidedInterviewDone = false;
+let guidedSummary = '';
+let guidedFetchingNext = false;
 
-function loadGuidedAnswers(){
-  try{
-    const raw = JSON.parse(localStorage.getItem(GUIDED_STORAGE_KEY) || '{}');
-    const out = [];
-    if(Array.isArray(raw)){
-      // Older format: string answers only (empties ignored)
-      raw.forEach((a, i) => {
-        if(i >= GUIDED_QUESTIONS.length) return;
-        if(a === null) out[i] = null;
-        else if(typeof a === 'string' && a.trim()) out[i] = a;
-      });
-    }else if(raw && typeof raw === 'object'){
-      Object.keys(raw).forEach(k => {
-        const i = Number(k);
-        if(Number.isNaN(i) || i < 0 || i >= GUIDED_QUESTIONS.length) return;
-        const a = raw[k];
-        if(a === null) out[i] = null;
-        else if(typeof a === 'string') out[i] = a;
-      });
-    }
-    return out;
-  }catch{
-    return [];
-  }
+function isGuidedAnswered(a){
+  return typeof a === 'string' && a.trim().length > 0;
+}
+
+function turnVisited(turn){
+  return turn && Object.prototype.hasOwnProperty.call(turn, 'answer');
+}
+
+function answeredCount(turns = guidedTurns){
+  return turns.filter(t => isGuidedAnswered(t?.answer)).length;
+}
+
+function visitedCount(turns = guidedTurns){
+  return turns.filter(turnVisited).length;
+}
+
+function formatGuidedAnswersText(turns = guidedTurns){
+  return turns
+    .map((t, i) => {
+      if(!t || !isGuidedAnswered(t.answer)) return null;
+      return `Q${i + 1}: ${t.question}\nA: ${t.answer.trim()}`;
+    })
+    .filter(Boolean)
+    .join('\n\n');
 }
 
 function composeStanceFromGuided(){
-  return guidedAnswers
-    .map((a, i) => isGuidedAnswered(a) ? `${GUIDED_QUESTIONS[i]}\n${a.trim()}` : null)
+  if(guidedSummary && guidedSummary.trim()) return guidedSummary.trim();
+  return guidedTurns
+    .map(t => {
+      if(!t || !isGuidedAnswered(t.answer)) return null;
+      return `${t.question}\n${t.answer.trim()}`;
+    })
     .filter(Boolean)
     .join('\n\n');
 }
 
 function syncStanceFromGuidedAnswers({ force = false } = {}){
   const composed = composeStanceFromGuided();
-  const el = document.getElementById('stanceText');
-  if(!el) return;
-  if(composed){
-    el.value = composed;
-    localStorage.setItem('vjr_stance', el.value);
-  }else if(force){
-    el.value = '';
-    localStorage.setItem('vjr_stance', '');
-  }
-  syncClearButton(el, document.getElementById('stanceClearBtn'));
-  document.getElementById('stanceNativePeek').classList.remove('show');
+  if(composed) setStanceText(composed);
+  else if(force) setStanceText('');
 }
 
 function saveGuidedAnswers(){
-  // Object map keeps pending vs skipped distinct (JSON arrays turn holes into null)
-  const map = {};
-  for(let i = 0; i < GUIDED_QUESTIONS.length; i++){
-    if(Object.prototype.hasOwnProperty.call(guidedAnswers, i)) map[i] = guidedAnswers[i];
-  }
-  localStorage.setItem(GUIDED_STORAGE_KEY, JSON.stringify(map));
+  localStorage.setItem(GUIDED_STORAGE_KEY, JSON.stringify({
+    version: 2,
+    turns: guidedTurns.map(t => ({
+      question: t.question,
+      ...(Object.prototype.hasOwnProperty.call(t, 'answer') ? { answer: t.answer } : {})
+    })),
+    summary: guidedSummary || '',
+    done: !!guidedInterviewDone
+  }));
   syncStanceFromGuidedAnswers();
   renderGuidedAnswersReview();
   updateGuidedStartUI();
 }
 
-function isGuidedAnswered(a){
-  return typeof a === 'string' && a.trim().length > 0;
-}
+function loadGuidedState(){
+  try{
+    const raw = JSON.parse(localStorage.getItem(GUIDED_STORAGE_KEY) || 'null');
+    if(!raw) return { turns: [], summary: '', done: false };
 
-function answeredCount(answers = guidedAnswers){
-  return answers.filter(isGuidedAnswered).length;
-}
+    // v2: AI interviewer turns
+    if(raw.version === 2 && Array.isArray(raw.turns)){
+      const turns = raw.turns
+        .filter(t => t && typeof t.question === 'string' && t.question.trim())
+        .map(t => {
+          const turn = { question: t.question.trim() };
+          if(Object.prototype.hasOwnProperty.call(t, 'answer')){
+            turn.answer = t.answer === null ? null : String(t.answer);
+          }
+          return turn;
+        });
+      return {
+        turns,
+        summary: typeof raw.summary === 'string' ? raw.summary : '',
+        done: !!raw.done
+      };
+    }
 
-function visitedCount(answers = guidedAnswers){
-  let n = 0;
-  for(let i = 0; i < GUIDED_QUESTIONS.length; i++){
-    if(Object.prototype.hasOwnProperty.call(answers, i)) n++;
+    // v1: fixed question list (array or index map)
+    const out = [];
+    if(Array.isArray(raw)){
+      raw.forEach((a, i) => {
+        if(i >= LEGACY_GUIDED_QUESTIONS.length) return;
+        const turn = { question: LEGACY_GUIDED_QUESTIONS[i] };
+        if(a === null) turn.answer = null;
+        else if(typeof a === 'string' && a.trim()) turn.answer = a;
+        else return;
+        out.push(turn);
+      });
+    }else if(raw && typeof raw === 'object'){
+      for(let i = 0; i < LEGACY_GUIDED_QUESTIONS.length; i++){
+        if(!Object.prototype.hasOwnProperty.call(raw, i) && !Object.prototype.hasOwnProperty.call(raw, String(i))) continue;
+        const a = raw[i] ?? raw[String(i)];
+        const turn = { question: LEGACY_GUIDED_QUESTIONS[i] };
+        if(a === null) turn.answer = null;
+        else if(typeof a === 'string') turn.answer = a;
+        else continue;
+        out.push(turn);
+      }
+    }
+    const allVisited = out.length >= LEGACY_GUIDED_QUESTIONS.length
+      && out.every(t => turnVisited(t));
+    return { turns: out, summary: '', done: allVisited };
+  }catch{
+    return { turns: [], summary: '', done: false };
   }
-  return n;
 }
 
 function firstOpenGuidedIndex(){
-  for(let i = 0; i < GUIDED_QUESTIONS.length; i++){
-    if(!Object.prototype.hasOwnProperty.call(guidedAnswers, i)) return i;
+  for(let i = 0; i < guidedTurns.length; i++){
+    if(!turnVisited(guidedTurns[i])) return i;
   }
-  for(let i = 0; i < GUIDED_QUESTIONS.length; i++){
-    if(guidedAnswers[i] === null) return i;
+  return Math.max(0, guidedTurns.length - 1);
+}
+
+function ensureProviderKeyForInterview(){
+  const provider = getProvider();
+  if(provider === 'openai' && !getOpenAIKey()){
+    throw new Error('Add your OpenAI API key first');
   }
-  return 0;
+  if(provider !== 'openai' && !getAnthropicKey()){
+    throw new Error('Add your Claude API key first');
+  }
+}
+
+function parseInterviewJson(text){
+  let cleaned = String(text || '').trim();
+  const fence = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if(fence) cleaned = fence[1].trim();
+  const start = cleaned.indexOf('{');
+  const end = cleaned.lastIndexOf('}');
+  if(start === -1 || end === -1 || end <= start){
+    throw new Error('Interview response was not valid JSON');
+  }
+  const obj = JSON.parse(cleaned.slice(start, end + 1));
+  if(obj && obj.done === true){
+    return {
+      done: true,
+      summary: typeof obj.summary === 'string' ? obj.summary.trim() : ''
+    };
+  }
+  const question = typeof obj?.question === 'string' ? obj.question.trim() : '';
+  if(!question) throw new Error('Interview response missing a next question');
+  return { done: false, question };
+}
+
+function interviewHistoryForPrompt(){
+  if(!guidedTurns.length) return '(none yet)';
+  return guidedTurns.map((t, i) => {
+    let a;
+    if(!turnVisited(t)) a = '(not answered yet)';
+    else if(t.answer === null) a = '(skipped)';
+    else if(isGuidedAnswered(t.answer)) a = t.answer.trim();
+    else a = '(empty)';
+    return `${i + 1}. Q: ${t.question}\n   A: ${a}`;
+  }).join('\n');
+}
+
+function buildNextQuestionPrompt({ forceDone = false } = {}){
+  const asked = guidedTurns.length;
+  const remaining = Math.max(0, GUIDED_MAX_QUESTIONS - asked);
+  if(forceDone || remaining <= 0){
+    return `You are wrapping up a short job-seeker interview. Using only the Q&A below, write a compact profile for matching jobs (skills, experience signals, role goals, constraints). Do not invent facts.
+
+Interview so far:
+${interviewHistoryForPrompt()}
+
+Respond ONLY with raw JSON (no fences, no preamble):
+{"done":true,"summary":"2-4 sentence English profile for job search"}`;
+  }
+  return `You are an AI interviewer helping build a job-search profile. Ask one focused follow-up question at a time about skills, experience, goals, constraints, location/remote preferences, or gaps — whatever is most useful next.
+
+Rules:
+- Do not repeat earlier questions.
+- Keep the question short and conversational (one or two sentences).
+- Prefer concrete, answerable questions.
+- After about 4–${GUIDED_MAX_QUESTIONS} questions you may finish if you have enough signal.
+- You have asked ${asked} question(s); at most ${remaining} more allowed (including the next one).
+
+Interview so far:
+${interviewHistoryForPrompt()}
+
+Respond ONLY with raw JSON (no fences, no preamble), either:
+{"done":false,"question":"..."}
+or when enough information:
+{"done":true,"summary":"2-4 sentence English profile for job search"}`;
+}
+
+async function callInterviewLlm({ forceDone = false } = {}){
+  ensureProviderKeyForInterview();
+  const prompt = buildNextQuestionPrompt({ forceDone });
+  const provider = getProvider();
+  const raw = provider === 'openai'
+    ? await callOpenAI(prompt, { webSearch: false })
+    : await callClaude(prompt, { webSearch: false, maxTokens: 500 });
+  return parseInterviewJson(raw);
+}
+
+function setGuidedNavBusy(busy){
+  guidedFetchingNext = busy;
+  const nextBtn = document.getElementById('guidedNextBtn');
+  const skipBtn = document.getElementById('guidedSkipBtn');
+  const startBtn = document.getElementById('startGuidedBtn');
+  nextBtn.disabled = busy;
+  skipBtn.disabled = busy;
+  startBtn.disabled = busy;
+  if(busy){
+    document.getElementById('guidedProgress').innerHTML =
+      `<span class="spinner"></span>thinking of next question…`;
+  }
+}
+
+function closeGuidedConvo(){
+  stopTtsPlayback();
+  guidedConvoActive = false;
+  document.getElementById('guidedConvo').style.display = 'none';
+  document.getElementById('guidedAskSpeakBtn').style.display = '';
+  document.getElementById('guidedMicBtn').style.display = 'inline-block';
+  document.getElementById('guidedAnswerInput').style.display = 'block';
+  renderGuidedAnswersReview();
+  updateGuidedStartUI();
+}
+
+async function finishGuidedInterview(){
+  try{
+    setGuidedNavBusy(true);
+    ensureProviderKeyForInterview();
+    let summary = '';
+    try{
+      const result = await callInterviewLlm({ forceDone: true });
+      summary = result.summary || '';
+    }catch(err){
+      log(`interview summary failed, composing from Q&A: ${err.message}`);
+    }
+    guidedInterviewDone = true;
+    guidedSummary = summary || composeStanceFromGuided();
+    if(!guidedSummary) guidedSummary = formatGuidedAnswersText() || '';
+    saveGuidedAnswers();
+    closeGuidedConvo();
+    setStatus('guidedMicStatus', '', '');
+  }catch(err){
+    setStatus('guidedMicStatus', err.message || 'Could not finish interview', 'err');
+    throw err;
+  }finally{
+    setGuidedNavBusy(false);
+  }
+}
+
+async function fetchAndShowNextGuidedQuestion(){
+  if(guidedTurns.length >= GUIDED_MAX_QUESTIONS){
+    await finishGuidedInterview();
+    return;
+  }
+  try{
+    setGuidedNavBusy(true);
+    const result = await callInterviewLlm({ forceDone: false });
+    if(result.done){
+      guidedInterviewDone = true;
+      guidedSummary = result.summary || composeStanceFromGuided();
+      saveGuidedAnswers();
+      closeGuidedConvo();
+      return;
+    }
+    guidedTurns.push({ question: result.question });
+    guidedQuestionIndex = guidedTurns.length - 1;
+    saveGuidedAnswers();
+    showGuidedQuestion({ speak: true });
+    renderGuidedAnswersReview();
+  }catch(err){
+    log(`next interview question ERROR: ${err.message}`);
+    setStatus('guidedMicStatus', err.message || 'Could not get next question', 'err');
+    updateGuidedNextFromInput();
+    document.getElementById('guidedProgress').textContent =
+      `Question ${guidedQuestionIndex + 1} of up to ${GUIDED_MAX_QUESTIONS}`;
+  }finally{
+    setGuidedNavBusy(false);
+  }
 }
 
 function renderGuidedAnswersReview(){
   const review = document.getElementById('guidedAnswersReview');
   const list = document.getElementById('guidedAnswersList');
+  if(!guidedTurns.length){
+    list.innerHTML = '';
+    review.classList.add('hidden');
+    return;
+  }
 
-  list.innerHTML = GUIDED_QUESTIONS.map((q, i) => {
-    const val = guidedAnswers[i];
+  list.innerHTML = guidedTurns.map((t, i) => {
+    const val = turnVisited(t) ? t.answer : undefined;
     let body;
     let actions = '';
     if(isGuidedAnswered(val)){
@@ -2296,7 +2460,7 @@ function renderGuidedAnswersReview(){
       : `Answer question ${i + 1}`;
     return `<div class="guided-answer${current}">
       <button type="button" class="guided-answer-main" data-guided-index="${i}" aria-label="${editLabel}">
-        <div class="q">${i + 1}. ${escapeHtml(q)}</div>
+        <div class="q">${i + 1}. ${escapeHtml(t.question)}</div>
         ${body}
       </button>
       ${actions}
@@ -2315,16 +2479,15 @@ function updateGuidedStartUI(){
     return;
   }
   startBtn.style.display = 'inline-block';
-  const answered = answeredCount();
   const visited = visitedCount();
-  if(answered >= GUIDED_QUESTIONS.length){
+  if(guidedInterviewDone){
     startBtn.textContent = 'Review again';
-  }else if(visited > 0){
+  }else if(visited > 0 || guidedTurns.length > 0){
     startBtn.textContent = 'Continue';
   }else{
     startBtn.textContent = 'Start';
   }
-  clearBtn.style.display = visited ? 'inline-block' : 'none';
+  clearBtn.style.display = (visited || guidedTurns.length) ? 'inline-block' : 'none';
 }
 
 function updateCvReviewUI(){
@@ -2332,49 +2495,54 @@ function updateCvReviewUI(){
   btn.style.display = cvText.trim() ? 'inline-block' : 'none';
 }
 
+function currentGuidedQuestionText(){
+  return guidedTurns[guidedQuestionIndex]?.question || '';
+}
+
 function speakCurrentGuidedQuestion(){
-  const q = GUIDED_QUESTIONS[guidedQuestionIndex];
+  const q = currentGuidedQuestionText();
+  if(!q) return;
   const btn = document.getElementById('guidedAskSpeakBtn');
   speakEnglishAloud(q, 'guidedAskStatus', 'guided-ask', btn);
 }
 
 function beginGuidedAt(index, { speak = true } = {}){
+  if(!guidedTurns.length){
+    guidedTurns = [{ question: GUIDED_OPENING_QUESTION }];
+    guidedInterviewDone = false;
+    guidedSummary = '';
+  }
   guidedConvoActive = true;
-  guidedQuestionIndex = Math.max(0, Math.min(index, GUIDED_QUESTIONS.length - 1));
+  guidedQuestionIndex = Math.max(0, Math.min(index, guidedTurns.length - 1));
   document.getElementById('guidedConvo').style.display = 'block';
   document.getElementById('startGuidedBtn').style.display = 'none';
   document.getElementById('clearGuidedBtn').style.display = 'none';
   document.getElementById('guidedMicBtn').style.display = 'inline-block';
   document.getElementById('guidedAnswerInput').style.display = 'block';
   document.getElementById('guidedSkipBtn').style.display = 'inline-block';
+  document.getElementById('guidedAskSpeakBtn').style.display = '';
   showGuidedQuestion({ speak });
   renderGuidedAnswersReview();
 }
 
-function advanceGuided(){
-  if(guidedQuestionIndex >= GUIDED_QUESTIONS.length - 1){
-    // Done with the set — close the editor (answer already committed in English by Next)
-    stopTtsPlayback();
-    guidedConvoActive = false;
-    document.getElementById('guidedConvo').style.display = 'none';
-    renderGuidedAnswersReview();
-    updateGuidedStartUI();
-    return;
-  }
-  guidedQuestionIndex++;
-  showGuidedQuestion({ speak: true });
-  renderGuidedAnswersReview();
+function onLastCommittedTurn(){
+  return guidedQuestionIndex >= guidedTurns.length - 1;
 }
 
 function guidedNextLabel(){
-  return guidedQuestionIndex === GUIDED_QUESTIONS.length - 1 ? 'Done' : 'Next';
+  if(guidedInterviewDone) return 'Done';
+  if(onLastCommittedTurn() && guidedTurns.length >= GUIDED_MAX_QUESTIONS) return 'Done';
+  return 'Next';
 }
 
 function commitGuidedAnswerFromInput(){
   const input = document.getElementById('guidedAnswerInput');
   const raw = input.value.trim();
   if(!raw) return false;
-  guidedAnswers[guidedQuestionIndex] = raw;
+  if(!guidedTurns[guidedQuestionIndex]) return false;
+  guidedTurns[guidedQuestionIndex].answer = raw;
+  // Edits invalidate a prior LLM summary; search falls back to Q&A compose.
+  if(guidedSummary) guidedSummary = '';
   saveGuidedAnswers();
   guidedAnswerReady = true;
   document.getElementById('guidedNativePeek').classList.remove('show');
@@ -2382,12 +2550,12 @@ function commitGuidedAnswerFromInput(){
 }
 
 function updateGuidedNextFromInput(){
+  if(guidedFetchingNext) return;
   const hasTyped = document.getElementById('guidedAnswerInput').value.trim().length > 0;
-  const existing = guidedAnswers[guidedQuestionIndex];
+  const existing = guidedTurns[guidedQuestionIndex]?.answer;
   if(hasTyped || isGuidedAnswered(existing) || existing === null){
     document.getElementById('guidedNextBtn').style.display = 'inline-block';
     document.getElementById('guidedNextBtn').textContent = guidedNextLabel();
-    if(hasTyped || isGuidedAnswered(existing)) guidedAnswerReady = true;
   }else{
     document.getElementById('guidedNextBtn').style.display = 'none';
     guidedAnswerReady = false;
@@ -2395,9 +2563,10 @@ function updateGuidedNextFromInput(){
 }
 
 function showGuidedQuestion({ speak = false } = {}){
-  document.getElementById('guidedQuestion').textContent = GUIDED_QUESTIONS[guidedQuestionIndex];
+  const turn = guidedTurns[guidedQuestionIndex];
+  document.getElementById('guidedQuestion').textContent = turn?.question || '';
   document.getElementById('guidedProgress').textContent =
-    `Question ${guidedQuestionIndex + 1} of ${GUIDED_QUESTIONS.length}`;
+    `Question ${guidedQuestionIndex + 1} of up to ${GUIDED_MAX_QUESTIONS}`;
   document.getElementById('guidedNextBtn').style.display = 'none';
   document.getElementById('guidedSkipBtn').style.display = 'inline-block';
   document.getElementById('guidedAnswerInput').style.display = 'block';
@@ -2408,7 +2577,7 @@ function showGuidedQuestion({ speak = false } = {}){
   guidedAnswerReady = false;
 
   const input = document.getElementById('guidedAnswerInput');
-  const existing = guidedAnswers[guidedQuestionIndex];
+  const existing = turn && turnVisited(turn) ? turn.answer : undefined;
   if(isGuidedAnswered(existing)){
     input.value = existing.trim();
     document.getElementById('guidedNextBtn').style.display = 'inline-block';
@@ -2427,32 +2596,92 @@ function showGuidedQuestion({ speak = false } = {}){
   if(speak) speakCurrentGuidedQuestion();
 }
 
-document.getElementById('startGuidedBtn').addEventListener('click', () => {
-  beginGuidedAt(firstOpenGuidedIndex(), { speak: true });
+async function advanceGuided(){
+  if(guidedFetchingNext) return;
+
+  // Editing after interview already complete: walk saved turns, then close.
+  if(guidedInterviewDone){
+    if(guidedQuestionIndex >= guidedTurns.length - 1){
+      closeGuidedConvo();
+      return;
+    }
+    guidedQuestionIndex++;
+    showGuidedQuestion({ speak: true });
+    renderGuidedAnswersReview();
+    return;
+  }
+
+  // Mid-list navigation (user jumped back via review list)
+  if(guidedQuestionIndex < guidedTurns.length - 1){
+    guidedQuestionIndex++;
+    showGuidedQuestion({ speak: true });
+    renderGuidedAnswersReview();
+    return;
+  }
+
+  // On the latest turn — ask LLM for next question or finish
+  if(guidedTurns.length >= GUIDED_MAX_QUESTIONS){
+    await finishGuidedInterview();
+    return;
+  }
+  await fetchAndShowNextGuidedQuestion();
+}
+
+document.getElementById('startGuidedBtn').addEventListener('click', async () => {
+  try{
+    if(!guidedTurns.length){
+      ensureProviderKeyForInterview();
+      beginGuidedAt(0, { speak: true });
+      saveGuidedAnswers();
+      return;
+    }
+    // Continue: open first unanswered, or fetch next if all current turns answered
+    const openIdx = firstOpenGuidedIndex();
+    const allVisited = guidedTurns.every(turnVisited);
+    if(!guidedInterviewDone && allVisited && guidedTurns.length < GUIDED_MAX_QUESTIONS){
+      beginGuidedAt(guidedTurns.length - 1, { speak: false });
+      await fetchAndShowNextGuidedQuestion();
+      return;
+    }
+    beginGuidedAt(openIdx, { speak: true });
+  }catch(err){
+    setStatus('guidedMicStatus', err.message || 'Cannot start interview', 'err');
+    document.getElementById('guidedConvo').style.display = 'block';
+    document.getElementById('guidedQuestion').textContent = '';
+    document.getElementById('guidedProgress').textContent = '';
+    document.getElementById('guidedMicBtn').style.display = 'none';
+    document.getElementById('guidedAnswerInput').style.display = 'none';
+    document.getElementById('guidedSkipBtn').style.display = 'none';
+    document.getElementById('guidedNextBtn').style.display = 'none';
+    document.getElementById('guidedAskSpeakBtn').style.display = 'none';
+    guidedConvoActive = true;
+    updateGuidedStartUI();
+  }
 });
 
 document.getElementById('clearGuidedBtn').addEventListener('click', () => {
   if(!confirm('Clear all saved answers?')) return;
   stopTtsPlayback();
-  guidedAnswers = [];
+  guidedTurns = [];
+  guidedQuestionIndex = 0;
+  guidedInterviewDone = false;
+  guidedSummary = '';
   guidedConvoActive = false;
   saveGuidedAnswers();
   syncStanceFromGuidedAnswers({ force: true });
   document.getElementById('guidedConvo').style.display = 'none';
+  document.getElementById('guidedAskSpeakBtn').style.display = '';
 });
 
 document.getElementById('guidedCancelBtn').addEventListener('click', () => {
   commitGuidedAnswerFromInput();
-  stopTtsPlayback();
-  guidedConvoActive = false;
-  document.getElementById('guidedConvo').style.display = 'none';
-  renderGuidedAnswersReview();
-  updateGuidedStartUI();
+  closeGuidedConvo();
 });
 
-document.getElementById('guidedNextBtn').addEventListener('click', () => {
+document.getElementById('guidedNextBtn').addEventListener('click', async () => {
+  if(guidedFetchingNext) return;
   commitGuidedAnswerFromInput();
-  advanceGuided();
+  await advanceGuided();
 });
 
 document.getElementById('guidedAnswerInput').addEventListener('input', () => {
@@ -2464,8 +2693,10 @@ document.getElementById('guidedAnswerInput').addEventListener('input', () => {
 document.getElementById('guidedClearBtn').addEventListener('click', () => {
   const input = document.getElementById('guidedAnswerInput');
   input.value = '';
-  if(Object.prototype.hasOwnProperty.call(guidedAnswers, guidedQuestionIndex)){
-    delete guidedAnswers[guidedQuestionIndex];
+  const turn = guidedTurns[guidedQuestionIndex];
+  if(turn && Object.prototype.hasOwnProperty.call(turn, 'answer')){
+    delete turn.answer;
+    if(guidedSummary) guidedSummary = '';
     saveGuidedAnswers();
   }
   syncClearButton(input, document.getElementById('guidedClearBtn'));
@@ -2490,10 +2721,13 @@ document.getElementById('guidedAskSpeakBtn').addEventListener('click', () => {
   speakCurrentGuidedQuestion();
 });
 
-document.getElementById('guidedSkipBtn').addEventListener('click', () => {
-  guidedAnswers[guidedQuestionIndex] = null;
+document.getElementById('guidedSkipBtn').addEventListener('click', async () => {
+  if(guidedFetchingNext) return;
+  if(!guidedTurns[guidedQuestionIndex]) return;
+  guidedTurns[guidedQuestionIndex].answer = null;
+  if(guidedSummary) guidedSummary = '';
   saveGuidedAnswers();
-  advanceGuided();
+  await advanceGuided();
 });
 
 document.getElementById('guidedAnswersList').addEventListener('click', (e) => {
@@ -2582,10 +2816,7 @@ async function reviewMyCv(){
 
   try{
     const cvExcerpt = truncateForPrompt(cvText, MAX_CV_CHARS);
-    const answersText = guidedAnswers
-      .map((a, i) => isGuidedAnswered(a) ? `Q: ${GUIDED_QUESTIONS[i]}\nA: ${a.trim()}` : null)
-      .filter(Boolean)
-      .join('\n\n');
+    const answersText = formatGuidedAnswersText();
     const prompt = `You are a CV coach. Review this person's CV and give concrete pointers on how to improve it.
 ${answersText ? `\nThey also answered a few profile questions — use these only as extra context if helpful:\n${answersText}\n` : ''}
 CV text (may be truncated):
@@ -2620,8 +2851,11 @@ bindMicButton({
   onResult: (text) => {
     const input = document.getElementById('guidedAnswerInput');
     input.value = appendDictatedText(input.value, text);
-    guidedAnswers[guidedQuestionIndex] = input.value.trim();
-    saveGuidedAnswers();
+    if(guidedTurns[guidedQuestionIndex]){
+      guidedTurns[guidedQuestionIndex].answer = input.value.trim();
+      if(guidedSummary) guidedSummary = '';
+      saveGuidedAnswers();
+    }
     guidedAnswerReady = true;
     document.getElementById('guidedNextBtn').style.display = 'inline-block';
     document.getElementById('guidedNextBtn').textContent = guidedNextLabel();
@@ -2630,14 +2864,17 @@ bindMicButton({
   }
 });
 
-// Restore saved guided answers on load
-guidedAnswers = loadGuidedAnswers();
-renderGuidedAnswersReview();
-updateGuidedStartUI();
-updateCvReviewUI();
-// If prior guided answers exist, refresh stance from them (keeps search in sync).
-// Leave free-form stance alone when there are no guided answers yet.
-if(answeredCount() > 0) syncStanceFromGuidedAnswers();
+// Restore saved interview on load
+(() => {
+  const state = loadGuidedState();
+  guidedTurns = state.turns;
+  guidedSummary = state.summary;
+  guidedInterviewDone = state.done;
+  renderGuidedAnswersReview();
+  updateGuidedStartUI();
+  updateCvReviewUI();
+  if(answeredCount() > 0 || guidedSummary) syncStanceFromGuidedAnswers();
+})();
 
 // ---------- job chat history (Translate/Speak via shared langActionsHtml) ----------
 function renderJobChatHistory(index){
