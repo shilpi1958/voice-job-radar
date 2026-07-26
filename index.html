@@ -256,7 +256,7 @@
   .job-chat-mic{padding:7px 14px 7px 11px; font-size:0.82rem;}
   .job-chat .mic-control{margin:8px 0 0;}
   .profile-methods{
-    display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-bottom:18px;
+    display:grid; grid-template-columns:repeat(2, 1fr); gap:8px; margin-bottom:18px;
   }
   .method-pick{
     background:var(--field-bg); color:var(--text); border:1px solid var(--border-strong);
@@ -286,9 +286,19 @@
   }
   .guided-start{margin-top:4px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
   .guided-q{
-    font-size:1rem; font-weight:500; color:var(--text); margin:10px 0 14px;
+    font-size:1rem; font-weight:500; color:var(--text); margin:10px 0 8px;
     text-wrap:balance;
   }
+  .guided-q-actions{
+    display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+    margin:0 0 14px;
+  }
+  .guided-q-actions .status{margin:0; min-height:0;}
+  .guided-q-actions .status:empty{display:none;}
+  .voice-profile-summary{
+    margin-top:18px; border-top:1px solid var(--border); padding-top:14px;
+  }
+  .voice-profile-summary > label{margin-top:0;}
   .guided-answers{
     margin-top:16px; border-top:1px solid var(--border); padding-top:14px;
   }
@@ -586,68 +596,20 @@
   </div>
 
   <div class="profile-methods" role="tablist" aria-label="How to build your profile">
-    <button type="button" class="method-pick active" data-tab="speak" role="tab" aria-selected="true">
-      Speak
-      <span class="desc">Say it out loud</span>
+    <button type="button" class="method-pick active" data-tab="voice" role="tab" aria-selected="true">
+      Voice profile
+      <span class="desc">Agent asks, you answer</span>
     </button>
     <button type="button" class="method-pick" data-tab="cv" role="tab" aria-selected="false">
       Upload CV
       <span class="desc">PDF or text</span>
     </button>
-    <button type="button" class="method-pick" data-tab="guided" role="tab" aria-selected="false">
-      5 questions
-      <span class="desc">We write it for you</span>
-    </button>
   </div>
 
-  <div class="profile-panel active" id="profilePanel-speak">
-    <p class="hint">Speak freely — tap Speak, then Stop when you're done. No time limit.</p>
-    <div class="mic-control">
-      <button id="stanceMicBtn" class="mic" type="button" aria-label="Speak" aria-pressed="false">
-        <span class="mic-ico" aria-hidden="true"></span>
-        <span class="mic-text"><span class="full">Speak</span><span class="short">Speak</span></span>
-      </button>
-      <span class="status" id="stanceMicStatus"></span>
-    </div>
-    <div class="field-head">
-      <label for="stanceText">Your profile</label>
-      <button type="button" class="field-clear" id="stanceClearBtn" hidden aria-label="Clear profile">Clear</button>
-    </div>
-    <textarea id="stanceText" rows="5" style="min-height:120px;" placeholder="Experience, preferences, deal-breakers…"></textarea>
-    <div class="text-actions">
-      <button type="button" id="stanceTranslateBtn" class="secondary" aria-label="Translate profile">Translate</button>
-      <button type="button" id="stanceSpeakBtn" class="secondary" aria-label="Speak" aria-pressed="false">Speak</button>
-      <span class="status" id="stanceReadbackStatus"></span>
-    </div>
-    <div class="native-peek" id="stanceNativePeek" aria-live="polite">
-      <div class="label">in your language</div>
-      <div id="stanceNativePeekText"></div>
-    </div>
-  </div>
-
-  <div class="profile-panel" id="profilePanel-cv">
-    <p class="hint">Used to spot skill gaps on each job match. Upload a CV, then review it for concrete update pointers.</p>
-    <div class="cv-drop">
-      <label for="cvFileInput" class="cv-upload-btn">Choose file</label>
-      <input type="file" id="cvFileInput" accept=".pdf,.txt" style="display:none;">
-      <div class="row">
-        <span class="status" id="cvStatus" style="margin:0;"></span>
-        <button type="button" id="cvClearBtn" class="secondary" style="display:none;">Remove</button>
-      </div>
-    </div>
-    <div class="guided-start" style="margin-top:14px;">
-      <button type="button" id="reviewCvBtn" class="secondary" style="display:none;">Review my CV</button>
-    </div>
-    <div id="cvNotesPanel" class="cv-notes hidden" aria-live="polite">
-      <h3>How to update your CV</h3>
-      <p class="status" id="cvNotesStatus"></p>
-      <ul class="cv-notes-list" id="cvNotesList"></ul>
-    </div>
-  </div>
-
-  <div class="profile-panel" id="profilePanel-guided">
-    <p class="hint">Five questions — speak or type. Tap a question to start; skip any you want.</p>
+  <div class="profile-panel active" id="profilePanel-voice">
+    <p class="hint">A voice agent asks a few questions to profile you. Answer by speaking or typing — English answers are kept for search.</p>
     <div class="guided-start">
+      <button type="button" id="startGuidedBtn">Start</button>
       <button type="button" id="clearGuidedBtn" class="secondary" style="display:none;">Clear answers</button>
     </div>
 
@@ -657,6 +619,10 @@
         <button type="button" id="guidedCancelBtn" class="secondary">Done for now</button>
       </div>
       <div class="guided-q" id="guidedQuestion"></div>
+      <div class="guided-q-actions">
+        <button type="button" id="guidedAskSpeakBtn" class="secondary" aria-label="Speak question" aria-pressed="false">Speak question</button>
+        <span class="status" id="guidedAskStatus"></span>
+      </div>
       <div class="mic-control">
         <button id="guidedMicBtn" class="mic" type="button" aria-label="Speak" aria-pressed="false">
           <span class="mic-ico" aria-hidden="true"></span>
@@ -687,6 +653,44 @@
     <div id="guidedAnswersReview" class="guided-answers" aria-live="polite">
       <h3>Your answers</h3>
       <div id="guidedAnswersList"></div>
+    </div>
+
+    <div class="voice-profile-summary">
+      <div class="field-head">
+        <label for="stanceText">Your profile</label>
+        <button type="button" class="field-clear" id="stanceClearBtn" hidden aria-label="Clear profile">Clear</button>
+      </div>
+      <p class="hint" style="margin:0 0 8px;">Built from your answers — edit anytime. Used when searching for jobs.</p>
+      <textarea id="stanceText" rows="5" style="min-height:120px;" placeholder="Your answers will appear here as a profile for job search…"></textarea>
+      <div class="text-actions">
+        <button type="button" id="stanceTranslateBtn" class="secondary" aria-label="Translate profile">Translate</button>
+        <button type="button" id="stanceSpeakBtn" class="secondary" aria-label="Speak" aria-pressed="false">Speak</button>
+        <span class="status" id="stanceReadbackStatus"></span>
+      </div>
+      <div class="native-peek" id="stanceNativePeek" aria-live="polite">
+        <div class="label">in your language</div>
+        <div id="stanceNativePeekText"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="profile-panel" id="profilePanel-cv">
+    <p class="hint">Used to spot skill gaps on each job match. Upload a CV, then review it for concrete update pointers.</p>
+    <div class="cv-drop">
+      <label for="cvFileInput" class="cv-upload-btn">Choose file</label>
+      <input type="file" id="cvFileInput" accept=".pdf,.txt" style="display:none;">
+      <div class="row">
+        <span class="status" id="cvStatus" style="margin:0;"></span>
+        <button type="button" id="cvClearBtn" class="secondary" style="display:none;">Remove</button>
+      </div>
+    </div>
+    <div class="guided-start" style="margin-top:14px;">
+      <button type="button" id="reviewCvBtn" class="secondary" style="display:none;">Review my CV</button>
+    </div>
+    <div id="cvNotesPanel" class="cv-notes hidden" aria-live="polite">
+      <h3>How to update your CV</h3>
+      <p class="status" id="cvNotesStatus"></p>
+      <ul class="cv-notes-list" id="cvNotesList"></ul>
     </div>
   </div>
 </section>
@@ -928,7 +932,6 @@ document.getElementById('stanceClearBtn').addEventListener('click', () => {
   localStorage.setItem('vjr_stance', '');
   syncClearButton(el, document.getElementById('stanceClearBtn'));
   document.getElementById('stanceNativePeek').classList.remove('show');
-  setStatus('stanceMicStatus', '', '');
   setStatus('stanceReadbackStatus', '', '');
   el.focus();
 });
@@ -1112,6 +1115,16 @@ function showProfileMethod(tab){
   });
   document.querySelectorAll('.profile-panel').forEach(p => p.classList.remove('active'));
   document.getElementById(`profilePanel-${tab}`).classList.add('active');
+  if(tab !== 'voice'){
+    stopTtsPlayback();
+    if(guidedConvoActive){
+      commitGuidedAnswerFromInput();
+      guidedConvoActive = false;
+      document.getElementById('guidedConvo').style.display = 'none';
+      renderGuidedAnswersReview();
+      updateGuidedStartUI();
+    }
+  }
 }
 
 document.querySelectorAll('.method-pick').forEach(tab => {
@@ -1222,12 +1235,31 @@ async function sarvamSpeak(texts, languageCode){
   return allAudios; // base64 wav strings, in chunk order
 }
 
+/** Base language tag: `en-IN` / `en-US` → `en`. Ignores auto/unknown. */
+function languageBase(code){
+  const base = String(code || '').trim().toLowerCase().split(/[-_]/)[0];
+  if(!base || base === 'auto' || base === 'unknown') return '';
+  return base;
+}
+
+/** True when codes match exactly or share the same language family (e.g. en ≈ en-IN). */
+function sameLanguage(a, b){
+  const ca = String(a || '').trim().toLowerCase();
+  const cb = String(b || '').trim().toLowerCase();
+  if(ca && cb && ca === cb) return true;
+  const ba = languageBase(a);
+  const bb = languageBase(b);
+  return Boolean(ba && bb && ba === bb);
+}
+
 // Translate with the same sentence/word chunking as TTS when over the API input cap.
 async function sarvamTranslate(text, sourceLang, targetLang){
   const key = getSarvamKey();
   if(!key) throw new Error('add your Sarvam API key first');
   const input = String(text || '').trim();
   if(!input) return '';
+  // Sarvam rejects same source/target — return text unchanged (en ≈ en-IN, etc.).
+  if(sameLanguage(sourceLang, targetLang)) return input;
 
   const chunks = input.length <= SARVAM_TRANSLATE_MAX_CHARS
     ? [input]
@@ -1258,7 +1290,7 @@ function getPreferredLanguage(){
 }
 
 function isEnglishLang(code){
-  return String(code || '').toLowerCase().startsWith('en');
+  return sameLanguage(code, 'en');
 }
 
 /** Per-block Translate / Speak UI. Text is registered via setLangActionText. */
@@ -1321,7 +1353,10 @@ const ttsPlayback = {
 
 function setTtsSpeakButtonLabel(btn, speaking){
   if(!btn) return;
-  const label = speaking ? 'Stop' : 'Speak';
+  if(!btn.dataset.ttsIdleLabel){
+    btn.dataset.ttsIdleLabel = (btn.textContent || 'Speak').trim() || 'Speak';
+  }
+  const label = speaking ? 'Stop' : btn.dataset.ttsIdleLabel;
   btn.textContent = label;
   btn.setAttribute('aria-label', label);
   btn.setAttribute('aria-pressed', speaking ? 'true' : 'false');
@@ -2050,7 +2085,10 @@ async function transcribeBlobsToEnglish(blobs){
       langMismatch = true;
     }
 
-    const translated = await sarvamTranslate(original, detectedLang, 'en-IN');
+    // Already English (or same family as en-IN) — skip translate to avoid Sarvam same-lang error.
+    const translated = isEnglishLang(detectedLang)
+      ? original
+      : await sarvamTranslate(original, detectedLang, 'en-IN');
     const english = await cleanupTranslatedText(translated);
     log(`cleaned up: ${english}`);
     if(english.trim()) englishParts.push(english.trim());
@@ -2122,16 +2160,6 @@ bindMicButton({
   buttonId: 'micBtn', statusId: 'micStatus',
   onResult: (english, meta) => appendSearchDictation(english, meta)
 });
-bindMicButton({
-  buttonId: 'stanceMicBtn', statusId: 'stanceMicStatus',
-  onResult: (text) => {
-    const el = document.getElementById('stanceText');
-    el.value = appendDictatedText(el.value, text, '\n\n');
-    localStorage.setItem('vjr_stance', el.value);
-    syncClearButton(el, document.getElementById('stanceClearBtn'));
-    document.getElementById('stanceNativePeek').classList.remove('show');
-  }
-});
 
 document.getElementById('stanceTranslateBtn').addEventListener('click', () => {
   peekNativeTranslation(
@@ -2144,7 +2172,7 @@ document.getElementById('stanceSpeakBtn').addEventListener('click', () => {
   speakEnglishAloud(document.getElementById('stanceText').value, 'stanceReadbackStatus', 'stance', btn);
 });
 
-// ---------- guided CV-building conversation ----------
+// ---------- voice profile agent (guided questions) ----------
 const GUIDED_QUESTIONS = [
   "What are you really good at? Tell us your strongest skills or the work you do best.",
   "What's something you're still learning, or could use a bit of coaching or practice on?",
@@ -2185,6 +2213,28 @@ function loadGuidedAnswers(){
   }
 }
 
+function composeStanceFromGuided(){
+  return guidedAnswers
+    .map((a, i) => isGuidedAnswered(a) ? `${GUIDED_QUESTIONS[i]}\n${a.trim()}` : null)
+    .filter(Boolean)
+    .join('\n\n');
+}
+
+function syncStanceFromGuidedAnswers({ force = false } = {}){
+  const composed = composeStanceFromGuided();
+  const el = document.getElementById('stanceText');
+  if(!el) return;
+  if(composed){
+    el.value = composed;
+    localStorage.setItem('vjr_stance', el.value);
+  }else if(force){
+    el.value = '';
+    localStorage.setItem('vjr_stance', '');
+  }
+  syncClearButton(el, document.getElementById('stanceClearBtn'));
+  document.getElementById('stanceNativePeek').classList.remove('show');
+}
+
 function saveGuidedAnswers(){
   // Object map keeps pending vs skipped distinct (JSON arrays turn holes into null)
   const map = {};
@@ -2192,6 +2242,7 @@ function saveGuidedAnswers(){
     if(Object.prototype.hasOwnProperty.call(guidedAnswers, i)) map[i] = guidedAnswers[i];
   }
   localStorage.setItem(GUIDED_STORAGE_KEY, JSON.stringify(map));
+  syncStanceFromGuidedAnswers();
   renderGuidedAnswersReview();
   updateGuidedStartUI();
 }
@@ -2210,6 +2261,16 @@ function visitedCount(answers = guidedAnswers){
     if(Object.prototype.hasOwnProperty.call(answers, i)) n++;
   }
   return n;
+}
+
+function firstOpenGuidedIndex(){
+  for(let i = 0; i < GUIDED_QUESTIONS.length; i++){
+    if(!Object.prototype.hasOwnProperty.call(guidedAnswers, i)) return i;
+  }
+  for(let i = 0; i < GUIDED_QUESTIONS.length; i++){
+    if(guidedAnswers[i] === null) return i;
+  }
+  return 0;
 }
 
 function renderGuidedAnswersReview(){
@@ -2246,9 +2307,24 @@ function renderGuidedAnswersReview(){
 }
 
 function updateGuidedStartUI(){
-  if(guidedConvoActive) return;
+  const startBtn = document.getElementById('startGuidedBtn');
   const clearBtn = document.getElementById('clearGuidedBtn');
-  clearBtn.style.display = visitedCount() ? 'inline-block' : 'none';
+  if(guidedConvoActive){
+    startBtn.style.display = 'none';
+    clearBtn.style.display = 'none';
+    return;
+  }
+  startBtn.style.display = 'inline-block';
+  const answered = answeredCount();
+  const visited = visitedCount();
+  if(answered >= GUIDED_QUESTIONS.length){
+    startBtn.textContent = 'Review again';
+  }else if(visited > 0){
+    startBtn.textContent = 'Continue';
+  }else{
+    startBtn.textContent = 'Start';
+  }
+  clearBtn.style.display = visited ? 'inline-block' : 'none';
 }
 
 function updateCvReviewUI(){
@@ -2256,21 +2332,29 @@ function updateCvReviewUI(){
   btn.style.display = cvText.trim() ? 'inline-block' : 'none';
 }
 
-function beginGuidedAt(index){
+function speakCurrentGuidedQuestion(){
+  const q = GUIDED_QUESTIONS[guidedQuestionIndex];
+  const btn = document.getElementById('guidedAskSpeakBtn');
+  speakEnglishAloud(q, 'guidedAskStatus', 'guided-ask', btn);
+}
+
+function beginGuidedAt(index, { speak = true } = {}){
   guidedConvoActive = true;
   guidedQuestionIndex = Math.max(0, Math.min(index, GUIDED_QUESTIONS.length - 1));
   document.getElementById('guidedConvo').style.display = 'block';
+  document.getElementById('startGuidedBtn').style.display = 'none';
   document.getElementById('clearGuidedBtn').style.display = 'none';
   document.getElementById('guidedMicBtn').style.display = 'inline-block';
   document.getElementById('guidedAnswerInput').style.display = 'block';
   document.getElementById('guidedSkipBtn').style.display = 'inline-block';
-  showGuidedQuestion();
+  showGuidedQuestion({ speak });
   renderGuidedAnswersReview();
 }
 
 function advanceGuided(){
   if(guidedQuestionIndex >= GUIDED_QUESTIONS.length - 1){
     // Done with the set — close the editor (answer already committed in English by Next)
+    stopTtsPlayback();
     guidedConvoActive = false;
     document.getElementById('guidedConvo').style.display = 'none';
     renderGuidedAnswersReview();
@@ -2278,7 +2362,7 @@ function advanceGuided(){
     return;
   }
   guidedQuestionIndex++;
-  showGuidedQuestion();
+  showGuidedQuestion({ speak: true });
   renderGuidedAnswersReview();
 }
 
@@ -2310,7 +2394,7 @@ function updateGuidedNextFromInput(){
   }
 }
 
-function showGuidedQuestion(){
+function showGuidedQuestion({ speak = false } = {}){
   document.getElementById('guidedQuestion').textContent = GUIDED_QUESTIONS[guidedQuestionIndex];
   document.getElementById('guidedProgress').textContent =
     `Question ${guidedQuestionIndex + 1} of ${GUIDED_QUESTIONS.length}`;
@@ -2319,6 +2403,7 @@ function showGuidedQuestion(){
   document.getElementById('guidedAnswerInput').style.display = 'block';
   setStatus('guidedMicStatus', '', '');
   setStatus('guidedLangStatus', '', '');
+  setStatus('guidedAskStatus', '', '');
   document.getElementById('guidedNativePeek').classList.remove('show');
   guidedAnswerReady = false;
 
@@ -2339,18 +2424,26 @@ function showGuidedQuestion(){
     input.value = '';
   }
   syncClearButton(input, document.getElementById('guidedClearBtn'));
+  if(speak) speakCurrentGuidedQuestion();
 }
+
+document.getElementById('startGuidedBtn').addEventListener('click', () => {
+  beginGuidedAt(firstOpenGuidedIndex(), { speak: true });
+});
 
 document.getElementById('clearGuidedBtn').addEventListener('click', () => {
   if(!confirm('Clear all saved answers?')) return;
+  stopTtsPlayback();
   guidedAnswers = [];
   guidedConvoActive = false;
   saveGuidedAnswers();
+  syncStanceFromGuidedAnswers({ force: true });
   document.getElementById('guidedConvo').style.display = 'none';
 });
 
 document.getElementById('guidedCancelBtn').addEventListener('click', () => {
   commitGuidedAnswerFromInput();
+  stopTtsPlayback();
   guidedConvoActive = false;
   document.getElementById('guidedConvo').style.display = 'none';
   renderGuidedAnswersReview();
@@ -2393,6 +2486,9 @@ document.getElementById('guidedSpeakBtn').addEventListener('click', () => {
   const btn = document.getElementById('guidedSpeakBtn');
   speakEnglishAloud(document.getElementById('guidedAnswerInput').value, 'guidedLangStatus', 'guided', btn);
 });
+document.getElementById('guidedAskSpeakBtn').addEventListener('click', () => {
+  speakCurrentGuidedQuestion();
+});
 
 document.getElementById('guidedSkipBtn').addEventListener('click', () => {
   guidedAnswers[guidedQuestionIndex] = null;
@@ -2407,11 +2503,11 @@ document.getElementById('guidedAnswersList').addEventListener('click', (e) => {
   if(!btn) return;
   const index = Number(btn.dataset.guidedIndex);
   if(Number.isNaN(index)) return;
-  if(!guidedConvoActive) beginGuidedAt(index);
+  if(!guidedConvoActive) beginGuidedAt(index, { speak: true });
   else {
     commitGuidedAnswerFromInput();
     guidedQuestionIndex = index;
-    showGuidedQuestion();
+    showGuidedQuestion({ speak: true });
     renderGuidedAnswersReview();
   }
 });
@@ -2539,6 +2635,9 @@ guidedAnswers = loadGuidedAnswers();
 renderGuidedAnswersReview();
 updateGuidedStartUI();
 updateCvReviewUI();
+// If prior guided answers exist, refresh stance from them (keeps search in sync).
+// Leave free-form stance alone when there are no guided answers yet.
+if(answeredCount() > 0) syncStanceFromGuidedAnswers();
 
 // ---------- job chat history (Translate/Speak via shared langActionsHtml) ----------
 function renderJobChatHistory(index){
