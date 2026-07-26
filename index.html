@@ -545,10 +545,8 @@
   </div>
 
   <div class="profile-panel" id="profilePanel-guided">
-    <p class="hint">Five questions — speak or type. Skip any you want — we use what you answer.</p>
+    <p class="hint">Five questions — speak or type. Skip any you want. Click a question to answer.</p>
     <div class="guided-start">
-      <button type="button" id="startGuidedBtn">Start</button>
-      <button type="button" id="resumeGuidedBtn" class="secondary" style="display:none;">Continue</button>
       <button type="button" id="reviewGuidedBtn" class="secondary" style="display:none;">Review</button>
       <button type="button" id="clearGuidedBtn" class="secondary" style="display:none;">Clear answers</button>
     </div>
@@ -579,7 +577,7 @@
       </div>
     </div>
 
-    <div id="guidedAnswersReview" class="guided-answers hidden" aria-live="polite">
+    <div id="guidedAnswersReview" class="guided-answers" aria-live="polite">
       <h3>Your answers</h3>
       <div id="guidedAnswersList"></div>
     </div>
@@ -1776,26 +1774,9 @@ function visitedCount(answers = guidedAnswers){
   return n;
 }
 
-function allQuestionsVisited(answers = guidedAnswers){
-  return visitedCount(answers) >= GUIDED_QUESTIONS.length;
-}
-
-function firstUnansweredIndex(answers = guidedAnswers){
-  for(let i = 0; i < GUIDED_QUESTIONS.length; i++){
-    if(!Object.prototype.hasOwnProperty.call(answers, i)) return i;
-  }
-  return GUIDED_QUESTIONS.length;
-}
-
 function renderGuidedAnswersReview(){
   const review = document.getElementById('guidedAnswersReview');
   const list = document.getElementById('guidedAnswersList');
-  const hasAny = visitedCount() > 0 || guidedConvoActive;
-  if(!hasAny){
-    review.classList.add('hidden');
-    list.innerHTML = '';
-    return;
-  }
 
   list.innerHTML = GUIDED_QUESTIONS.map((q, i) => {
     const has = Object.prototype.hasOwnProperty.call(guidedAnswers, i);
@@ -1804,7 +1785,7 @@ function renderGuidedAnswersReview(){
     if(isGuidedAnswered(val)) body = `<div class="a">${escapeHtml(val.trim())}</div>`;
     else if(val === null) body = `<div class="a muted">Skipped</div>`;
     else if(guidedConvoActive && i === guidedQuestionIndex) body = `<div class="a muted">Answering now…</div>`;
-    else body = `<div class="a muted">Not answered yet</div>`;
+    else body = `<div class="a muted">Tap to answer</div>`;
 
     const current = guidedConvoActive && i === guidedQuestionIndex ? ' current' : '';
     return `<button type="button" class="guided-answer${current}" data-guided-index="${i}">
@@ -1818,8 +1799,6 @@ function renderGuidedAnswersReview(){
 
 function updateGuidedStartUI(){
   if(guidedConvoActive) return;
-  const startBtn = document.getElementById('startGuidedBtn');
-  const resumeBtn = document.getElementById('resumeGuidedBtn');
   const reviewBtn = document.getElementById('reviewGuidedBtn');
   const clearBtn = document.getElementById('clearGuidedBtn');
   const n = answeredCount();
@@ -1827,33 +1806,12 @@ function updateGuidedStartUI(){
 
   clearBtn.style.display = visited ? 'inline-block' : 'none';
   reviewBtn.style.display = n > 0 ? 'inline-block' : 'none';
-  if(!visited){
-    startBtn.textContent = 'Start';
-    startBtn.style.display = 'inline-block';
-    resumeBtn.style.display = 'none';
-  }else if(allQuestionsVisited() && n > 0){
-    startBtn.textContent = 'Rewrite profile';
-    startBtn.style.display = 'inline-block';
-    resumeBtn.textContent = 'Review & edit';
-    resumeBtn.style.display = 'inline-block';
-  }else if(allQuestionsVisited() && n === 0){
-    startBtn.textContent = 'Start over';
-    startBtn.style.display = 'inline-block';
-    resumeBtn.style.display = 'none';
-  }else{
-    startBtn.textContent = 'Start over';
-    startBtn.style.display = 'inline-block';
-    resumeBtn.textContent = `Continue (${n} answered)`;
-    resumeBtn.style.display = 'inline-block';
-  }
 }
 
 function beginGuidedAt(index){
   guidedConvoActive = true;
   guidedQuestionIndex = Math.max(0, Math.min(index, GUIDED_QUESTIONS.length - 1));
   document.getElementById('guidedConvo').style.display = 'block';
-  document.getElementById('startGuidedBtn').style.display = 'none';
-  document.getElementById('resumeGuidedBtn').style.display = 'none';
   document.getElementById('reviewGuidedBtn').style.display = 'none';
   document.getElementById('clearGuidedBtn').style.display = 'none';
   document.getElementById('guidedMicBtn').style.display = 'inline-block';
@@ -1865,11 +1823,12 @@ function beginGuidedAt(index){
 
 function advanceGuided(){
   if(guidedQuestionIndex >= GUIDED_QUESTIONS.length - 1){
-    if(answeredCount() === 0){
-      setStatus('guidedMicStatus', 'Answer at least one question first', 'err');
-      return;
-    }
-    synthesizeGuidedProfile();
+    // Done with the set — close the editor; profile stays on Speak tab
+    commitGuidedAnswerFromInput();
+    guidedConvoActive = false;
+    document.getElementById('guidedConvo').style.display = 'none';
+    renderGuidedAnswersReview();
+    updateGuidedStartUI();
     return;
   }
   guidedQuestionIndex++;
@@ -1878,7 +1837,7 @@ function advanceGuided(){
 }
 
 function guidedNextLabel(){
-  return guidedQuestionIndex === GUIDED_QUESTIONS.length - 1 ? 'Finish' : 'Next';
+  return guidedQuestionIndex === GUIDED_QUESTIONS.length - 1 ? 'Done' : 'Next';
 }
 
 function commitGuidedAnswerFromInput(){
@@ -1935,24 +1894,6 @@ function showGuidedQuestion(){
   }
 }
 
-document.getElementById('startGuidedBtn').addEventListener('click', () => {
-  const n = answeredCount();
-  if(allQuestionsVisited() && n > 0){
-    synthesizeGuidedProfile();
-    return;
-  }
-  if(visitedCount() > 0 && !confirm('Start over and clear saved answers?')) return;
-  guidedAnswers = [];
-  saveGuidedAnswers();
-  clearCvNotesPanel();
-  beginGuidedAt(0);
-});
-
-document.getElementById('resumeGuidedBtn').addEventListener('click', () => {
-  const idx = allQuestionsVisited() ? 0 : firstUnansweredIndex();
-  beginGuidedAt(idx === GUIDED_QUESTIONS.length ? 0 : idx);
-});
-
 document.getElementById('clearGuidedBtn').addEventListener('click', () => {
   if(!confirm('Clear all saved answers?')) return;
   guidedAnswers = [];
@@ -1998,63 +1939,6 @@ document.getElementById('guidedAnswersList').addEventListener('click', (e) => {
     renderGuidedAnswersReview();
   }
 });
-
-async function synthesizeGuidedProfile(){
-  if(answeredCount() === 0){
-    setStatus('guidedMicStatus', 'Answer at least one question first', 'err');
-    return;
-  }
-  guidedConvoActive = true;
-  document.getElementById('guidedConvo').style.display = 'block';
-  document.getElementById('guidedQuestion').textContent = 'Writing your profile…';
-  document.getElementById('guidedProgress').textContent = '';
-  document.getElementById('guidedMicBtn').style.display = 'none';
-  document.getElementById('guidedAnswerInput').style.display = 'none';
-  document.getElementById('guidedNextBtn').style.display = 'none';
-  document.getElementById('guidedSkipBtn').style.display = 'none';
-  document.getElementById('startGuidedBtn').style.display = 'none';
-  document.getElementById('resumeGuidedBtn').style.display = 'none';
-  document.getElementById('reviewGuidedBtn').style.display = 'none';
-  document.getElementById('clearGuidedBtn').style.display = 'none';
-  try{
-    const answersText = guidedAnswers
-      .map((a, i) => isGuidedAnswered(a) ? `Q: ${GUIDED_QUESTIONS[i]}\nA: ${a.trim()}` : null)
-      .filter(Boolean)
-      .join('\n\n');
-    const prompt = `You are helping someone build a short, honest CV-style profile from their answers to a few questions. They may have skipped some questions — only use what they answered. Answers may be typed in any language, or spoken and translated to English (so phrasing may be a little rough) — clean it up into clear English, but do not invent anything they didn't say.
-
-${answersText}
-
-Write a concise, well-organized profile covering what they shared: skills/areas, development areas, past skills, highlights, and role focus — only where they gave an answer. Write it in plain first-person prose, not bullet points, suitable to drop directly into a job search profile field. Keep it under 150 words.
-
-Respond with ONLY the profile text, no preamble, no headers.`;
-    const provider = getProvider();
-    const profile = provider === 'openai'
-      ? await callOpenAI(prompt, { webSearch: false })
-      : await callClaude(prompt, { webSearch: false, maxTokens: 500 });
-    document.getElementById('stanceText').value = profile.trim();
-    localStorage.setItem('vjr_stance', profile.trim());
-    saveGuidedAnswers();
-    log(`guided profile synthesized: ${profile.trim().length} chars`);
-    guidedConvoActive = false;
-    showProfileMethod('speak');
-    setStatus('stanceReadbackStatus', 'Profile written from your answers — edit if needed.', 'ok');
-  }catch(err){
-    log(`guided profile ERROR: ${err.message}`);
-    document.getElementById('guidedQuestion').textContent = `Something went wrong: ${err.message}`;
-    document.getElementById('guidedMicBtn').style.display = 'inline-block';
-    document.getElementById('guidedAnswerInput').style.display = 'block';
-    document.getElementById('guidedSkipBtn').style.display = 'inline-block';
-  }finally{
-    if(!guidedConvoActive){
-      document.getElementById('guidedMicBtn').style.display = 'inline-block';
-      document.getElementById('guidedAnswerInput').style.display = 'block';
-      document.getElementById('guidedConvo').style.display = 'none';
-      renderGuidedAnswersReview();
-      updateGuidedStartUI();
-    }
-  }
-}
 
 function clearCvNotesPanel(){
   const panel = document.getElementById('cvNotesPanel');
