@@ -75,9 +75,17 @@ product: the customization is structural, not decorative.
 
 - Sarvam AI — speech-to-text, translation, text-to-speech (Voice Experience)
 - Claude (Anthropic) — web search + ranking against the stated profile, in
-  one call
-- Single-file HTML/JS, no backend, no auth, no database — session-only,
-  scoped deliberately for a hackathon build, not a production architecture
+  one call. This is the documented, primary path: called directly from the
+  browser, no backend needed.
+- OpenAI — supported as an alternate provider (toggle in the UI), added
+  because Claude access wasn't available to test with during the build.
+  Unlike Claude, OpenAI's API blocks direct browser calls, so this path
+  requires running the small local proxy in `server.js`. Not the path this
+  project is submitted/demoed on; kept because it's what got the pipeline
+  actually verified end-to-end.
+- HTML/JS frontend, no auth, no database — session-only. `server.js` is an
+  optional ~40-line dev-only proxy for the OpenAI path; the Claude path
+  needs no backend at all.
 
 ## Status
 

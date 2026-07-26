@@ -11,6 +11,12 @@ cards → Sarvam TTS reads the top results back in the original language.
 No auth, no database, no persistence — session-only state. No code reused
 from the original job radar; this is a fresh build that extends the idea.
 
+**Provider note:** Claude is the documented, submitted path — called direct
+from the browser, no backend. OpenAI was added as a second toggleable
+provider purely because a Claude key wasn't on hand to test with during the
+build; it requires the small local proxy in `server.js` since OpenAI's API
+(unlike Claude's) blocks direct browser calls. The demo runs on Claude.
+
 ## Sarvam parameter declared: Voice Experience
 
 Realistic target: **L3 (Working)** — decent turn-taking, domain-aware
@@ -43,10 +49,14 @@ adding a second call to build, wire, and test under time pressure.
 
 ## Hour-by-hour
 
-1. Sarvam auth working — STT call returns a transcript, translate call
-   returns English. Prove the API connection before building UI around it.
-2. Wire STT+translate output into a Claude web-search call. Get one real
-   result back, end to end, however ugly.
+1. Sarvam auth working — translate call confirmed returning English from a
+   Hindi input. STT itself not yet tested with real audio (no mic test run
+   yet) — deferred since translate proves the same auth path.
+2. Wired typed English text + stance into a job-search call, with the
+   Claude and OpenAI paths both implemented. Verified end-to-end on the
+   OpenAI path (via `server.js`, since a Claude key wasn't available at
+   test time) — 5 real, scored, sourced job results came back correctly.
+   Claude path is written but not yet run live.
 3–4. Build the actual UI (mic input, stance box, results cards) around the
    now-working pipeline. Test with 5+ different spoken queries, ideally
    across 2–3 languages.
