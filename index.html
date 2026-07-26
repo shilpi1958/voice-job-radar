@@ -119,7 +119,6 @@
   }
   @media (prefers-reduced-motion: reduce){
     button.mic.recording{animation:none;}
-    .chip{animation:none;}
   }
   .mic-control{
     display:flex; align-items:center; gap:10px; flex-wrap:wrap;
@@ -221,15 +220,6 @@
     .provider-picks{grid-template-columns:1fr;}
   }
 
-  .chip-input{background:var(--field-bg); border:1px solid var(--border-strong); border-radius:8px; padding:8px 10px;}
-  .chip-list{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px;}
-  .chip-list:empty{margin-bottom:0;}
-  .chip{display:inline-flex; align-items:center; gap:6px; background:var(--accent-tint); color:var(--accent-strong); border-radius:14px; padding:4px 6px 4px 12px; font-size:0.85rem; font-weight:600; animation:chip-in 0.15s ease-out;}
-  @keyframes chip-in{from{transform:scale(0.85); opacity:0;}to{transform:scale(1); opacity:1;}}
-  .chip button{background:transparent; color:var(--accent-strong); border:none; border-radius:50%; width:18px; height:18px; padding:0; font-size:0.9rem; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center;}
-  .chip button:hover{background:rgba(217,122,69,0.2);}
-  .chip-input input{background:transparent; border:none; padding:4px 2px; width:100%;}
-  .chip-input input:focus{outline:none;}
   .cv-upload-btn{background:transparent; color:var(--secondary); border:1px solid var(--border-strong); border-radius:8px; padding:9px 16px; font-family:inherit; font-weight:600; cursor:pointer; font-size:0.9rem; display:inline-block;}
   .cv-upload-btn:hover{border-color:var(--secondary); background:var(--secondary-tint);}
   .skill-gap{margin-top:12px; padding-top:12px; border-top:1px solid var(--border);}
@@ -306,6 +296,25 @@
     display:flex; gap:8px; align-items:center; justify-content:flex-end;
     margin-top:12px; flex-wrap:wrap;
   }
+  .cv-notes{
+    margin-top:16px; border-top:1px solid var(--border); padding-top:14px;
+  }
+  .cv-notes.hidden{display:none;}
+  .cv-notes h3{
+    margin:0 0 10px; font-size:0.72rem; text-transform:uppercase;
+    letter-spacing:0.06em; color:var(--muted); font-weight:600;
+  }
+  .cv-notes-list{
+    margin:0; padding:0; list-style:none;
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .cv-notes-list li{
+    padding:10px 12px; border-radius:8px;
+    background:var(--field-bg); border:1px solid var(--border);
+    font-size:0.9rem; color:var(--text); line-height:1.45;
+  }
+  .cv-notes .status{margin:0 0 8px;}
+  .cv-notes .status:empty{display:none; margin:0;}
   .search-compose-row{
     display:flex; gap:8px; align-items:center;
   }
@@ -323,8 +332,6 @@
     border-color:var(--accent);
     box-shadow:0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
   }
-  .search-field .chip-list{margin-bottom:8px;}
-  .search-field .chip-list:empty{display:none; margin:0;}
   .search-field-head{
     display:flex; align-items:baseline; justify-content:space-between;
     gap:8px; margin-bottom:8px;
@@ -538,6 +545,7 @@
     <div class="guided-start">
       <button type="button" id="startGuidedBtn">Start</button>
       <button type="button" id="resumeGuidedBtn" class="secondary" style="display:none;">Continue</button>
+      <button type="button" id="reviewGuidedBtn" class="secondary" style="display:none;">Review</button>
       <button type="button" id="clearGuidedBtn" class="secondary" style="display:none;">Clear answers</button>
     </div>
 
@@ -570,6 +578,12 @@
       <h3>Your answers</h3>
       <div id="guidedAnswersList"></div>
     </div>
+
+    <div id="cvNotesPanel" class="cv-notes hidden" aria-live="polite">
+      <h3>How to update your CV</h3>
+      <p class="status" id="cvNotesStatus"></p>
+      <ul class="cv-notes-list" id="cvNotesList"></ul>
+    </div>
   </div>
 </section>
 </div><!-- /view-profile -->
@@ -583,13 +597,13 @@
     <p class="step-title">Search for jobs</p>
   </div>
   <p class="hint" style="color:var(--muted); font-size:0.9rem; margin:4px 0 14px;">
-    Add roles, companies, and keywords — speak or type.
+    Type or speak into Roles, Companies, or Keywords.
   </p>
 
   <div class="voice-target" role="tablist" aria-label="Voice adds to">
-    <button type="button" class="voice-target-btn active" data-chip-cat="roles" role="tab" aria-selected="true">Roles</button>
-    <button type="button" class="voice-target-btn" data-chip-cat="companies" role="tab" aria-selected="false">Companies</button>
-    <button type="button" class="voice-target-btn" data-chip-cat="keywords" role="tab" aria-selected="false">Keywords</button>
+    <button type="button" class="voice-target-btn active" data-field-cat="roles" role="tab" aria-selected="true">Roles</button>
+    <button type="button" class="voice-target-btn" data-field-cat="companies" role="tab" aria-selected="false">Companies</button>
+    <button type="button" class="voice-target-btn" data-field-cat="keywords" role="tab" aria-selected="false">Keywords</button>
   </div>
 
   <div class="mic-control">
@@ -600,37 +614,34 @@
     <span class="status" id="micStatus"></span>
   </div>
 
-  <div class="search-fields" id="chipInput">
-    <div class="search-field active" data-chip-cat="roles" id="chipField-roles">
+  <div class="search-fields" id="searchFields">
+    <div class="search-field active" data-field-cat="roles" id="searchField-roles">
       <div class="search-field-head">
-        <label for="chipTextInput-roles">Roles</label>
+        <label for="searchInput-roles">Roles</label>
         <span class="hint">job titles</span>
       </div>
-      <div class="chip-list" id="chipList-roles"></div>
       <div class="search-compose-row">
-        <input type="text" id="chipTextInput-roles" data-chip-cat="roles" placeholder="e.g. robotics engineer" autocomplete="off">
+        <input type="text" id="searchInput-roles" data-field-cat="roles" placeholder="Backend Engineer, Full Stack" autocomplete="off">
       </div>
     </div>
 
-    <div class="search-field" data-chip-cat="companies" id="chipField-companies">
+    <div class="search-field" data-field-cat="companies" id="searchField-companies">
       <div class="search-field-head">
-        <label for="chipTextInput-companies">Companies</label>
+        <label for="searchInput-companies">Companies</label>
         <span class="hint">employers to target</span>
       </div>
-      <div class="chip-list" id="chipList-companies"></div>
       <div class="search-compose-row">
-        <input type="text" id="chipTextInput-companies" data-chip-cat="companies" placeholder="e.g. Tesla" autocomplete="off">
+        <input type="text" id="searchInput-companies" data-field-cat="companies" placeholder="Razorpay, PhonePe" autocomplete="off">
       </div>
     </div>
 
-    <div class="search-field" data-chip-cat="keywords" id="chipField-keywords">
+    <div class="search-field" data-field-cat="keywords" id="searchField-keywords">
       <div class="search-field-head">
-        <label for="chipTextInput-keywords">Keywords</label>
+        <label for="searchInput-keywords">Keywords</label>
         <span class="hint">topics, skills, places</span>
       </div>
-      <div class="chip-list" id="chipList-keywords"></div>
       <div class="search-compose-row">
-        <input type="text" id="chipTextInput-keywords" data-chip-cat="keywords" placeholder="e.g. deep tech, Bangalore" autocomplete="off">
+        <input type="text" id="searchInput-keywords" data-field-cat="keywords" placeholder="fintech, remote" autocomplete="off">
       </div>
     </div>
   </div>
@@ -1349,122 +1360,116 @@ function setStatus(id, msg, cls){
   el.className = 'status' + (cls ? ' ' + cls : '');
 }
 
-// ---------- chip-based keyword search (roles / companies / keywords) ----------
-const CHIP_CATS = ['roles', 'companies', 'keywords'];
-const CHIP_STORAGE_KEYS = {
+// ---------- free-text search fields (roles / companies / keywords) ----------
+const FIELD_CATS = ['roles', 'companies', 'keywords'];
+const FIELD_STORAGE_KEYS = {
+  roles: 'vjr_field_roles',
+  companies: 'vjr_field_companies',
+  keywords: 'vjr_field_keywords'
+};
+const LEGACY_CHIP_STORAGE_KEYS = {
   roles: 'vjr_chips_roles',
   companies: 'vjr_chips_companies',
   keywords: 'vjr_chips_keywords'
 };
-const CHIP_LABELS = {
+const FIELD_LABELS = {
   roles: 'Roles',
   companies: 'Companies',
   keywords: 'Keywords'
 };
 
-let searchChips = { roles: [], companies: [], keywords: [] };
-let activeChipCat = 'roles';
+let activeFieldCat = 'roles';
 
-function loadSearchChips(){
-  CHIP_CATS.forEach((cat) => {
-    try{
-      const raw = JSON.parse(localStorage.getItem(CHIP_STORAGE_KEYS[cat]) || '[]');
-      searchChips[cat] = Array.isArray(raw)
-        ? raw.map(t => String(t).trim()).filter(Boolean)
-        : [];
-    }catch{
-      searchChips[cat] = [];
+function getSearchInput(cat){
+  return document.getElementById(`searchInput-${cat}`);
+}
+
+function getFieldValue(cat){
+  const input = getSearchInput(cat);
+  return input ? input.value.trim() : '';
+}
+
+function migrateLegacyChips(cat){
+  try{
+    const raw = JSON.parse(localStorage.getItem(LEGACY_CHIP_STORAGE_KEYS[cat]) || 'null');
+    if(!Array.isArray(raw)) return '';
+    return raw.map(t => String(t).trim()).filter(Boolean).join(', ');
+  }catch{
+    return '';
+  }
+}
+
+function loadSearchFields(){
+  FIELD_CATS.forEach((cat) => {
+    let value = localStorage.getItem(FIELD_STORAGE_KEYS[cat]);
+    if(value == null){
+      value = migrateLegacyChips(cat);
+      if(value) localStorage.setItem(FIELD_STORAGE_KEYS[cat], value);
     }
+    const input = getSearchInput(cat);
+    if(input) input.value = value || '';
   });
 }
 
-function saveSearchChips(cat){
-  localStorage.setItem(CHIP_STORAGE_KEYS[cat], JSON.stringify(searchChips[cat]));
+function saveSearchField(cat){
+  const input = getSearchInput(cat);
+  if(!input || !FIELD_CATS.includes(cat)) return;
+  localStorage.setItem(FIELD_STORAGE_KEYS[cat], input.value);
 }
 
-function setActiveChipCat(cat){
-  if(!CHIP_CATS.includes(cat)) return;
-  activeChipCat = cat;
+function setActiveFieldCat(cat){
+  if(!FIELD_CATS.includes(cat)) return;
+  activeFieldCat = cat;
   document.querySelectorAll('.voice-target-btn').forEach((btn) => {
-    const on = btn.dataset.chipCat === cat;
+    const on = btn.dataset.fieldCat === cat;
     btn.classList.toggle('active', on);
     btn.setAttribute('aria-selected', on ? 'true' : 'false');
   });
   document.querySelectorAll('.search-field').forEach((field) => {
-    field.classList.toggle('active', field.dataset.chipCat === cat);
+    field.classList.toggle('active', field.dataset.fieldCat === cat);
   });
 }
 
-function renderChips(cat){
-  const cats = cat ? [cat] : CHIP_CATS;
-  cats.forEach((c) => {
-    const list = document.getElementById(`chipList-${c}`);
-    if(!list) return;
-    list.innerHTML = '';
-    searchChips[c].forEach((chip, i) => {
-      const el = document.createElement('span');
-      el.className = 'chip';
-      el.innerHTML = `${escapeHtml(chip)} <button type="button" aria-label="remove">&times;</button>`;
-      el.querySelector('button').addEventListener('click', () => {
-        searchChips[c].splice(i, 1);
-        saveSearchChips(c);
-        renderChips(c);
-      });
-      list.appendChild(el);
-    });
-  });
-}
-
-function addChip(text, cat = activeChipCat){
-  const trimmed = (text || '').trim();
-  if(!trimmed || !CHIP_CATS.includes(cat)) return;
-  if(searchChips[cat].some(c => c.toLowerCase() === trimmed.toLowerCase())) return;
-  searchChips[cat].push(trimmed);
-  saveSearchChips(cat);
-  renderChips(cat);
+function appendToActiveField(text, cat = activeFieldCat){
+  const trimmed = String(text || '').trim();
+  if(!trimmed || !FIELD_CATS.includes(cat)) return;
+  const input = getSearchInput(cat);
+  if(!input) return;
+  const current = input.value.trim();
+  input.value = current ? `${current}, ${trimmed}` : trimmed;
+  saveSearchField(cat);
+  setActiveFieldCat(cat);
 }
 
 function getChipQuery(){
   const lines = [];
-  CHIP_CATS.forEach((cat) => {
-    if(searchChips[cat].length){
-      lines.push(`${CHIP_LABELS[cat]}: ${searchChips[cat].join(', ')}`);
-    }
+  FIELD_CATS.forEach((cat) => {
+    const value = getFieldValue(cat);
+    if(value) lines.push(`${FIELD_LABELS[cat]}: ${value}`);
   });
   return lines.join('\n');
 }
 
-function hasAnyChips(){
-  return CHIP_CATS.some((cat) => searchChips[cat].length > 0);
+function hasAnySearchFields(){
+  return FIELD_CATS.some((cat) => getFieldValue(cat));
 }
 
-loadSearchChips();
-renderChips();
-setActiveChipCat('roles');
+loadSearchFields();
+setActiveFieldCat('roles');
 
 document.querySelectorAll('.voice-target-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
-    setActiveChipCat(btn.dataset.chipCat);
-    const input = document.getElementById(`chipTextInput-${btn.dataset.chipCat}`);
+    setActiveFieldCat(btn.dataset.fieldCat);
+    const input = getSearchInput(btn.dataset.fieldCat);
     if(input) input.focus();
   });
 });
 
-CHIP_CATS.forEach((cat) => {
-  const input = document.getElementById(`chipTextInput-${cat}`);
+FIELD_CATS.forEach((cat) => {
+  const input = getSearchInput(cat);
   if(!input) return;
-  input.addEventListener('focus', () => setActiveChipCat(cat));
-  input.addEventListener('keydown', (e) => {
-    if(e.key === 'Enter'){
-      e.preventDefault();
-      addChip(input.value, cat);
-      input.value = '';
-    }else if(e.key === 'Backspace' && !input.value && searchChips[cat].length){
-      searchChips[cat].pop();
-      saveSearchChips(cat);
-      renderChips(cat);
-    }
-  });
+  input.addEventListener('focus', () => setActiveFieldCat(cat));
+  input.addEventListener('input', () => saveSearchField(cat));
 });
 
 // ---------- search flow ----------
@@ -1496,8 +1501,8 @@ function startSearchProgress(statusEl){
 document.getElementById('searchBtn').addEventListener('click', async () => {
   const query = getChipQuery();
   const stance = document.getElementById('stanceText').value.trim();
-  if(!hasAnyChips()){
-    setStatus('searchStatus', 'Add at least one term first', 'err');
+  if(!hasAnySearchFields()){
+    setStatus('searchStatus', 'Fill in at least one field first', 'err');
     return;
   }
   const btn = document.getElementById('searchBtn');
@@ -1685,7 +1690,7 @@ function bindMicButton({ buttonId, statusId, onResult, originalBoxId, englishBox
 }
 
 bindMicButton({
-  buttonId: 'micBtn', statusId: 'micStatus', onResult: addChip,
+  buttonId: 'micBtn', statusId: 'micStatus', onResult: appendToActiveField,
   originalBoxId: 'transcriptOriginal', englishBoxId: 'transcriptEnglish', transcriptBoxId: 'transcriptBox'
 });
 bindMicButton({
@@ -1810,11 +1815,13 @@ function updateGuidedStartUI(){
   if(guidedConvoActive) return;
   const startBtn = document.getElementById('startGuidedBtn');
   const resumeBtn = document.getElementById('resumeGuidedBtn');
+  const reviewBtn = document.getElementById('reviewGuidedBtn');
   const clearBtn = document.getElementById('clearGuidedBtn');
   const n = answeredCount();
   const visited = visitedCount();
 
   clearBtn.style.display = visited ? 'inline-block' : 'none';
+  reviewBtn.style.display = n > 0 ? 'inline-block' : 'none';
   if(!visited){
     startBtn.textContent = 'Start';
     startBtn.style.display = 'inline-block';
@@ -1842,6 +1849,7 @@ function beginGuidedAt(index){
   document.getElementById('guidedConvo').style.display = 'block';
   document.getElementById('startGuidedBtn').style.display = 'none';
   document.getElementById('resumeGuidedBtn').style.display = 'none';
+  document.getElementById('reviewGuidedBtn').style.display = 'none';
   document.getElementById('clearGuidedBtn').style.display = 'none';
   document.getElementById('guidedMicBtn').style.display = 'inline-block';
   document.getElementById('guidedSkipBtn').style.display = 'inline-block';
@@ -1900,6 +1908,7 @@ document.getElementById('startGuidedBtn').addEventListener('click', () => {
   if(visitedCount() > 0 && !confirm('Start over and clear saved answers?')) return;
   guidedAnswers = [];
   saveGuidedAnswers();
+  clearCvNotesPanel();
   beginGuidedAt(0);
 });
 
@@ -1914,6 +1923,7 @@ document.getElementById('clearGuidedBtn').addEventListener('click', () => {
   guidedConvoActive = false;
   saveGuidedAnswers();
   document.getElementById('guidedConvo').style.display = 'none';
+  clearCvNotesPanel();
 });
 
 document.getElementById('guidedCancelBtn').addEventListener('click', () => {
@@ -1958,6 +1968,7 @@ async function synthesizeGuidedProfile(){
   document.getElementById('guidedSkipBtn').style.display = 'none';
   document.getElementById('startGuidedBtn').style.display = 'none';
   document.getElementById('resumeGuidedBtn').style.display = 'none';
+  document.getElementById('reviewGuidedBtn').style.display = 'none';
   document.getElementById('clearGuidedBtn').style.display = 'none';
   try{
     const answersText = guidedAnswers
@@ -1996,6 +2007,110 @@ Respond with ONLY the profile text, no preamble, no headers.`;
     }
   }
 }
+
+function clearCvNotesPanel(){
+  const panel = document.getElementById('cvNotesPanel');
+  document.getElementById('cvNotesList').innerHTML = '';
+  setStatus('cvNotesStatus', '', '');
+  panel.classList.add('hidden');
+}
+
+function parseCvNotesBullets(text){
+  const lines = (text || '').split(/\n+/).map(l => l.trim()).filter(Boolean);
+  const bullets = [];
+  for(const line of lines){
+    const cleaned = line
+      .replace(/^#{1,6}\s+/, '')
+      .replace(/^[-*•]\s+/, '')
+      .replace(/^\d+[.)]\s+/, '')
+      .trim();
+    if(!cleaned) continue;
+    // Skip short section headers the model may emit
+    if(/^(strong|strengths?|missing|weak|gaps?|edits?|suggestions?|cv notes|how to update)$/i.test(cleaned) && cleaned.length < 40) continue;
+    bullets.push(cleaned);
+    if(bullets.length >= 8) break;
+  }
+  return bullets;
+}
+
+function renderCvNotes(text){
+  const panel = document.getElementById('cvNotesPanel');
+  const list = document.getElementById('cvNotesList');
+  const bullets = parseCvNotesBullets(text);
+  if(!bullets.length){
+    list.innerHTML = `<li>${escapeHtml((text || '').trim() || 'No notes returned.')}</li>`;
+  }else{
+    list.innerHTML = bullets.map(b => `<li>${escapeHtml(b)}</li>`).join('');
+  }
+  panel.classList.remove('hidden');
+}
+
+async function reviewGuidedCv(){
+  if(answeredCount() === 0){
+    const panel = document.getElementById('cvNotesPanel');
+    panel.classList.remove('hidden');
+    document.getElementById('cvNotesList').innerHTML = '';
+    setStatus('cvNotesStatus', 'Answer at least one question first', 'err');
+    return;
+  }
+  const provider = getProvider();
+  if(provider === 'openai' && !getOpenAIKey()){
+    const panel = document.getElementById('cvNotesPanel');
+    panel.classList.remove('hidden');
+    document.getElementById('cvNotesList').innerHTML = '';
+    setStatus('cvNotesStatus', 'Add your OpenAI API key first', 'err');
+    return;
+  }
+  if(provider !== 'openai' && !getAnthropicKey()){
+    const panel = document.getElementById('cvNotesPanel');
+    panel.classList.remove('hidden');
+    document.getElementById('cvNotesList').innerHTML = '';
+    setStatus('cvNotesStatus', 'Add your Claude API key first', 'err');
+    return;
+  }
+
+  const panel = document.getElementById('cvNotesPanel');
+  const list = document.getElementById('cvNotesList');
+  const btn = document.getElementById('reviewGuidedBtn');
+  panel.classList.remove('hidden');
+  list.innerHTML = '';
+  document.getElementById('cvNotesStatus').innerHTML = '<span class="spinner"></span>reviewing…';
+  btn.disabled = true;
+
+  try{
+    const answersText = guidedAnswers
+      .map((a, i) => isGuidedAnswered(a) ? `Q: ${GUIDED_QUESTIONS[i]}\nA: ${a.trim()}` : null)
+      .filter(Boolean)
+      .join('\n\n');
+    const cvExcerpt = cvText ? truncateForPrompt(cvText, MAX_CV_CHARS) : '';
+    const prompt = `You are a CV coach. Given this person's answers to guided questions${cvExcerpt ? ' and (if useful) their current CV text' : ''}, give concrete pointers on how to update their CV.
+
+Answers:
+${answersText}
+${cvExcerpt ? `\nCurrent CV text (may be truncated):\n${cvExcerpt}\n` : '\n(No CV uploaded — base advice on answers only.)\n'}
+Cover briefly: what's already strong, what's missing or weak, and specific edits (bullet rewrites or sections to add). Do not invent employers, dates, or credentials they did not mention. Prefer actionable, specific wording they can paste or adapt.
+
+Respond with 5–8 plain bullet points only. No preamble, no headers, no closing. Each bullet one concrete pointer.`;
+
+    const notes = provider === 'openai'
+      ? await callOpenAI(prompt, { webSearch: false })
+      : await callClaude(prompt, { webSearch: false, maxTokens: 900 });
+    setStatus('cvNotesStatus', '', '');
+    document.getElementById('cvNotesStatus').innerHTML = '';
+    renderCvNotes(notes);
+    log(`guided CV review: ${notes.trim().length} chars`);
+  }catch(err){
+    log(`guided CV review ERROR: ${err.message}`);
+    list.innerHTML = '';
+    setStatus('cvNotesStatus', err.message || 'Review failed', 'err');
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+document.getElementById('reviewGuidedBtn').addEventListener('click', () => {
+  reviewGuidedCv();
+});
 
 bindMicButton({
   buttonId: 'guidedMicBtn', statusId: 'guidedMicStatus',
