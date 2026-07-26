@@ -1,0 +1,3948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>voice job radar</title>
+<style>
+  @font-face{
+    font-family:'Fraunces';
+    src:local('Georgia');
+    font-weight:500 700;
+  }
+  :root{
+    --bg:#f7f4ee; --panel:#ffffff; --border:#e4ddcd; --border-strong:#d3c9b0;
+    --text:#2a241c; --muted:#8a8071; --field-bg:#fbf9f4;
+    --accent:#d97a45; --accent-strong:#b85f2f; --accent-tint:#fbe4d3;
+    --secondary:#2d6a6a; --secondary-tint:#dbebe9;
+    --danger:#c94a35; --danger-tint:#f7e0da;
+    --card:#ffffff;
+    --shadow:0 1px 2px rgba(42,36,28,0.04), 0 2px 8px rgba(42,36,28,0.04);
+    --radius:12px;
+  }
+  :root[data-theme="dark"]{
+    --bg:#211c16; --panel:#2b241c; --border:#453b2c; --border-strong:#584b38;
+    --text:#f3ede0; --muted:#a89b83; --field-bg:#1c1712;
+    --accent:#e8935a; --accent-strong:#f0a876; --accent-tint:#4a3222;
+    --secondary:#5fa8a3; --secondary-tint:#243837;
+    --danger:#e0715c; --danger-tint:#4a2820;
+    --card:#2b241c;
+    --shadow:0 1px 2px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.25);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#211c16; --panel:#2b241c; --border:#453b2c; --border-strong:#584b38;
+      --text:#f3ede0; --muted:#a89b83; --field-bg:#1c1712;
+      --accent:#e8935a; --accent-strong:#f0a876; --accent-tint:#4a3222;
+      --secondary:#5fa8a3; --secondary-tint:#243837;
+      --danger:#e0715c; --danger-tint:#4a2820;
+      --card:#2b241c;
+      --shadow:0 1px 2px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.25);
+    }
+  }
+  *{box-sizing:border-box;}
+  body{
+    background:
+      radial-gradient(ellipse 90% 55% at 12% -10%, color-mix(in srgb, var(--accent-tint) 55%, transparent), transparent 55%),
+      radial-gradient(ellipse 70% 45% at 100% 0%, color-mix(in srgb, var(--secondary-tint) 50%, transparent), transparent 50%),
+      linear-gradient(180deg, color-mix(in srgb, var(--bg) 92%, var(--accent-tint)) 0%, var(--bg) 42%, var(--bg) 100%);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    max-width:640px; margin:0 auto; padding:24px 20px 80px; line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1{
+    font-family:Fraunces,Georgia,'Times New Roman',serif; font-weight:600;
+    color:var(--text); font-size:1.7rem; margin:0; letter-spacing:-0.01em;
+    text-wrap:balance;
+  }
+  .sub{color:var(--muted); margin-bottom:8px; font-size:0.95rem; max-width:46ch;}
+  section{
+    background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);
+    padding:22px; margin-bottom:18px; box-shadow:var(--shadow);
+  }
+  .step-head{display:flex; align-items:center; gap:10px; margin-bottom:4px;}
+  .step-num{
+    flex:none; width:26px; height:26px; border-radius:50%; background:var(--accent-tint);
+    color:var(--accent-strong); font-weight:700; font-size:0.85rem;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .step-num.done{background:var(--secondary-tint); color:var(--secondary);}
+  .step-title{font-size:1.05rem; font-weight:600; color:var(--text); margin:0;}
+  label{display:block; font-size:0.85rem; color:var(--muted); margin-bottom:6px; font-weight:500;}
+  input[type=text], input[type=password], textarea, select{
+    width:100%; background:var(--field-bg); color:var(--text); border:1px solid var(--border-strong);
+    border-radius:8px; padding:10px 12px; font-family:inherit; font-size:0.95rem;
+  }
+  input:focus, textarea:focus, select:focus{
+    outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent);
+  }
+  textarea{resize:vertical; min-height:60px;}
+  button{
+    background:var(--accent); color:#fff; border:none; border-radius:8px; padding:10px 18px;
+    font-family:inherit; font-weight:600; cursor:pointer; font-size:0.9rem;
+    transition:background 0.15s, transform 0.1s;
+  }
+  button:hover:not(:disabled){background:var(--accent-strong);}
+  button:active:not(:disabled){transform:scale(0.98);}
+  button:disabled{opacity:0.5; cursor:not-allowed;}
+  button:focus-visible{outline:2px solid var(--accent-strong); outline-offset:2px;}
+  button.secondary{background:transparent; color:var(--secondary); border:1px solid var(--border-strong);}
+  button.secondary:hover:not(:disabled){background:var(--secondary-tint); border-color:var(--secondary);}
+  button.secondary.tts-speaking{
+    color:var(--danger);
+    border-color:color-mix(in srgb, var(--danger) 40%, var(--border-strong));
+    background:var(--danger-tint);
+  }
+  button.secondary.tts-speaking:hover:not(:disabled){
+    background:color-mix(in srgb, var(--danger-tint) 70%, #fff);
+    border-color:var(--danger);
+    color:var(--danger);
+  }
+  button.mic{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    background:var(--danger-tint); color:var(--danger);
+    border:1px solid color-mix(in srgb, var(--danger) 32%, var(--border-strong));
+    border-radius:999px; padding:9px 16px 9px 12px;
+    font-size:0.88rem; font-weight:600; letter-spacing:0.01em;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.45);
+    transition:background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s, transform 0.1s;
+    user-select:none; -webkit-user-select:none; touch-action:none;
+  }
+  button.mic:hover:not(:disabled){
+    background:color-mix(in srgb, var(--danger-tint) 70%, #fff);
+    border-color:var(--danger); color:var(--danger); filter:none;
+  }
+  button.mic:active:not(:disabled){
+    background:var(--danger); color:#fff; border-color:var(--danger);
+    box-shadow:none; transform:scale(0.97);
+  }
+  button.mic.recording{
+    background:var(--danger); color:#fff; border-color:var(--danger);
+    box-shadow:none; animation:mic-pulse 1.15s ease-in-out infinite;
+  }
+  button.mic .mic-ico{
+    width:15px; height:15px; flex:none; background:currentColor;
+    -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 14a3 3 0 0 0 3-3V5a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 14a3 3 0 0 0 3-3V5a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z'/%3E%3C/svg%3E") center / contain no-repeat;
+  }
+  button.mic .mic-text .short{display:none;}
+  @keyframes mic-pulse{
+    0%,100%{box-shadow:0 0 0 0 color-mix(in srgb, var(--danger) 32%, transparent);}
+    50%{box-shadow:0 0 0 10px transparent;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    button.mic.recording{animation:none;}
+  }
+  .mic-control{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    margin:0 0 12px;
+  }
+  .mic-control .status{
+    margin:0; min-height:0; flex:1 1 140px; min-width:0;
+    line-height:1.35;
+  }
+  .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+  .status{font-size:0.85rem; color:var(--muted); margin-top:8px; min-height:1.2em;}
+  .status.err{color:var(--danger);}
+  .status.ok{color:var(--secondary);}
+  .transcript-box{background:var(--field-bg); border:1px solid var(--border); border-radius:8px; padding:12px; margin-top:10px; font-size:0.9rem; display:none;}
+  .transcript-box.show{display:block;}
+  .transcript-box .label{color:var(--muted); font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em; font-weight:600;}
+  .card{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:18px; margin-bottom:14px; box-shadow:var(--shadow);}
+  .card h3{margin:0 0 4px; color:var(--text); font-size:1.1rem; font-weight:600; padding-right:70px;}
+  .card .meta{color:var(--muted); font-size:0.85rem; margin-bottom:10px;}
+  .card .score{float:right; background:var(--secondary-tint); color:var(--secondary); border-radius:20px; padding:3px 10px; font-size:0.8rem; font-weight:700; font-variant-numeric:tabular-nums;}
+  .card .fit{margin-bottom:10px;}
+  .card .gate{color:var(--danger); background:var(--danger-tint); border-radius:8px; padding:8px 10px; font-size:0.85rem; margin-bottom:10px;}
+  .card .skills{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;}
+  .card .skills span{background:var(--field-bg); border:1px solid var(--border); border-radius:12px; padding:3px 10px; font-size:0.78rem; color:var(--muted);}
+  .card a{color:var(--secondary); font-weight:600; text-decoration:none;}
+  .card a:hover{text-decoration:underline;}
+  .spinner{display:inline-block; width:14px; height:14px; border:2px solid var(--border-strong); border-top-color:var(--accent); border-radius:50%; animation:spin 0.7s linear infinite; vertical-align:middle; margin-right:6px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  @media (prefers-reduced-motion: reduce){ .spinner{animation:none;} }
+  details summary{cursor:pointer; color:var(--muted); font-size:0.85rem;}
+  .lang-select{max-width:220px;}
+
+  /* top nav */
+  .topbar{
+    display:flex; align-items:flex-start; justify-content:space-between; gap:16px;
+    margin-bottom:28px;
+  }
+  .topbar-brand{min-width:0;}
+  .topbar .sub{margin:4px 0 0;}
+  .nav{
+    display:flex; gap:4px; flex:none; background:var(--panel);
+    border:1px solid var(--border); border-radius:10px; padding:4px; box-shadow:var(--shadow);
+  }
+  .nav-btn{
+    background:transparent; color:var(--muted); border:none; border-radius:7px;
+    padding:8px 14px; font-weight:600; font-size:0.85rem; position:relative;
+  }
+  .nav-btn:hover:not(:disabled){background:var(--field-bg); color:var(--text);}
+  .nav-btn.active{background:var(--accent-tint); color:var(--accent-strong);}
+  .nav-btn .dot{
+    position:absolute; top:7px; right:7px; width:7px; height:7px;
+    border-radius:50%; background:var(--danger); display:none;
+  }
+  .nav-btn.needs-setup .dot{display:block;}
+
+  .view{display:none;}
+  .view.active{display:block; animation:view-in 0.32s ease-out;}
+  @keyframes view-in{
+    from{opacity:0; transform:translateY(6px);}
+    to{opacity:1; transform:none;}
+  }
+
+  /* setup wizard */
+  .setup-progress{
+    display:flex; gap:8px; margin-bottom:22px; align-items:center;
+  }
+  .setup-progress .pip{
+    flex:1; height:3px; border-radius:2px; background:var(--border);
+    transition:background 0.2s;
+  }
+  .setup-progress .pip.on{background:var(--accent);}
+  .setup-progress .pip.done{background:var(--secondary);}
+  .setup-step{display:none;}
+  .setup-step.active{display:block;}
+  .setup-step .hint{color:var(--muted); font-size:0.9rem; margin:0 0 18px; max-width:40ch;}
+  .provider-picks{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;}
+  .provider-pick{
+    display:block; cursor:pointer; border:1px solid var(--border-strong);
+    border-radius:10px; padding:14px 14px 12px; background:var(--field-bg);
+    transition:border-color 0.15s, background 0.15s;
+  }
+  .provider-pick:hover{border-color:var(--accent);}
+  .provider-pick:has(input:checked){
+    border-color:var(--accent); background:var(--accent-tint);
+  }
+  .provider-pick input{position:absolute; opacity:0; pointer-events:none;}
+  .provider-pick .name{display:block; font-weight:600; color:var(--text); font-size:0.95rem;}
+  .provider-pick .desc{display:block; font-size:0.78rem; color:var(--muted); margin-top:2px;}
+  .setup-actions{display:flex; gap:10px; align-items:center; margin-top:20px; flex-wrap:wrap;}
+  .setup-actions .spacer{flex:1;}
+  .setup-done{
+    text-align:center; padding:28px 12px 8px;
+  }
+  .setup-done .check{
+    width:44px; height:44px; border-radius:50%; background:var(--secondary-tint);
+    color:var(--secondary); display:inline-flex; align-items:center; justify-content:center;
+    font-size:1.3rem; font-weight:700; margin-bottom:12px;
+  }
+  .setup-done h2{
+    font-family:Fraunces,Georgia,serif; font-size:1.35rem; font-weight:600;
+    margin:0 0 6px;
+  }
+  .setup-done p{color:var(--muted); margin:0 0 20px; font-size:0.95rem;}
+  @media (max-width:480px){
+    .topbar{flex-direction:column; gap:14px;}
+    .provider-picks{grid-template-columns:1fr;}
+  }
+
+  .cv-upload-btn{background:transparent; color:var(--secondary); border:1px solid var(--border-strong); border-radius:8px; padding:9px 16px; font-family:inherit; font-weight:600; cursor:pointer; font-size:0.9rem; display:inline-block;}
+  .cv-upload-btn:hover{border-color:var(--secondary); background:var(--secondary-tint);}
+  .skill-gap{margin-top:12px; padding-top:12px; border-top:1px solid var(--border);}
+  .skill-gap .job-section{margin-bottom:12px;}
+  .skill-gap .row-label{font-size:0.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; font-weight:600; margin-bottom:5px;}
+  .skill-gap .skills{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;}
+  .skill-gap .skills span{border-radius:12px; padding:3px 10px; font-size:0.78rem; font-weight:500;}
+  .skill-gap .skills.have span{background:var(--secondary-tint); border:1px solid var(--secondary); color:var(--secondary);}
+  .skill-gap .skills.missing span{background:var(--danger-tint); border:1px solid var(--danger); color:var(--danger);}
+  .skill-gap .next-step{font-size:0.88rem; color:var(--text);}
+  .job-chat{margin-top:12px; padding-top:12px; border-top:1px solid var(--border);}
+  .job-chat-toggle{width:100%; text-align:left;}
+  .job-chat-panel{margin-top:10px;}
+  .job-chat-history{display:flex; flex-direction:column; gap:8px; margin-bottom:4px;}
+  .job-chat-msg{border-radius:10px; padding:9px 12px; font-size:0.85rem; max-width:90%;}
+  .job-chat-msg.user{background:var(--accent-tint); color:var(--accent-strong); align-self:flex-end;}
+  .job-chat-msg.assistant{background:var(--field-bg); border:1px solid var(--border); color:var(--text); align-self:flex-start;}
+  .job-chat-msg .msg-label{font-size:0.68rem; text-transform:uppercase; letter-spacing:0.06em; opacity:0.7; margin-bottom:2px; font-weight:600;}
+  .job-chat-msg .text-actions{margin-top:6px;}
+  .job-chat-msg .native-peek{margin-top:6px; padding:8px 10px; font-size:0.85rem;}
+  .job-chat-mic{padding:7px 14px 7px 11px; font-size:0.82rem;}
+  .job-chat .mic-control{margin:8px 0 0;}
+  .profile-methods{
+    display:grid; grid-template-columns:repeat(2, 1fr); gap:8px; margin-bottom:18px;
+  }
+  .method-pick{
+    background:var(--field-bg); color:var(--text); border:1px solid var(--border-strong);
+    border-radius:10px; padding:12px 10px; text-align:center; font-weight:600; font-size:0.85rem;
+  }
+  .method-pick:hover:not(:disabled){background:var(--field-bg); border-color:var(--accent); color:var(--text);}
+  .method-pick.active{
+    background:var(--accent-tint); border-color:var(--accent); color:var(--accent-strong);
+  }
+  .method-pick .desc{
+    display:block; font-weight:400; font-size:0.72rem; color:var(--muted); margin-top:2px;
+  }
+  .method-pick.active .desc{color:var(--accent-strong); opacity:0.85;}
+  .profile-panel{display:none;}
+  .profile-panel.active{display:block;}
+  .profile-panel .hint{color:var(--muted); font-size:0.9rem; margin:0 0 14px; max-width:42ch;}
+  .profile-toolbar{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    flex-wrap:wrap; margin-bottom:16px;
+  }
+  .profile-toolbar label{margin:0; font-size:0.8rem;}
+  .profile-toolbar .lang-select{max-width:160px;}
+  .cv-drop{
+    display:flex; flex-direction:column; align-items:flex-start; gap:10px;
+    border:1px dashed var(--border-strong); border-radius:10px;
+    padding:18px; background:var(--field-bg);
+  }
+  .guided-start{margin-top:4px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  .guided-progress-track{
+    height:3px; border-radius:2px; background:var(--border);
+    margin:10px 0 2px; overflow:hidden;
+  }
+  .guided-progress-fill{
+    height:100%; width:0%; border-radius:2px; background:var(--accent);
+    transition:width 0.35s ease;
+  }
+  .guided-q{
+    font-size:1rem; font-weight:500; color:var(--text); margin:10px 0 8px;
+    text-wrap:balance;
+  }
+  .guided-q.enter{
+    animation:q-enter 0.38s ease-out;
+  }
+  @keyframes q-enter{
+    from{opacity:0; transform:translateY(8px);}
+    to{opacity:1; transform:none;}
+  }
+  .interview-ready{
+    display:none; margin-top:16px; padding:16px 16px 14px;
+    border-radius:10px; border:1px solid color-mix(in srgb, var(--secondary) 35%, var(--border));
+    background:
+      linear-gradient(135deg, color-mix(in srgb, var(--secondary-tint) 70%, transparent), transparent 70%),
+      var(--field-bg);
+  }
+  .interview-ready.show{
+    display:block; animation:ready-in 0.45s ease-out;
+  }
+  @keyframes ready-in{
+    from{opacity:0; transform:translateY(10px) scale(0.98);}
+    to{opacity:1; transform:none;}
+  }
+  .interview-ready .ready-kicker{
+    margin:0 0 4px; font-size:0.72rem; text-transform:uppercase;
+    letter-spacing:0.06em; color:var(--secondary); font-weight:700;
+  }
+  .interview-ready .ready-title{
+    margin:0 0 6px; font-family:Fraunces,Georgia,serif; font-size:1.15rem; font-weight:600;
+  }
+  .interview-ready .ready-summary{
+    margin:0 0 12px; font-size:0.9rem; color:var(--muted); max-width:46ch;
+  }
+  .interview-ready .ready-actions{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  .memory-cue{
+    display:none; margin:0 0 10px; font-size:0.82rem; color:var(--secondary);
+    opacity:0; transform:translateY(4px);
+    transition:opacity 0.28s ease, transform 0.28s ease;
+  }
+  .memory-cue.show{
+    display:block; opacity:1; transform:none;
+  }
+  .memory-cue em{font-style:normal; font-weight:600;}
+  @media (prefers-reduced-motion: reduce){
+    .view.active, .guided-q.enter, .interview-ready.show{animation:none;}
+    .guided-progress-fill, .memory-cue{transition:none;}
+  }
+  .guided-q-actions{
+    display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+    margin:0 0 14px;
+  }
+  .guided-q-actions .status{margin:0; min-height:0;}
+  .guided-q-actions .status:empty{display:none;}
+  .guided-answers{
+    margin-top:16px; border-top:1px solid var(--border); padding-top:14px;
+  }
+  .guided-answers.hidden{display:none;}
+  .guided-answers h3{
+    margin:0 0 10px; font-size:0.72rem; text-transform:uppercase;
+    letter-spacing:0.06em; color:var(--muted); font-weight:600;
+  }
+  .guided-answer{
+    margin-bottom:10px; padding:10px 12px; border-radius:8px;
+    background:var(--field-bg); border:1px solid var(--border);
+    text-align:left; width:100%; font:inherit;
+    display:block; color:inherit;
+  }
+  .guided-answer.current{border-color:var(--accent); background:var(--accent-tint);}
+  .guided-answer .guided-answer-main{
+    background:transparent; border:none; padding:0; margin:0;
+    cursor:pointer; text-align:left; width:100%; font:inherit; color:inherit;
+    border-radius:6px;
+  }
+  .guided-answer .guided-answer-main:hover .a:not(.muted){
+    text-decoration:underline; text-underline-offset:2px;
+  }
+  .guided-answer .guided-answer-main:focus-visible{
+    outline:2px solid var(--accent); outline-offset:2px;
+  }
+  .guided-answer .q{font-size:0.78rem; color:var(--muted); margin-bottom:4px;}
+  .guided-answer .a{font-size:0.9rem; color:var(--text);}
+  .guided-answer .a.muted{color:var(--muted); font-style:italic;}
+  .guided-answer .text-actions{
+    margin-top:10px; padding-top:8px;
+    border-top:1px solid var(--border);
+  }
+  .job-section{margin-bottom:14px;}
+  .job-section > .fit,
+  .job-section > .gate,
+  .job-section > .next-step,
+  .job-section > .meta,
+  .job-section > .skills{margin-bottom:0;}
+  .job-section .text-actions{margin-top:6px;}
+  .job-section .native-peek{margin-top:6px;}
+  .guided-answer-input{
+    width:100%; margin-top:0; min-height:72px;
+    font-size:0.95rem; line-height:1.45;
+  }
+  .guided-nav{
+    display:flex; gap:8px; align-items:center; justify-content:flex-end;
+    margin-top:12px; flex-wrap:wrap;
+  }
+  .cv-notes{
+    margin-top:16px; border-top:1px solid var(--border); padding-top:14px;
+  }
+  .cv-notes.hidden{display:none;}
+  .cv-notes h3{
+    margin:0 0 10px; font-size:0.72rem; text-transform:uppercase;
+    letter-spacing:0.06em; color:var(--muted); font-weight:600;
+  }
+  .cv-review-block{
+    padding:12px 14px; border-radius:8px;
+    background:var(--field-bg); border:1px solid var(--border);
+    font-size:0.95rem; color:var(--text); line-height:1.5;
+  }
+  .cv-review-block:empty{display:none;}
+  .cv-review-block .note-body{margin:0;}
+  .cv-review-block .cv-review-list{
+    margin:0; padding-left:1.15em;
+    display:flex; flex-direction:column; gap:0.45em;
+  }
+  .cv-review-block .cv-review-list li{margin:0;}
+  .cv-review-block .text-actions{margin-top:8px;}
+  .cv-apply-prompt{margin-top:14px;}
+  .cv-apply-prompt.hidden{display:none;}
+  .cv-apply-prompt .row{gap:8px; flex-wrap:wrap;}
+  /* Stacked by default: body max-width is 640px, so side-by-side
+     columns were ~300px each. Prefer full-width top/bottom panes. */
+  .cv-edit-dual{
+    margin-top:16px;
+    display:grid;
+    grid-template-columns:1fr;
+    gap:14px;
+    align-items:stretch;
+  }
+  .cv-edit-dual.hidden{display:none;}
+  .cv-pane{
+    border:1px solid var(--border);
+    border-radius:10px;
+    background:var(--field-bg);
+    min-height:min(48vh, 480px);
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+  }
+  .cv-pane-head{
+    margin:0; padding:10px 12px;
+    font-size:0.72rem; text-transform:uppercase;
+    letter-spacing:0.06em; color:var(--muted); font-weight:600;
+    border-bottom:1px solid var(--border);
+    flex-shrink:0;
+  }
+  .cv-pane-body{
+    flex:1 1 auto; overflow:auto; padding:12px;
+    min-height:0;
+    display:flex; flex-direction:column;
+  }
+  .cv-pane-body.cv-pane-body-editor{
+    padding:0;
+    position:relative;
+  }
+  .cv-pane-foot{
+    padding:10px 12px; border-top:1px solid var(--border);
+    display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+    flex-shrink:0;
+  }
+  .cv-pane-foot.hidden{display:none;}
+  .cv-original-preview{
+    flex:1; min-height:0;
+  }
+  .cv-original-preview canvas{
+    display:block; width:100%; height:auto;
+    margin:0 0 10px; border:1px solid var(--border); border-radius:6px;
+    background:#fff;
+  }
+  .cv-original-preview .cv-text-fallback{
+    margin:0; white-space:pre-wrap; word-break:break-word;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:0.78rem; line-height:1.45; color:var(--text);
+  }
+  textarea.cv-updated-editor{
+    flex:1 1 auto;
+    width:100%;
+    min-height:min(48vh, 480px);
+    height:100%;
+    margin:0;
+    resize:none;
+    border:none;
+    border-radius:0;
+    background:transparent;
+    color:var(--text);
+    padding:14px 16px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:0.82rem;
+    line-height:1.5;
+    box-sizing:border-box;
+  }
+  textarea.cv-updated-editor:focus{
+    outline:none;
+    box-shadow:inset 0 0 0 2px var(--accent);
+  }
+  textarea.cv-updated-editor.is-busy{
+    color:var(--muted);
+    cursor:wait;
+  }
+  textarea.cv-updated-editor::placeholder{
+    color:var(--muted);
+    font-family:inherit;
+    font-size:0.9rem;
+  }
+  .cv-editor-busy-banner{
+    display:none;
+    position:absolute;
+    top:10px; right:12px;
+    align-items:center; gap:8px;
+    padding:6px 10px;
+    border-radius:8px;
+    background:color-mix(in srgb, var(--field-bg) 88%, var(--accent));
+    border:1px solid var(--border);
+    font-size:0.8rem;
+    color:var(--muted);
+    pointer-events:none;
+    z-index:1;
+  }
+  .cv-pane-body-editor.is-busy .cv-editor-busy-banner{display:inline-flex;}
+  .cv-notes .status{margin:0 0 8px;}
+  .cv-notes .status:empty{display:none; margin:0;}
+  /* Side-by-side only when each column can be ≥~420px: break out of
+     the 640px body shell so panes use horizontal space comfortably. */
+  @media (min-width:960px){
+    .cv-edit-dual{
+      --cv-dual-w: min(100vw - 40px, 1100px);
+      width: var(--cv-dual-w);
+      max-width: none;
+      margin-left: calc((100% - var(--cv-dual-w)) / 2);
+      grid-template-columns: 1fr 1fr;
+      gap:16px;
+      min-height: min(62vh, 640px);
+    }
+    .cv-pane{min-height:min(58vh, 560px);}
+    textarea.cv-updated-editor{min-height:min(52vh, 480px);}
+  }
+  @media (max-width:520px){
+    .cv-pane{min-height:min(42vh, 360px);}
+    textarea.cv-updated-editor{min-height:min(40vh, 340px);}
+  }
+  .text-actions{
+    display:flex; gap:6px; flex-wrap:wrap; align-items:center;
+    margin:8px 0 0;
+  }
+  .text-actions .status{margin:0; min-height:0; flex:1 1 auto; min-width:0;}
+  .text-actions .status:empty{display:none;}
+  /* Compact secondary actions — keep hierarchy under primary content */
+  .text-actions button.secondary{
+    padding:5px 10px; font-size:0.78rem; font-weight:600;
+    border-radius:6px; line-height:1.2;
+  }
+  .field-head{
+    display:flex; align-items:baseline; justify-content:space-between;
+    gap:10px; margin:8px 0 6px;
+  }
+  .field-head label{margin:0;}
+  button.field-clear{
+    background:transparent; color:var(--muted); border:none;
+    padding:2px 0; font:inherit; font-size:0.82rem; font-weight:600;
+    cursor:pointer; text-decoration:underline; text-underline-offset:2px;
+  }
+  button.field-clear:hover:not(:disabled){
+    color:var(--danger); background:transparent; filter:none;
+  }
+  button.field-clear:focus-visible{
+    outline:2px solid var(--accent-strong); outline-offset:2px;
+  }
+  button.field-clear[hidden]{display:none;}
+  .native-peek{
+    display:none; margin-top:8px; padding:10px 12px;
+    border-radius:8px; background:var(--field-bg); border:1px solid var(--border);
+    font-size:0.9rem; color:var(--text); line-height:1.45;
+  }
+  .native-peek.show{display:block;}
+  .native-peek .label{
+    color:var(--muted); font-size:0.72rem; text-transform:uppercase;
+    letter-spacing:0.06em; font-weight:600; margin-bottom:4px;
+  }
+  .search-compose-row{
+    display:flex; gap:8px; align-items:center;
+  }
+  .search-compose-row input{
+    flex:1; background:transparent; border:none; padding:8px 4px;
+    color:var(--text); font-family:inherit; font-size:0.95rem; width:auto;
+  }
+  .search-compose-row input:focus{outline:none;}
+  .search-compose-row .field-clear{
+    flex:none; padding:4px 6px; text-decoration:none;
+    border-radius:6px; line-height:1;
+  }
+  .search-compose-row .field-clear:hover:not(:disabled){
+    background:color-mix(in srgb, var(--danger) 10%, transparent);
+  }
+  .search-fields{display:flex; flex-direction:column; gap:12px; margin-top:4px;}
+  .search-field{
+    border:1px solid var(--border-strong); border-radius:10px;
+    background:var(--field-bg); padding:12px;
+  }
+  .search-field.active{
+    border-color:var(--accent);
+    box-shadow:0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+  }
+  .search-field-head{
+    display:flex; align-items:baseline; justify-content:space-between;
+    gap:8px; margin-bottom:8px;
+  }
+  .search-field-head label{margin:0; color:var(--text); font-weight:600; font-size:0.88rem;}
+  .search-field-head .hint{
+    margin:0; font-size:0.75rem; color:var(--muted); font-weight:400;
+  }
+  .voice-target{
+    display:grid; grid-template-columns:repeat(3, 1fr); gap:6px;
+    margin:0 0 12px;
+  }
+  .voice-target-btn{
+    background:var(--field-bg); color:var(--text); border:1px solid var(--border-strong);
+    border-radius:8px; padding:8px 6px; font-size:0.8rem; font-weight:600;
+  }
+  .voice-target-btn:hover:not(:disabled){
+    background:var(--field-bg); border-color:var(--accent); color:var(--text);
+  }
+  .voice-target-btn.active{
+    background:var(--accent-tint); border-color:var(--accent); color:var(--accent-strong);
+  }
+  .search-actions{
+    display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:16px;
+  }
+  .search-actions .status{margin:0;}
+  @media (max-width:520px){
+    .profile-methods{grid-template-columns:1fr;}
+    button.mic .mic-text .full{display:none;}
+    button.mic .mic-text .short{display:inline;}
+    button.mic{padding:9px 14px 9px 12px;}
+    .mic-control{gap:8px;}
+    .text-actions{gap:5px;}
+    .text-actions button.secondary{padding:5px 9px; font-size:0.76rem;}
+    .voice-target{gap:5px;}
+    .voice-target-btn{padding:8px 4px; font-size:0.75rem;}
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-brand">
+    <h1>Voice Job Radar</h1>
+    <div class="sub">Find work by speaking, in your own language.</div>
+  </div>
+  <nav class="nav" aria-label="Main">
+    <button type="button" class="nav-btn active" data-view="search" id="navSearch">Search</button>
+    <button type="button" class="nav-btn" data-view="profile" id="navProfile">Profile</button>
+    <button type="button" class="nav-btn needs-setup" data-view="setup" id="navSetup">
+      Setup<span class="dot" aria-hidden="true"></span>
+    </button>
+  </nav>
+</header>
+
+<!-- ========== SETUP VIEW ========== -->
+<div class="view" id="view-setup">
+  <section>
+    <div class="setup-progress" aria-hidden="true">
+      <div class="pip on" id="pip1"></div>
+      <div class="pip" id="pip2"></div>
+      <div class="pip" id="pip3"></div>
+    </div>
+
+    <div class="setup-step active" id="setupStep1" data-step="1">
+      <div class="step-head">
+        <span class="step-num">1</span>
+        <p class="step-title">Voice</p>
+      </div>
+      <p class="hint">Sarvam handles speech in your language. Keys stay in this browser.</p>
+      <label for="sarvamKeyInput">Sarvam API key</label>
+      <input type="password" id="sarvamKeyInput" placeholder="sk_..." autocomplete="off">
+      <div class="setup-actions">
+        <span class="spacer"></span>
+        <button type="button" id="setupNext1">Next</button>
+      </div>
+    </div>
+
+    <div class="setup-step" id="setupStep2" data-step="2">
+      <div class="step-head">
+        <span class="step-num">2</span>
+        <p class="step-title">Job search</p>
+      </div>
+      <p class="hint">Pick a provider, then paste its key.</p>
+
+      <div class="provider-picks" role="radiogroup" aria-label="Job search provider">
+        <label class="provider-pick">
+          <input type="radio" name="provider" value="claude" id="providerClaude" checked>
+          <span class="name">Claude</span>
+          <span class="desc">Direct from browser</span>
+        </label>
+        <label class="provider-pick">
+          <input type="radio" name="provider" value="openai" id="providerOpenAI">
+          <span class="name">OpenAI</span>
+          <span class="desc">Vercel or local proxy</span>
+        </label>
+      </div>
+
+      <div id="claudeKeyRow">
+        <label for="anthropicKeyInput">Claude API key</label>
+        <input type="password" id="anthropicKeyInput" placeholder="sk-ant-..." autocomplete="off">
+      </div>
+      <div id="openaiKeyRow" style="display:none;">
+        <label for="openaiKeyInput">OpenAI API key</label>
+        <input type="password" id="openaiKeyInput" placeholder="sk-..." autocomplete="off">
+        <p class="status" id="openaiProxyNote" style="margin-top:8px;">
+          OpenAI’s API blocks browser CORS, so calls go through a small BYOK
+          proxy (key is never stored). Works on the
+          <a href="https://voice-job-radar.vercel.app/" target="_blank" rel="noopener">Vercel app</a>
+          and locally via <code>node local-server.js</code>
+          (<code>http://127.0.0.1:8788</code>). On GitHub Pages, use Claude
+          or open the Vercel URL for OpenAI.
+        </p>
+      </div>
+
+      <div class="setup-actions">
+        <button type="button" class="secondary" id="setupBack2">Back</button>
+        <span class="spacer"></span>
+        <button type="button" id="setupNext2">Save &amp; continue</button>
+      </div>
+      <span class="status" id="keysStatus"></span>
+    </div>
+
+    <div class="setup-step" id="setupStep3" data-step="3">
+      <div class="setup-done">
+        <div class="check" aria-hidden="true">✓</div>
+        <h2>You're set</h2>
+        <p id="setupReadySummary">Voice and job search keys saved.</p>
+        <button type="button" id="setupGoSearch">Build voice profile</button>
+        <div style="margin-top:14px;">
+          <button type="button" class="secondary" id="setupEditKeys">Edit keys</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ========== PROFILE VIEW ========== -->
+<div class="view" id="view-profile">
+<section>
+  <div class="step-head">
+    <p class="step-title">Build your profile</p>
+  </div>
+  <p class="hint" style="color:var(--muted); font-size:0.9rem; margin:4px 0 14px;">Ranks jobs for you — not just keyword matches.</p>
+
+  <div class="profile-toolbar">
+    <div>
+      <label for="langSelect">Language</label>
+      <select id="langSelect" class="lang-select">
+        <option value="hi-IN">Hindi</option>
+        <option value="en-IN">English</option>
+        <option value="kn-IN">Kannada</option>
+        <option value="ta-IN">Tamil</option>
+        <option value="te-IN">Telugu</option>
+        <option value="mr-IN">Marathi</option>
+        <option value="bn-IN">Bengali</option>
+        <option value="gu-IN">Gujarati</option>
+        <option value="ml-IN">Malayalam</option>
+        <option value="pa-IN">Punjabi</option>
+        <option value="unknown">Auto-detect</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="profile-methods" role="tablist" aria-label="How to build your profile">
+    <button type="button" class="method-pick active" data-tab="voice" role="tab" aria-selected="true">
+      Voice profile
+      <span class="desc">Agent asks, you answer</span>
+    </button>
+    <button type="button" class="method-pick" data-tab="cv" role="tab" aria-selected="false">
+      Upload CV
+      <span class="desc">PDF or text</span>
+    </button>
+  </div>
+
+  <div class="profile-panel active" id="profilePanel-voice">
+    <p class="hint">An AI interviewer asks follow-ups based on your answers. Speak or type — English answers are kept for search.</p>
+    <div class="guided-start">
+      <button type="button" id="startGuidedBtn">Start</button>
+      <button type="button" id="clearGuidedBtn" class="secondary" style="display:none;">Clear answers</button>
+    </div>
+
+    <div id="guidedConvo" style="display:none; margin-top:4px;">
+      <div class="row" style="justify-content:space-between;">
+        <span class="status" id="guidedProgress" style="margin:0;"></span>
+        <button type="button" id="guidedCancelBtn" class="secondary">Done for now</button>
+      </div>
+      <div class="guided-progress-track" aria-hidden="true">
+        <div class="guided-progress-fill" id="guidedProgressFill"></div>
+      </div>
+      <div class="guided-q" id="guidedQuestion"></div>
+      <div class="guided-q-actions">
+        <button type="button" id="guidedAskSpeakBtn" class="secondary" aria-label="Speak question" aria-pressed="false">Speak question</button>
+        <span class="status" id="guidedAskStatus"></span>
+      </div>
+      <div class="mic-control">
+        <button id="guidedMicBtn" class="mic" type="button" aria-label="Speak" aria-pressed="false">
+          <span class="mic-ico" aria-hidden="true"></span>
+          <span class="mic-text"><span class="full">Speak</span><span class="short">Speak</span></span>
+        </button>
+        <span class="status" id="guidedMicStatus"></span>
+      </div>
+      <div class="field-head">
+        <label for="guidedAnswerInput">Your answer</label>
+        <button type="button" class="field-clear" id="guidedClearBtn" hidden aria-label="Clear answer">Clear</button>
+      </div>
+      <textarea id="guidedAnswerInput" class="guided-answer-input" rows="3" placeholder="Speak or type your answer" aria-label="Your answer" autocomplete="off"></textarea>
+      <div class="text-actions">
+        <button type="button" id="guidedTranslateBtn" class="secondary" aria-label="Translate answer">Translate</button>
+        <button type="button" id="guidedSpeakBtn" class="secondary" aria-label="Speak" aria-pressed="false">Speak</button>
+        <span class="status" id="guidedLangStatus"></span>
+      </div>
+      <div class="native-peek" id="guidedNativePeek" aria-live="polite">
+        <div class="label">in your language</div>
+        <div id="guidedNativePeekText"></div>
+      </div>
+      <div class="guided-nav">
+        <button type="button" id="guidedSkipBtn" class="secondary">Skip</button>
+        <button type="button" id="guidedNextBtn" style="display:none;">Next</button>
+      </div>
+    </div>
+
+    <div id="interviewReady" class="interview-ready" aria-live="polite">
+      <p class="ready-kicker">Interview complete</p>
+      <p class="ready-title">Ready to search</p>
+      <p class="ready-summary" id="interviewReadySummary"></p>
+      <div class="ready-actions">
+        <button type="button" id="interviewReadySearchBtn">Search with this profile</button>
+        <button type="button" id="interviewReadyCvBtn" class="secondary">Optional: upload CV</button>
+      </div>
+    </div>
+
+    <div id="guidedAnswersReview" class="guided-answers hidden" aria-live="polite">
+      <h3>Your answers</h3>
+      <div id="guidedAnswersList"></div>
+    </div>
+  </div>
+
+  <div class="profile-panel" id="profilePanel-cv">
+    <p class="hint">Upload a CV, get a pointed bullet review, then update it beside the original.</p>
+    <div class="cv-drop">
+      <label for="cvFileInput" class="cv-upload-btn">Choose file</label>
+      <input type="file" id="cvFileInput" accept=".pdf,.txt" style="display:none;">
+      <div class="row">
+        <span class="status" id="cvStatus" style="margin:0;"></span>
+        <button type="button" id="cvClearBtn" class="secondary" style="display:none;">Remove</button>
+      </div>
+    </div>
+    <div class="guided-start" style="margin-top:14px;">
+      <button type="button" id="reviewCvBtn" class="secondary" style="display:none;">Review my CV</button>
+    </div>
+    <div id="cvNotesPanel" class="cv-notes hidden" aria-live="polite">
+      <h3>CV review</h3>
+      <p class="status" id="cvNotesStatus"></p>
+      <div id="cvReviewBlock" class="cv-review-block"></div>
+      <div id="cvApplyPrompt" class="cv-apply-prompt hidden">
+        <div class="row">
+          <button type="button" id="cvUpdateBtn">Update CV</button>
+        </div>
+      </div>
+      <div id="cvEditDual" class="cv-edit-dual hidden">
+        <div class="cv-pane">
+          <p class="cv-pane-head">Original</p>
+          <div class="cv-pane-body">
+            <div id="cvOriginalPreview" class="cv-original-preview"></div>
+          </div>
+        </div>
+        <div class="cv-pane">
+          <p class="cv-pane-head">Updated — write or edit here</p>
+          <div class="cv-pane-body cv-pane-body-editor" id="cvUpdatedEditorWrap">
+            <div class="cv-editor-busy-banner" aria-hidden="true">
+              <span class="spinner"></span>Updating CV…
+            </div>
+            <textarea id="cvUpdatedEditor" class="cv-updated-editor" rows="18" spellcheck="true" placeholder="Your updated CV will appear here — you can edit it before downloading." aria-label="Updated CV editor"></textarea>
+          </div>
+          <div id="cvUpdatedFoot" class="cv-pane-foot hidden">
+            <p class="status" id="cvUpdatedStatus" style="margin:0; flex:1;"></p>
+            <button type="button" id="cvDownloadPdfBtn" style="display:none;">Download PDF</button>
+            <button type="button" id="cvDownloadTxtBtn" class="secondary" style="display:none;">Download .txt</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+</div><!-- /view-profile -->
+
+<!-- ========== SEARCH VIEW ========== -->
+<div class="view active" id="view-search">
+
+<section>
+  <div class="step-head">
+    <span class="step-num">1</span>
+    <p class="step-title">Search for jobs</p>
+  </div>
+  <p class="hint" style="color:var(--muted); font-size:0.9rem; margin:4px 0 14px;">
+    Type or speak into Roles, Companies, or Keywords.
+  </p>
+
+  <div class="voice-target" role="tablist" aria-label="Voice adds to">
+    <button type="button" class="voice-target-btn active" data-field-cat="roles" role="tab" aria-selected="true">Roles</button>
+    <button type="button" class="voice-target-btn" data-field-cat="companies" role="tab" aria-selected="false">Companies</button>
+    <button type="button" class="voice-target-btn" data-field-cat="keywords" role="tab" aria-selected="false">Keywords</button>
+  </div>
+
+  <div class="mic-control">
+    <button id="micBtn" class="mic" type="button" aria-label="Speak" aria-pressed="false">
+      <span class="mic-ico" aria-hidden="true"></span>
+      <span class="mic-text"><span class="full">Speak</span><span class="short">Speak</span></span>
+    </button>
+    <span class="status" id="micStatus"></span>
+  </div>
+
+  <div class="search-fields" id="searchFields">
+    <div class="search-field active" data-field-cat="roles" id="searchField-roles">
+      <div class="search-field-head">
+        <label for="searchInput-roles">Roles</label>
+        <span class="hint">job titles</span>
+      </div>
+      <div class="search-compose-row">
+        <input type="text" id="searchInput-roles" data-field-cat="roles" placeholder="Backend Engineer, Full Stack" autocomplete="off">
+        <button type="button" class="field-clear" data-clear-field="roles" hidden aria-label="Clear roles">Clear</button>
+      </div>
+    </div>
+
+    <div class="search-field" data-field-cat="companies" id="searchField-companies">
+      <div class="search-field-head">
+        <label for="searchInput-companies">Companies</label>
+        <span class="hint">employers to target</span>
+      </div>
+      <div class="search-compose-row">
+        <input type="text" id="searchInput-companies" data-field-cat="companies" placeholder="Razorpay, PhonePe" autocomplete="off">
+        <button type="button" class="field-clear" data-clear-field="companies" hidden aria-label="Clear companies">Clear</button>
+      </div>
+    </div>
+
+    <div class="search-field" data-field-cat="keywords" id="searchField-keywords">
+      <div class="search-field-head">
+        <label for="searchInput-keywords">Keywords</label>
+        <span class="hint">topics, skills, places</span>
+      </div>
+      <div class="search-compose-row">
+        <input type="text" id="searchInput-keywords" data-field-cat="keywords" placeholder="fintech, remote" autocomplete="off">
+        <button type="button" class="field-clear" data-clear-field="keywords" hidden aria-label="Clear keywords">Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="search-actions">
+    <button id="searchBtn" type="button">Search jobs</button>
+    <span class="status" id="searchStatus"></span>
+  </div>
+  <p class="memory-cue" id="searchMemoryCue" aria-live="polite"></p>
+</section>
+
+<section id="resultsSection" style="display:none;">
+  <div class="step-head">
+    <span class="step-num">2</span>
+    <p class="step-title">Your matches</p>
+  </div>
+  <p class="hint" style="color:var(--muted); font-size:0.9rem; margin:4px 0 16px;">
+    Ranked for your profile.
+  </p>
+  <p class="memory-cue" id="resultsMemoryCue" aria-live="polite"></p>
+  <div id="resultsList"></div>
+</section>
+
+<details>
+  <summary>debug log</summary>
+  <pre id="debugLog" style="font-size:0.75rem; color:var(--muted); white-space:pre-wrap;"></pre>
+</details>
+
+</div><!-- /view-search -->
+
+<script>
+// ---------- keys + setup wizard ----------
+function getAnthropicKey(){ return localStorage.getItem('vjr_anthropic_key') || ''; }
+function getSarvamKey(){ return localStorage.getItem('vjr_sarvam_key') || ''; }
+function getOpenAIKey(){ return localStorage.getItem('vjr_openai_key') || ''; }
+
+function getProvider(){ return localStorage.getItem('vjr_provider') || 'claude'; }
+function setProvider(p){ localStorage.setItem('vjr_provider', p === 'openai' ? 'openai' : 'claude'); }
+
+function keysReady(){
+  const provider = getProvider();
+  const providerKeyOk = provider === 'openai' ? !!getOpenAIKey() : !!getAnthropicKey();
+  return providerKeyOk && !!getSarvamKey();
+}
+
+function getSelectedProvider(){
+  const checked = document.querySelector('input[name="provider"]:checked');
+  return checked ? checked.value : getProvider();
+}
+
+function isGitHubPages(){
+  return /\.github\.io$/i.test(location.hostname);
+}
+
+/** True when this page is served by local-server.js (OpenAI same-origin proxy). */
+function isLocalOpenAIProxyHost(){
+  if(location.protocol === 'file:') return false;
+  const h = location.hostname;
+  return h === '127.0.0.1' || h === 'localhost';
+}
+
+/** True when hosted on Vercel (static + /api/openai-search). */
+function isVercelHost(){
+  if(location.protocol === 'file:') return false;
+  return /\.vercel\.app$/i.test(location.hostname);
+}
+
+/**
+ * Known production Vercel deployment — used as the OpenAI proxy when the app
+ * is on GitHub Pages (cross-origin) or another host without a local proxy.
+ * Update if the project’s Vercel URL changes.
+ */
+const VERCEL_OPENAI_PROXY_URL = 'https://voice-job-radar.vercel.app/api/openai-search';
+const VERCEL_APP_URL = 'https://voice-job-radar.vercel.app/';
+
+/** Where OpenAI POSTs should go, or null if OpenAI is not available on this host. */
+function getOpenAIProxyUrl(){
+  if(isLocalOpenAIProxyHost() || isVercelHost()) return '/api/openai-search';
+  if(VERCEL_OPENAI_PROXY_URL) return VERCEL_OPENAI_PROXY_URL;
+  return null;
+}
+
+function openAIProxyReady(){
+  return !!getOpenAIProxyUrl();
+}
+
+function updateProviderFields(){
+  const isOpenAI = getSelectedProvider() === 'openai';
+  document.getElementById('openaiKeyRow').style.display = isOpenAI ? 'block' : 'none';
+  document.getElementById('claudeKeyRow').style.display = isOpenAI ? 'none' : 'block';
+  const note = document.getElementById('openaiProxyNote');
+  if(!note) return;
+  const vercelLink = `<a href="${VERCEL_APP_URL}" target="_blank" rel="noopener">Vercel app</a>`;
+  if(isOpenAI && isGitHubPages()){
+    note.classList.remove('err');
+    note.innerHTML =
+      `On GitHub Pages, OpenAI calls the ${vercelLink} proxy (BYOK, key not stored). Prefer opening that URL for same-origin, or use <strong>Claude</strong> here. Local: <code>node local-server.js</code> → <code>http://127.0.0.1:8788</code>.`;
+  }else if(isOpenAI && !openAIProxyReady()){
+    note.classList.add('err');
+    note.innerHTML =
+      `OpenAI needs a proxy — open the ${vercelLink}, or run <code>node local-server.js</code> at <code>http://127.0.0.1:8788</code>. Or use Claude.`;
+  }else{
+    note.classList.remove('err');
+    note.innerHTML =
+      `OpenAI’s API blocks browser CORS, so calls go through a small BYOK proxy (key is never stored). Works on the ${vercelLink} and locally via <code>node local-server.js</code> (<code>http://127.0.0.1:8788</code>). On GitHub Pages, use Claude or open the Vercel URL for OpenAI.`;
+  }
+}
+
+function updateSetupNav(){
+  const nav = document.getElementById('navSetup');
+  if(keysReady()) nav.classList.remove('needs-setup');
+  else nav.classList.add('needs-setup');
+}
+
+function showView(name){
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`view-${name}`).classList.add('active');
+  const btn = document.querySelector(`.nav-btn[data-view="${name}"]`);
+  if(btn) btn.classList.add('active');
+}
+
+function showSetupStep(n){
+  document.querySelectorAll('.setup-step').forEach(s => s.classList.remove('active'));
+  document.getElementById(`setupStep${n}`).classList.add('active');
+  for(let i = 1; i <= 3; i++){
+    const pip = document.getElementById(`pip${i}`);
+    pip.classList.remove('on', 'done');
+    if(i < n) pip.classList.add('done');
+    else if(i === n) pip.classList.add('on');
+  }
+  if(n === 3){
+    const provider = getProvider();
+    document.getElementById('setupReadySummary').textContent =
+      `Sarvam + ${provider === 'openai' ? 'OpenAI' : 'Claude'} ready.`;
+  }
+}
+
+function updateSettingsSummary(){ updateSetupNav(); }
+
+function loadKeyInputs(){
+  document.getElementById('anthropicKeyInput').value = getAnthropicKey();
+  document.getElementById('sarvamKeyInput').value = getSarvamKey();
+  document.getElementById('openaiKeyInput').value = getOpenAIKey();
+  const provider = getProvider();
+  document.getElementById(provider === 'openai' ? 'providerOpenAI' : 'providerClaude').checked = true;
+  updateProviderFields();
+  updateSetupNav();
+
+  if(keysReady()){
+    showSetupStep(3);
+    // Returning users with a profile land on Search; otherwise Profile first.
+    showView(getStanceText().trim() ? 'search' : 'profile');
+  }else{
+    // Land on the first incomplete step
+    if(!getSarvamKey()) showSetupStep(1);
+    else showSetupStep(2);
+    showView('setup');
+  }
+}
+
+// ---------- profile / stance persistence ----------
+// Stance is built from the voice interview (no separate profile textarea).
+function syncClearButton(inputEl, clearBtn){
+  if(!inputEl || !clearBtn) return;
+  clearBtn.hidden = !String(inputEl.value || '').trim();
+}
+
+function getStanceText(){
+  return localStorage.getItem('vjr_stance') || '';
+}
+
+function setStanceText(text){
+  localStorage.setItem('vjr_stance', text || '');
+}
+
+/** Concise profile memory for search / job chat (stance + short CV). */
+function buildCandidateMemoryBlock({ maxStance = 900, maxCv = 1200 } = {}){
+  const stance = truncateForPrompt(getStanceText(), maxStance);
+  const cv = truncateForPrompt((cvText || '').trim(), maxCv);
+  const parts = [];
+  if(stance) parts.push(`Voice interview profile:\n${stance}`);
+  if(cv) parts.push(`CV excerpt (authoritative for skills/experience):\n${cv}`);
+  return parts.join('\n\n');
+}
+
+function hasProfileMemory(){
+  return !!(getStanceText().trim() || (cvText || '').trim());
+}
+
+function updateSearchMemoryCue(){
+  const cue = document.getElementById('searchMemoryCue');
+  if(!cue) return;
+  const stance = !!getStanceText().trim();
+  const cv = !!(cvText || '').trim();
+  if(!stance && !cv){
+    cue.classList.remove('show');
+    cue.textContent = '';
+    return;
+  }
+  const bits = [];
+  if(stance) bits.push('your interview');
+  if(cv) bits.push('your CV');
+  cue.innerHTML = `Ranking will use <em>${bits.join(' + ')}</em>.`;
+  cue.classList.add('show');
+}
+
+function updateResultsMemoryCue(used){
+  const cue = document.getElementById('resultsMemoryCue');
+  if(!cue) return;
+  if(!used){
+    cue.classList.remove('show');
+    cue.textContent = '';
+    return;
+  }
+  const bits = [];
+  if(getStanceText().trim()) bits.push('your interview');
+  if((cvText || '').trim()) bits.push('your CV');
+  if(!bits.length){
+    cue.classList.remove('show');
+    cue.textContent = '';
+    return;
+  }
+  cue.innerHTML = `Matched using <em>${bits.join(' + ')}</em>.`;
+  cue.classList.add('show');
+}
+
+// ---------- CV upload (session-only, never persisted to localStorage) ----------
+let cvText = '';
+let cvFileName = '';
+let cvIsPdf = false;
+let cvPdfBuffer = null; // ArrayBuffer copy for PDF.js preview
+let lastCvReview = '';
+let updatedCvText = '';
+// PDF.js v4 is ESM-only — classic pdf.min.js no longer exists on CDN (404).
+// Vendor locally so localhost + GitHub Pages work without third-party CDNs.
+let pdfjsLibPromise = null;
+let jspdfLibPromise = null;
+
+function pageDirUrl(){
+  const u = new URL(window.location.href);
+  let path = u.pathname;
+  if(path.endsWith('.html')) path = path.slice(0, path.lastIndexOf('/') + 1);
+  else if(!path.endsWith('/')) path += '/';
+  u.pathname = path;
+  u.search = '';
+  u.hash = '';
+  return u;
+}
+
+function pdfAssetUrl(name){
+  return new URL(`vendor/pdfjs/${name}`, pageDirUrl()).href;
+}
+
+function jspdfAssetUrl(){
+  return new URL('vendor/jspdf/jspdf.umd.min.js', pageDirUrl()).href;
+}
+
+function loadPdfJs(){
+  if(pdfjsLibPromise) return pdfjsLibPromise;
+  pdfjsLibPromise = import(pdfAssetUrl('pdf.min.mjs')).then((mod) => {
+    mod.GlobalWorkerOptions.workerSrc = pdfAssetUrl('pdf.worker.min.mjs');
+    return mod;
+  }).catch(() => {
+    pdfjsLibPromise = null;
+    throw new Error('PDF reader failed to load — refresh and try again');
+  });
+  return pdfjsLibPromise;
+}
+
+function loadJsPdf(){
+  if(jspdfLibPromise) return jspdfLibPromise;
+  if(window.jspdf && typeof window.jspdf.jsPDF === 'function'){
+    jspdfLibPromise = Promise.resolve(window.jspdf.jsPDF);
+    return jspdfLibPromise;
+  }
+  jspdfLibPromise = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = jspdfAssetUrl();
+    script.async = true;
+    script.onload = () => {
+      if(window.jspdf && typeof window.jspdf.jsPDF === 'function'){
+        resolve(window.jspdf.jsPDF);
+      }else{
+        jspdfLibPromise = null;
+        reject(new Error('PDF writer failed to load — refresh and try again'));
+      }
+    };
+    script.onerror = () => {
+      jspdfLibPromise = null;
+      reject(new Error('PDF writer failed to load — refresh and try again'));
+    };
+    document.head.appendChild(script);
+  });
+  return jspdfLibPromise;
+}
+
+async function extractPdfTextFromBuffer(buffer){
+  const pdfjs = await loadPdfJs();
+  const pdf = await pdfjs.getDocument({ data: buffer.slice(0) }).promise;
+  let text = '';
+  for(let i = 1; i <= pdf.numPages; i++){
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map(item => item.str).join(' ') + '\n';
+  }
+  return text.trim();
+}
+
+async function extractPdfText(file){
+  const buffer = await file.arrayBuffer();
+  return extractPdfTextFromBuffer(buffer);
+}
+
+function readTextFile(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('could not read file'));
+    reader.readAsText(file);
+  });
+}
+
+document.getElementById('cvFileInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  setStatus('cvStatus', '', '');
+  const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+  document.getElementById('cvStatus').innerHTML = isPdf
+    ? '<span class="spinner"></span>loading PDF reader…'
+    : '<span class="spinner"></span>reading CV…';
+  try{
+    let text;
+    cvFileName = file.name || 'CV';
+    cvIsPdf = isPdf;
+    cvPdfBuffer = null;
+    if(isPdf){
+      await loadPdfJs();
+      document.getElementById('cvStatus').innerHTML = '<span class="spinner"></span>reading CV…';
+      const buffer = await file.arrayBuffer();
+      cvPdfBuffer = buffer.slice(0);
+      text = await extractPdfTextFromBuffer(buffer);
+    }else{
+      text = await readTextFile(file);
+    }
+    if(!text || !text.trim()) throw new Error('couldn\'t find any text in that file');
+    cvText = text.trim();
+    lastCvReview = '';
+    updatedCvText = '';
+    log(`CV parsed: ${cvText.length} chars from ${file.name}`);
+    setStatus('cvStatus', `${file.name} added (${cvText.length} chars)`, 'ok');
+    document.getElementById('cvClearBtn').style.display = 'inline-block';
+    clearCvNotesPanel();
+    updateCvReviewUI();
+    updateSearchMemoryCue();
+  }catch(err){
+    log(`CV parse ERROR: ${err.message}`);
+    setStatus('cvStatus', err.message, 'err');
+    cvText = '';
+    cvFileName = '';
+    cvIsPdf = false;
+    cvPdfBuffer = null;
+    lastCvReview = '';
+    updatedCvText = '';
+    document.getElementById('cvClearBtn').style.display = 'none';
+    clearCvNotesPanel();
+    updateCvReviewUI();
+    updateSearchMemoryCue();
+  }
+});
+
+document.getElementById('cvClearBtn').addEventListener('click', () => {
+  cvText = '';
+  cvFileName = '';
+  cvIsPdf = false;
+  cvPdfBuffer = null;
+  lastCvReview = '';
+  updatedCvText = '';
+  document.getElementById('cvFileInput').value = '';
+  setStatus('cvStatus', '', '');
+  document.getElementById('cvClearBtn').style.display = 'none';
+  clearCvNotesPanel();
+  updateCvReviewUI();
+  updateSearchMemoryCue();
+});
+
+// ---------- setup wizard events ----------
+document.querySelectorAll('.nav-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const view = btn.dataset.view;
+    showView(view);
+    if(view === 'setup' && keysReady()) showSetupStep(3);
+  });
+});
+
+document.querySelectorAll('input[name="provider"]').forEach(radio => {
+  radio.addEventListener('change', () => {
+    setProvider(radio.value);
+    updateProviderFields();
+    updateSetupNav();
+  });
+});
+
+document.getElementById('setupNext1').addEventListener('click', () => {
+  const s = document.getElementById('sarvamKeyInput').value.trim();
+  if(!s && !getSarvamKey()){
+    setStatus('keysStatus', 'Add a Sarvam key to continue', 'err');
+    // keysStatus lives on step 2 — briefly flash via alert-style on step 1
+    const input = document.getElementById('sarvamKeyInput');
+    input.focus();
+    input.style.outline = '2px solid var(--danger)';
+    setTimeout(() => { input.style.outline = ''; }, 1200);
+    return;
+  }
+  if(s) localStorage.setItem('vjr_sarvam_key', s);
+  updateSetupNav();
+  showSetupStep(2);
+});
+
+document.getElementById('setupBack2').addEventListener('click', () => showSetupStep(1));
+
+document.getElementById('setupNext2').addEventListener('click', () => {
+  const provider = getSelectedProvider();
+  setProvider(provider);
+  if(provider === 'openai' && !openAIProxyReady()){
+    setStatus(
+      'keysStatus',
+      `OpenAI needs the Vercel app (${VERCEL_APP_URL}) or local node local-server.js — or switch to Claude`,
+      'err'
+    );
+    return;
+  }
+  const a = document.getElementById('anthropicKeyInput').value.trim();
+  const s = document.getElementById('sarvamKeyInput').value.trim();
+  const o = document.getElementById('openaiKeyInput').value.trim();
+  if(s) localStorage.setItem('vjr_sarvam_key', s);
+  if(a) localStorage.setItem('vjr_anthropic_key', a);
+  if(o) localStorage.setItem('vjr_openai_key', o);
+
+  const providerKeyOk = provider === 'openai' ? !!(o || getOpenAIKey()) : !!(a || getAnthropicKey());
+  const sarvamOk = !!(s || getSarvamKey());
+  if(!providerKeyOk || !sarvamOk){
+    const missing = [];
+    if(!sarvamOk) missing.push('Sarvam');
+    if(!providerKeyOk) missing.push(provider === 'openai' ? 'OpenAI' : 'Claude');
+    setStatus('keysStatus', `Need ${missing.join(' + ')} key`, 'err');
+    return;
+  }
+  setStatus('keysStatus', '', '');
+  updateSetupNav();
+  showSetupStep(3);
+});
+
+document.getElementById('setupGoSearch').addEventListener('click', () => {
+  // First 30s: land on voice profile, not an empty search form.
+  showView(getStanceText().trim() ? 'search' : 'profile');
+});
+document.getElementById('setupEditKeys').addEventListener('click', () => showSetupStep(1));
+
+loadKeyInputs();
+
+// ---------- profile methods ----------
+function showProfileMethod(tab){
+  document.querySelectorAll('.method-pick').forEach(t => {
+    const on = t.dataset.tab === tab;
+    t.classList.toggle('active', on);
+    t.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  document.querySelectorAll('.profile-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(`profilePanel-${tab}`).classList.add('active');
+  if(tab !== 'voice'){
+    stopTtsPlayback();
+    if(guidedConvoActive){
+      commitGuidedAnswerFromInput();
+      guidedConvoActive = false;
+      document.getElementById('guidedConvo').style.display = 'none';
+      renderGuidedAnswersReview();
+      updateGuidedStartUI();
+    }
+  }
+}
+
+document.querySelectorAll('.method-pick').forEach(tab => {
+  tab.addEventListener('click', () => showProfileMethod(tab.dataset.tab));
+});
+
+function log(msg){
+  const el = document.getElementById('debugLog');
+  el.textContent += `[${new Date().toLocaleTimeString()}] ${msg}\n`;
+}
+
+// ---------- Sarvam: STT + translate ----------
+async function sarvamTranscribe(audioBlob, languageCode){
+  const key = getSarvamKey();
+  if(!key) throw new Error('add your Sarvam API key first');
+  const form = new FormData();
+  form.set('file', audioBlob, 'query.webm');
+  form.set('model', 'saaras:v3');
+  form.set('language_code', languageCode || 'unknown');
+  form.set('with_timestamps', 'false');
+  const resp = await fetch('https://api.sarvam.ai/speech-to-text', {
+    method: 'POST',
+    headers: { 'api-subscription-key': key },
+    body: form
+  });
+  const data = await resp.json().catch(()=>({}));
+  if(!resp.ok) throw new Error(data.error?.message || `Sarvam STT HTTP ${resp.status}`);
+  return data; // { transcript, language_code, ... }
+}
+
+// Sarvam TTS validates each inputs[] string at ≤500 chars.
+// sarvam-translate:v1 rejects input over 2000 chars (422).
+const SARVAM_TTS_MAX_CHARS = 500;
+const SARVAM_TRANSLATE_MAX_CHARS = 2000;
+
+// Split long text for TTS: prefer a sentence end in the latter half of the window,
+// then words; mid-word only if unavoidable. Avoids tiny first chunks that waste
+// round-trips when an early "." is the only punctuation in the first 500 chars.
+function chunkTextForSarvamTts(text, maxChars = SARVAM_TTS_MAX_CHARS){
+  const trimmed = String(text || '').trim();
+  if(!trimmed) return [];
+  if(trimmed.length <= maxChars) return [trimmed];
+
+  const minSentenceSplit = Math.floor(maxChars * 0.4);
+  const chunks = [];
+  let remaining = trimmed;
+  while(remaining.length > maxChars){
+    const window = remaining.slice(0, maxChars);
+    let splitAt = -1;
+    const sentenceEnds = [...window.matchAll(/[.?!।]\s*/g)];
+    for(let i = sentenceEnds.length - 1; i >= 0; i--){
+      const end = sentenceEnds[i].index + sentenceEnds[i][0].length;
+      if(end >= minSentenceSplit){
+        splitAt = end;
+        break;
+      }
+    }
+    if(splitAt <= 0){
+      const lastSpace = window.lastIndexOf(' ');
+      splitAt = lastSpace >= minSentenceSplit ? lastSpace + 1 : maxChars;
+    }
+    const piece = remaining.slice(0, splitAt).trim();
+    // Guard against a no-progress split (would infinite-loop).
+    if(!piece || splitAt >= remaining.length){
+      chunks.push(remaining.slice(0, maxChars));
+      remaining = remaining.slice(maxChars).trim();
+      continue;
+    }
+    chunks.push(piece);
+    remaining = remaining.slice(splitAt).trim();
+  }
+  if(remaining) chunks.push(remaining);
+  return chunks;
+}
+
+async function sarvamSpeak(texts, languageCode){
+  const key = getSarvamKey();
+  if(!key) throw new Error('add your Sarvam API key first');
+  const chunks = (Array.isArray(texts) ? texts : [texts])
+    .flatMap(t => chunkTextForSarvamTts(t));
+  if(!chunks.length) return [];
+
+  // One input per request keeps each string ≤500 and avoids multi-input batch limits.
+  // Every chunk must yield audio — silently skipping would sound like a mid-answer cutoff.
+  const allAudios = [];
+  for(let i = 0; i < chunks.length; i++){
+    const chunk = chunks[i];
+    const resp = await fetch('https://api.sarvam.ai/text-to-speech', {
+      method: 'POST',
+      headers: { 'api-subscription-key': key, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        inputs: [chunk],
+        target_language_code: languageCode,
+        speaker: 'priya',
+        model: 'bulbul:v3',
+        speech_sample_rate: 24000,
+        enable_preprocessing: true
+      })
+    });
+    const data = await resp.json().catch(()=>({}));
+    if(!resp.ok) throw new Error(data.error?.message || `Sarvam TTS HTTP ${resp.status}`);
+    const piece = Array.isArray(data.audios) ? data.audios.filter(Boolean) : [];
+    if(!piece.length){
+      throw new Error(`Sarvam TTS returned no audio for chunk ${i + 1}/${chunks.length}`);
+    }
+    allAudios.push(...piece);
+  }
+  return allAudios; // base64 wav strings, in chunk order
+}
+
+/** Base language tag: `en-IN` / `en-US` → `en`. Ignores auto/unknown. */
+function languageBase(code){
+  const base = String(code || '').trim().toLowerCase().split(/[-_]/)[0];
+  if(!base || base === 'auto' || base === 'unknown') return '';
+  return base;
+}
+
+/** True when codes match exactly or share the same language family (e.g. en ≈ en-IN). */
+function sameLanguage(a, b){
+  const ca = String(a || '').trim().toLowerCase();
+  const cb = String(b || '').trim().toLowerCase();
+  if(ca && cb && ca === cb) return true;
+  const ba = languageBase(a);
+  const bb = languageBase(b);
+  return Boolean(ba && bb && ba === bb);
+}
+
+// Translate with the same sentence/word chunking as TTS when over the API input cap.
+async function sarvamTranslate(text, sourceLang, targetLang){
+  const key = getSarvamKey();
+  if(!key) throw new Error('add your Sarvam API key first');
+  const input = String(text || '').trim();
+  if(!input) return '';
+  // Sarvam rejects same source/target — return text unchanged (en ≈ en-IN, etc.).
+  if(sameLanguage(sourceLang, targetLang)) return input;
+
+  const chunks = input.length <= SARVAM_TRANSLATE_MAX_CHARS
+    ? [input]
+    : chunkTextForSarvamTts(input, SARVAM_TRANSLATE_MAX_CHARS);
+  const out = [];
+  for(const chunk of chunks){
+    const resp = await fetch('https://api.sarvam.ai/translate', {
+      method: 'POST',
+      headers: { 'api-subscription-key': key, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        input: chunk,
+        source_language_code: sourceLang || 'auto',
+        target_language_code: targetLang,
+        model: 'sarvam-translate:v1'
+      })
+    });
+    const data = await resp.json().catch(()=>({}));
+    if(!resp.ok) throw new Error(data.error?.message || `Sarvam translate HTTP ${resp.status}`);
+    if(data.translated_text) out.push(data.translated_text);
+  }
+  return out.join(' ').trim();
+}
+
+function getPreferredLanguage(){
+  const selected = document.getElementById('langSelect').value;
+  if(selected && selected !== 'unknown') return selected;
+  return lastSpokenLanguage || 'hi-IN';
+}
+
+function isEnglishLang(code){
+  return sameLanguage(code, 'en');
+}
+
+/** Per-block Translate / Speak UI. Text is registered via setLangActionText. */
+const langActionTexts = {};
+function setLangActionText(idPrefix, text){
+  langActionTexts[idPrefix] = String(text || '').trim();
+}
+function langActionsHtml(idPrefix){
+  return `
+    <div class="text-actions">
+      <button type="button" class="secondary" data-lang-translate="${idPrefix}" aria-label="Translate">Translate</button>
+      <button type="button" class="secondary" data-lang-speak="${idPrefix}" aria-label="Speak" aria-pressed="false">Speak</button>
+      <span class="status" id="langStatus-${idPrefix}"></span>
+    </div>
+    <div class="native-peek" id="langPeek-${idPrefix}" aria-live="polite">
+      <div class="label">in your language</div>
+      <div id="langPeekText-${idPrefix}"></div>
+    </div>
+  `;
+}
+
+async function peekNativeTranslation(englishText, peekId, textId, statusId){
+  const english = String(englishText || '').trim();
+  const statusEl = document.getElementById(statusId);
+  const peek = document.getElementById(peekId);
+  const textEl = document.getElementById(textId);
+  if(!english){
+    if(statusEl) setStatus(statusId, 'nothing to translate yet', 'err');
+    return;
+  }
+  if(!peek || !textEl) return;
+  const lang = getPreferredLanguage();
+  if(isEnglishLang(lang)){
+    textEl.textContent = english;
+    peek.classList.add('show');
+    setStatus(statusId, 'already English', 'ok');
+    return;
+  }
+  setStatus(statusId, '', '');
+  if(statusEl) statusEl.innerHTML = '<span class="spinner"></span>translating…';
+  try{
+    const native = await sarvamTranslate(english, 'en-IN', lang);
+    textEl.textContent = native || english;
+    peek.classList.add('show');
+    setStatus(statusId, '', '');
+  }catch(err){
+    setStatus(statusId, err.message, 'err');
+  }
+}
+
+/** Single-flight TTS: only one Speak utterance (and its chunk queue) at a time. */
+const ttsPlayback = {
+  generation: 0,
+  audio: null,
+  speakKey: null,
+  statusId: null,
+  speakBtn: null,
+  cancelPlay: null
+};
+
+function setTtsSpeakButtonLabel(btn, speaking){
+  if(!btn) return;
+  if(!btn.dataset.ttsIdleLabel){
+    btn.dataset.ttsIdleLabel = (btn.textContent || 'Speak').trim() || 'Speak';
+  }
+  const label = speaking ? 'Stop' : btn.dataset.ttsIdleLabel;
+  btn.textContent = label;
+  btn.setAttribute('aria-label', label);
+  btn.setAttribute('aria-pressed', speaking ? 'true' : 'false');
+  btn.classList.toggle('tts-speaking', speaking);
+}
+
+function clearTtsSpeakButton(){
+  if(ttsPlayback.speakBtn){
+    setTtsSpeakButtonLabel(ttsPlayback.speakBtn, false);
+    ttsPlayback.speakBtn = null;
+  }
+}
+
+function stopTtsPlayback(){
+  ttsPlayback.generation += 1;
+  const cancel = ttsPlayback.cancelPlay;
+  ttsPlayback.cancelPlay = null;
+  const audio = ttsPlayback.audio;
+  ttsPlayback.audio = null;
+  const prevStatus = ttsPlayback.statusId;
+  ttsPlayback.speakKey = null;
+  ttsPlayback.statusId = null;
+  clearTtsSpeakButton();
+  if(typeof cancel === 'function'){
+    try{ cancel(); }catch(_){}
+  }
+  if(audio){
+    try{
+      audio.pause();
+      audio.removeAttribute('src');
+      audio.load();
+    }catch(_){}
+  }
+  if(prevStatus){
+    const el = document.getElementById(prevStatus);
+    if(el && el.querySelector('.spinner')) setStatus(prevStatus, '', '');
+  }
+}
+
+function isTtsActive(speakKey){
+  return Boolean(speakKey) && ttsPlayback.speakKey === speakKey;
+}
+
+async function speakEnglishAloud(englishText, statusId, speakKey, speakBtn){
+  const key = speakKey || statusId || 'default';
+  // Same Speak control while active → Stop (toggle).
+  if(isTtsActive(key)){
+    stopTtsPlayback();
+    return;
+  }
+  // Any new Speak cancels the previous one (and its queued chunks / Stop label).
+  stopTtsPlayback();
+  const myGen = ttsPlayback.generation;
+  ttsPlayback.speakKey = key;
+  ttsPlayback.statusId = statusId || null;
+  ttsPlayback.speakBtn = speakBtn || null;
+  if(speakBtn) setTtsSpeakButtonLabel(speakBtn, true);
+
+  const english = String(englishText || '').trim();
+  const statusEl = document.getElementById(statusId);
+  if(!english){
+    if(statusEl) setStatus(statusId, 'nothing to speak yet', 'err');
+    if(ttsPlayback.generation === myGen){
+      ttsPlayback.speakKey = null;
+      ttsPlayback.statusId = null;
+      clearTtsSpeakButton();
+    }
+    return;
+  }
+  const lang = getPreferredLanguage();
+  setStatus(statusId, '', '');
+  if(statusEl) statusEl.innerHTML = '<span class="spinner"></span>speaking…';
+  try{
+    let textToSpeak = english;
+    if(!isEnglishLang(lang)){
+      textToSpeak = await sarvamTranslate(english, 'en-IN', lang);
+      if(ttsPlayback.generation !== myGen) return;
+    }
+    const audios = await sarvamSpeak([textToSpeak], lang);
+    if(ttsPlayback.generation !== myGen) return;
+    for(const b64 of audios){
+      if(ttsPlayback.generation !== myGen) return;
+      await playBase64Wav(b64);
+      if(ttsPlayback.generation !== myGen) return;
+    }
+    setStatus(statusId, '', '');
+  }catch(err){
+    if(ttsPlayback.generation !== myGen) return;
+    setStatus(statusId, err.message, 'err');
+  }finally{
+    if(ttsPlayback.generation === myGen){
+      ttsPlayback.speakKey = null;
+      ttsPlayback.statusId = null;
+      ttsPlayback.audio = null;
+      ttsPlayback.cancelPlay = null;
+      clearTtsSpeakButton();
+    }
+  }
+}
+
+document.addEventListener('click', async (e) => {
+  const translateBtn = e.target.closest('[data-lang-translate]');
+  const speakBtn = e.target.closest('[data-lang-speak]');
+  if(!translateBtn && !speakBtn) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const idPrefix = (translateBtn || speakBtn).getAttribute(
+    translateBtn ? 'data-lang-translate' : 'data-lang-speak'
+  );
+  if(!idPrefix) return;
+  const text = langActionTexts[idPrefix] || '';
+  const statusId = `langStatus-${idPrefix}`;
+  if(translateBtn){
+    peekNativeTranslation(text, `langPeek-${idPrefix}`, `langPeekText-${idPrefix}`, statusId);
+  }else{
+    speakEnglishAloud(text, statusId, idPrefix, speakBtn);
+  }
+});
+
+// ---------- Claude / OpenAI: web-search job scan ----------
+// Keep prompts small: full CVs and long profiles dominate latency on Responses + web_search.
+const MAX_CV_CHARS = 6000;
+const MAX_STANCE_CHARS = 1500;
+const MAX_JOB_RESULTS = 5;
+
+function truncateForPrompt(text, maxChars){
+  const t = (text || '').trim();
+  if(!t || t.length <= maxChars) return t;
+  return `${t.slice(0, maxChars)}\n…[truncated]`;
+}
+
+const JOB_SEARCH_PROMPT = (query, stance, cv) => `Job search for someone who cannot easily verify English postings. Never invent titles, companies, skills, or URLs. Empty array beats fabricated matches.
+
+Search the web NOW for CURRENT live openings (not hub pages) matching:
+
+${query}
+
+Weight labels separately (ignore empty): Roles=title; Companies=careers pages first; Keywords=topics/skills/locations (not titles unless also under Roles).
+
+Prefer: company careers → Naukri/Indeed/Instahyre/Cutshort/Wellfound (India-weighted unless query says otherwise) → LinkedIn/other boards.
+
+${stance
+  ? `Candidate memory (MUST use for ranking fit — skills, seniority, domain, constraints from their voice interview; do not invent beyond this):\n${stance}`
+  : 'Profile: (none — rank on query only; do not invent background)'}
+${cv ? `\nCV (authoritative for skills/experience over profile):\n${cv}\n` : ''}
+
+HARD CAP: return at most ${MAX_JOB_RESULTS} jobs — never more. Prefer fewer if sparse. Score 0-100: query/location ≤50, profile fit ≤40, legitimacy ≤10. Do not inflate. When profile/CV memory is present, fit sentences must reference concrete signals from it.
+
+Fields per job: title, company, location, url (verbatim from search only — never invent; else careers URL from search), fit (one concrete sentence), score, gate (blocker or null), skills_required (3-6), source
+${cv ? `, matched_skills (CV-supported only), missing_skills (honest gaps), next_step (one action for THIS role)` : ''}
+
+ONLY raw JSON array. No fences/preamble. No " inside strings. Schema:
+[{"title":"","company":"","location":"","url":"","fit":"","score":0,"gate":null,"skills_required":[]${cv ? ',"matched_skills":[],"missing_skills":[],"next_step":""' : ''},"source":""}]`;
+
+async function callClaude(prompt, { webSearch = false, maxTokens = 4000 } = {}){
+  const key = getAnthropicKey();
+  if(!key) throw new Error('add your Claude API key first');
+  const body = {
+    model: 'claude-sonnet-4-6',
+    max_tokens: maxTokens,
+    messages: [{ role: 'user', content: prompt }]
+  };
+  // Fewer search rounds = lower latency; 3 is enough for a short job list.
+  if(webSearch) body.tools = [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 }];
+  let response;
+  try{
+    response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify(body)
+    });
+  }catch(err){
+    throw new Error(
+      'Could not reach Anthropic (network/CORS). Check connectivity, or switch to OpenAI with the local proxy at http://127.0.0.1:8788'
+    );
+  }
+  const data = await response.json().catch(()=>({}));
+  if(!response.ok){
+    throw new Error(data.error?.message || `Anthropic HTTP ${response.status}`);
+  }
+  const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n');
+  if(!text) throw new Error('Claude returned an empty response');
+  return text;
+}
+
+// getProvider/setProvider are defined earlier, near the key-loading code.
+async function callOpenAI(prompt, { webSearch = false } = {}){
+  const key = getOpenAIKey();
+  if(!key) throw new Error('add your OpenAI API key first');
+  // Local / Vercel: same-origin /api/openai-search.
+  // GitHub Pages: cross-origin POST to the Vercel proxy (CORS + BYOK).
+  const proxyUrl = getOpenAIProxyUrl();
+  if(!proxyUrl){
+    throw new Error(
+      `OpenAI needs a proxy. Open ${VERCEL_APP_URL}, run node local-server.js at http://127.0.0.1:8788, or switch to Claude. This page is at ${location.origin}.`
+    );
+  }
+  let response;
+  try{
+    response = await fetch(proxyUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, apiKey: key, webSearch: !!webSearch })
+    });
+  }catch(err){
+    throw new Error(
+      proxyUrl.startsWith('/')
+        ? `OpenAI proxy unreachable at ${location.origin}. On Vercel use the deployed app; locally run node local-server.js (prefer http://127.0.0.1:8788).`
+        : `OpenAI proxy unreachable at ${proxyUrl}. Check the Vercel deployment, or run node local-server.js locally.`
+    );
+  }
+  const data = await response.json().catch(()=>({}));
+  if(!response.ok){
+    const msg = data.error?.message || data.error;
+    if(msg) throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
+    if(response.status === 405 || response.status === 404){
+      throw new Error(
+        `OpenAI proxy missing (HTTP ${response.status}). Use ${VERCEL_APP_URL}, run node local-server.js at http://127.0.0.1:8788, or switch to Claude.`
+      );
+    }
+    throw new Error(`OpenAI proxy HTTP ${response.status}`);
+  }
+  const text = data.output_text
+    || (data.output || []).flatMap(item => (item.content || [])).filter(c => c.type === 'output_text' || c.text).map(c => c.text).join('\n');
+  if(!text) throw new Error('OpenAI returned an empty response');
+  return text;
+}
+
+async function callJobSearch(query, stance, cv){
+  const prompt = JOB_SEARCH_PROMPT(
+    query,
+    truncateForPrompt(stance, MAX_STANCE_CHARS),
+    cv ? truncateForPrompt(cv, MAX_CV_CHARS) : ''
+  );
+  const provider = getProvider();
+  return provider === 'openai'
+    ? callOpenAI(prompt, { webSearch: true })
+    : callClaude(prompt, { webSearch: true, maxTokens: 2500 });
+}
+
+// ---------- cleanup pass: polish raw STT+translate output (Wispr-style) ----------
+const CLEANUP_PROMPT = (rawText) => `You are cleaning up text that was spoken aloud, transcribed by a speech-to-text model, and then machine-translated into English. It may contain: filler words ("um", "uh", "like"), transcription errors, awkward literal translation phrasing, repeated words, or false starts.
+
+Rewrite it as a clean, natural English sentence that preserves the speaker's exact meaning and intent — do not add information, do not remove any real content (job titles, locations, company names, numbers, years of experience, constraints), do not change what they're asking for. Only fix phrasing, grammar, and disfluencies.
+
+Raw text: "${rawText}"
+
+Respond with ONLY the cleaned-up text, no quotes, no preamble, no explanation.`;
+
+async function cleanupTranslatedText(rawText){
+  if(!rawText || !rawText.trim()) return rawText;
+  try{
+    const prompt = CLEANUP_PROMPT(rawText);
+    const provider = getProvider();
+    const cleaned = provider === 'openai'
+      ? await callOpenAI(prompt, { webSearch: false })
+      : await callClaude(prompt, { webSearch: false, maxTokens: 300 });
+    return cleaned.trim() || rawText;
+  }catch(err){
+    log(`cleanup pass failed, using raw translation: ${err.message}`);
+    return rawText;
+  }
+}
+
+function parseJobsJson(text){
+  let cleaned = text.trim();
+  const fence = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if(fence) cleaned = fence[1].trim();
+  const start = cleaned.indexOf('[');
+  const end = cleaned.lastIndexOf(']');
+  if(start === -1 || end === -1) throw new Error('no JSON array found in the response');
+  cleaned = cleaned.slice(start, end + 1);
+  return JSON.parse(cleaned);
+}
+
+// ---------- results rendering ----------
+let lastResults = [];
+let lastSpokenLanguage = 'hi-IN';
+
+function renderResults(jobs){
+  lastResults = jobs;
+  const list = document.getElementById('resultsList');
+  const section = document.getElementById('resultsSection');
+  list.innerHTML = '';
+  if(!jobs.length){
+    const hasMemory = hasProfileMemory();
+    list.innerHTML = hasMemory
+      ? '<div class="status">No live matches for that query — try a broader role or keyword. Your interview is still saved for the next search.</div>'
+      : '<div class="status">No results found — try broadening the search, or build a voice profile so ranking has more to work with.</div>';
+    section.style.display = 'block';
+    updateResultsMemoryCue(false);
+    return;
+  }
+  jobs.forEach((job, index) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    const skills = (job.skills_required || []).map(s => `<span>${escapeHtml(s)}</span>`).join('');
+    const hasGapAnalysis = job.matched_skills || job.missing_skills || job.next_step;
+    const matchedSkills = (job.matched_skills || []).map(s => `<span>${escapeHtml(s)}</span>`).join('');
+    const missingSkills = (job.missing_skills || []).map(s => `<span>${escapeHtml(s)}</span>`).join('');
+    const summaryText = [job.title || 'Untitled role', job.company, job.location, job.source].filter(Boolean).join(' · ');
+    const summaryId = `job-${index}-summary`;
+    const fitId = `job-${index}-fit`;
+    const gateId = `job-${index}-gate`;
+    const matchedId = `job-${index}-matched`;
+    const missingId = `job-${index}-missing`;
+    const nextId = `job-${index}-next`;
+    setLangActionText(summaryId, summaryText);
+    if(job.fit) setLangActionText(fitId, job.fit);
+    if(job.gate) setLangActionText(gateId, job.gate);
+    if(job.matched_skills && job.matched_skills.length) setLangActionText(matchedId, job.matched_skills.join(', '));
+    if(job.missing_skills && job.missing_skills.length) setLangActionText(missingId, job.missing_skills.join(', '));
+    if(job.next_step) setLangActionText(nextId, job.next_step);
+
+    card.innerHTML = `
+      <span class="score">${job.score ?? '?'}/100</span>
+      <div class="job-section">
+        <h3>${escapeHtml(job.title || 'Untitled role')}</h3>
+        <div class="meta">${escapeHtml(job.company || '')} &middot; ${escapeHtml(job.location || '')} &middot; ${escapeHtml(job.source || '')}</div>
+        ${langActionsHtml(summaryId)}
+      </div>
+      ${job.fit ? `<div class="job-section"><div class="fit">${escapeHtml(job.fit)}</div>${langActionsHtml(fitId)}</div>` : ''}
+      ${job.gate ? `<div class="job-section"><div class="gate">&#9888; ${escapeHtml(job.gate)}</div>${langActionsHtml(gateId)}</div>` : ''}
+      ${skills ? `<div class="job-section"><div class="skills">${skills}</div></div>` : ''}
+      ${job.url ? `<div class="row" style="margin:0 0 12px;"><a href="${escapeHtml(job.url)}" target="_blank" rel="noopener">view posting &rarr;</a></div>` : ''}
+      ${hasGapAnalysis ? `
+      <div class="skill-gap">
+        ${matchedSkills ? `<div class="job-section"><div class="row-label">you already have</div><div class="skills have">${matchedSkills}</div>${langActionsHtml(matchedId)}</div>` : ''}
+        ${missingSkills ? `<div class="job-section"><div class="row-label">skills to close the gap</div><div class="skills missing">${missingSkills}</div>${langActionsHtml(missingId)}</div>` : ''}
+        ${job.next_step ? `<div class="job-section"><div class="row-label">what to do next</div><div class="next-step">${escapeHtml(job.next_step)}</div>${langActionsHtml(nextId)}</div>` : ''}
+      </div>` : ''}
+      <div class="job-chat">
+        <button type="button" class="secondary job-chat-toggle" data-job-index="${index}">Ask a question about this job</button>
+        <div class="job-chat-panel" id="jobChatPanel-${index}" style="display:none;">
+          <div class="job-chat-history" id="jobChatHistory-${index}"></div>
+          <p class="hint" style="margin:0 0 8px; font-size:0.85rem;">Tap Speak, then Stop when you're done.</p>
+          <div class="mic-control">
+            <button class="mic job-chat-mic" data-job-index="${index}" type="button" aria-label="Speak" aria-pressed="false">
+              <span class="mic-ico" aria-hidden="true"></span>
+              <span class="mic-text"><span class="full">Speak</span><span class="short">Speak</span></span>
+            </button>
+            <span class="status" id="jobChatMicStatus-${index}"></span>
+          </div>
+        </div>
+      </div>
+    `;
+    card.querySelector('.job-chat-toggle').addEventListener('click', () => toggleJobChat(index));
+    list.appendChild(card);
+  });
+  section.style.display = 'block';
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str == null ? '' : String(str);
+  return div.innerHTML;
+}
+
+function setStatus(id, msg, cls){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.textContent = msg;
+  el.className = 'status' + (cls ? ' ' + cls : '');
+}
+
+// ---------- free-text search fields (roles / companies / keywords) ----------
+const FIELD_CATS = ['roles', 'companies', 'keywords'];
+const FIELD_STORAGE_KEYS = {
+  roles: 'vjr_field_roles',
+  companies: 'vjr_field_companies',
+  keywords: 'vjr_field_keywords'
+};
+const LEGACY_CHIP_STORAGE_KEYS = {
+  roles: 'vjr_chips_roles',
+  companies: 'vjr_chips_companies',
+  keywords: 'vjr_chips_keywords'
+};
+const FIELD_LABELS = {
+  roles: 'Roles',
+  companies: 'Companies',
+  keywords: 'Keywords'
+};
+
+let activeFieldCat = 'roles';
+
+function getSearchInput(cat){
+  return document.getElementById(`searchInput-${cat}`);
+}
+
+function getFieldValue(cat){
+  const input = getSearchInput(cat);
+  return input ? input.value.trim() : '';
+}
+
+function migrateLegacyChips(cat){
+  try{
+    const raw = JSON.parse(localStorage.getItem(LEGACY_CHIP_STORAGE_KEYS[cat]) || 'null');
+    if(!Array.isArray(raw)) return '';
+    return raw.map(t => String(t).trim()).filter(Boolean).join(', ');
+  }catch{
+    return '';
+  }
+}
+
+function getSearchClearBtn(cat){
+  return document.querySelector(`.field-clear[data-clear-field="${cat}"]`);
+}
+
+function syncSearchClearBtn(cat){
+  syncClearButton(getSearchInput(cat), getSearchClearBtn(cat));
+}
+
+function loadSearchFields(){
+  FIELD_CATS.forEach((cat) => {
+    let value = localStorage.getItem(FIELD_STORAGE_KEYS[cat]);
+    if(value == null){
+      value = migrateLegacyChips(cat);
+      if(value) localStorage.setItem(FIELD_STORAGE_KEYS[cat], value);
+    }
+    const input = getSearchInput(cat);
+    if(input) input.value = value || '';
+    syncSearchClearBtn(cat);
+  });
+}
+
+function saveSearchField(cat){
+  const input = getSearchInput(cat);
+  if(!input || !FIELD_CATS.includes(cat)) return;
+  localStorage.setItem(FIELD_STORAGE_KEYS[cat], input.value);
+  syncSearchClearBtn(cat);
+}
+
+function setActiveFieldCat(cat){
+  if(!FIELD_CATS.includes(cat)) return;
+  activeFieldCat = cat;
+  document.querySelectorAll('.voice-target-btn').forEach((btn) => {
+    const on = btn.dataset.fieldCat === cat;
+    btn.classList.toggle('active', on);
+    btn.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  document.querySelectorAll('.search-field').forEach((field) => {
+    field.classList.toggle('active', field.dataset.fieldCat === cat);
+  });
+}
+
+function appendToActiveField(text, cat = activeFieldCat){
+  const trimmed = String(text || '').trim();
+  if(!trimmed || !FIELD_CATS.includes(cat)) return;
+  const input = getSearchInput(cat);
+  if(!input) return;
+  const current = input.value.trim();
+  input.value = current ? `${current}, ${trimmed}` : trimmed;
+  saveSearchField(cat);
+  setActiveFieldCat(cat);
+}
+
+/** Roles → English; companies/keywords keep the spoken wording. */
+function appendSearchDictation(english, meta = {}){
+  const cat = activeFieldCat;
+  const keepAsSpoken = cat === 'companies' || cat === 'keywords';
+  const text = keepAsSpoken
+    ? (meta.original || english)
+    : english;
+  appendToActiveField(text, cat);
+}
+
+function clearSearchField(cat){
+  const input = getSearchInput(cat);
+  if(!input || !FIELD_CATS.includes(cat)) return;
+  input.value = '';
+  saveSearchField(cat);
+  input.focus();
+}
+
+function getChipQuery(){
+  const lines = [];
+  FIELD_CATS.forEach((cat) => {
+    const value = getFieldValue(cat);
+    if(value) lines.push(`${FIELD_LABELS[cat]}: ${value}`);
+  });
+  return lines.join('\n');
+}
+
+function hasAnySearchFields(){
+  return FIELD_CATS.some((cat) => getFieldValue(cat));
+}
+
+loadSearchFields();
+setActiveFieldCat('roles');
+
+document.querySelectorAll('.voice-target-btn').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    setActiveFieldCat(btn.dataset.fieldCat);
+    const input = getSearchInput(btn.dataset.fieldCat);
+    if(input) input.focus();
+  });
+});
+
+FIELD_CATS.forEach((cat) => {
+  const input = getSearchInput(cat);
+  if(!input) return;
+  input.addEventListener('focus', () => setActiveFieldCat(cat));
+  input.addEventListener('input', () => {
+    saveSearchField(cat);
+    const peek = document.getElementById(`searchNativePeek-${cat}`);
+    if(peek) peek.classList.remove('show');
+  });
+  const clearBtn = getSearchClearBtn(cat);
+  if(clearBtn){
+    clearBtn.addEventListener('click', () => {
+      clearSearchField(cat);
+      setActiveFieldCat(cat);
+      const peek = document.getElementById(`searchNativePeek-${cat}`);
+      if(peek) peek.classList.remove('show');
+    });
+  }
+});
+
+// ---------- search flow ----------
+function startSearchProgress(statusEl, { hasMemory = false } = {}){
+  const stages = [
+    'searching the web for live postings…',
+    'checking career pages and job boards…',
+    hasMemory
+      ? 'ranking matches with your interview…'
+      : 'ranking matches for your profile…',
+    'still working — web search can take a minute…'
+  ];
+  const started = Date.now();
+  let stageIdx = 0;
+  const render = () => {
+    const secs = Math.floor((Date.now() - started) / 1000);
+    statusEl.className = 'status';
+    statusEl.innerHTML = `<span class="spinner"></span>${stages[stageIdx]} <span style="opacity:0.7">${secs}s</span>`;
+  };
+  render();
+  const tick = setInterval(() => {
+    const secs = Math.floor((Date.now() - started) / 1000);
+    if(secs >= 12 && stageIdx < 1) stageIdx = 1;
+    else if(secs >= 28 && stageIdx < 2) stageIdx = 2;
+    else if(secs >= 50 && stageIdx < 3) stageIdx = 3;
+    render();
+  }, 1000);
+  return () => clearInterval(tick);
+}
+
+document.getElementById('searchBtn').addEventListener('click', async () => {
+  const query = getChipQuery();
+  const stance = getStanceText().trim();
+  if(!query){
+    if(stance){
+      setStatus('searchStatus', 'Add a role or keyword — your interview is ready to rank matches', 'err');
+    }else{
+      setStatus('searchStatus', 'Add roles, companies, or keywords first — or build a voice profile', 'err');
+    }
+    return;
+  }
+  const btn = document.getElementById('searchBtn');
+  const statusEl = document.getElementById('searchStatus');
+  btn.disabled = true;
+  setStatus('searchStatus', '', '');
+  updateSearchMemoryCue();
+  const stopProgress = startSearchProgress(statusEl, { hasMemory: !!(stance || (cvText || '').trim()) });
+  try{
+    log(`calling ${getProvider()} web search for:\n${query}${stance ? `\n(with interview stance, ${Math.min(stance.length, MAX_STANCE_CHARS)} chars)` : ''}${cvText ? `\n(with CV, ${Math.min(cvText.length, MAX_CV_CHARS)}/${cvText.length} chars)` : ''}`);
+    const raw = await callJobSearch(query, stance, cvText);
+    log(`raw response length: ${raw.length}`);
+    const jobs = parseJobsJson(raw).slice(0, MAX_JOB_RESULTS);
+    log(`parsed ${jobs.length} jobs`);
+    stopProgress();
+    renderResults(jobs);
+    updateResultsMemoryCue(!!(stance || (cvText || '').trim()) && jobs.length > 0);
+    setStatus('searchStatus', `found ${jobs.length} result${jobs.length===1?'':'s'}`, 'ok');
+  }catch(err){
+    stopProgress();
+    log(`ERROR: ${err.message}`);
+    setStatus('searchStatus', err.message, 'err');
+  }finally{
+    btn.disabled = false;
+  }
+});
+
+// ---------- mic recording ----------
+// Sarvam STT caps each clip at ~30s. We keep one Start→Stop session and
+// quietly roll ~30s chunks in the background so the UI just shows Recording…
+const CHUNK_MS = 29500;
+let activeMicButton = null;
+let recordSession = null;
+
+function clearRecordTimers(){
+  if(!recordSession) return;
+  if(recordSession.tickInterval){ clearInterval(recordSession.tickInterval); recordSession.tickInterval = null; }
+  if(recordSession.chunkTimer){ clearTimeout(recordSession.chunkTimer); recordSession.chunkTimer = null; }
+}
+
+function formatRecordClock(ms){
+  const secs = Math.max(0, Math.floor(ms / 1000));
+  const m = Math.floor(secs / 60);
+  const s = String(secs % 60).padStart(2, '0');
+  return `${m}:${s}`;
+}
+
+function setMicButtonRecording(btn, recording){
+  if(!btn) return;
+  btn.classList.toggle('recording', recording);
+  btn.setAttribute('aria-label', recording ? 'Stop recording' : 'Speak');
+  btn.setAttribute('aria-pressed', recording ? 'true' : 'false');
+  const full = btn.querySelector('.mic-text .full');
+  const short = btn.querySelector('.mic-text .short');
+  if(full) full.textContent = recording ? 'Stop' : 'Speak';
+  if(short) short.textContent = recording ? 'Stop' : 'Speak';
+}
+
+function startRecorderOnStream(stream){
+  const chunks = [];
+  const recorder = new MediaRecorder(stream);
+  recorder.ondataavailable = (e) => { if(e.data && e.data.size) chunks.push(e.data); };
+  recorder.start();
+  return { recorder, chunks };
+}
+
+function stopRecorder(recorder, chunks){
+  return new Promise((resolve) => {
+    if(!recorder || recorder.state === 'inactive'){
+      resolve(new Blob(chunks, { type: 'audio/webm' }));
+      return;
+    }
+    recorder.onstop = () => resolve(new Blob(chunks, { type: 'audio/webm' }));
+    try{ recorder.requestData(); }catch(_){ /* older browsers */ }
+    recorder.stop();
+  });
+}
+
+async function rollRecordChunk(){
+  if(!recordSession || recordSession.rolling) return;
+  const session = recordSession;
+  session.rolling = true;
+  try{
+    const blob = await stopRecorder(session.recorder, session.chunks);
+    if(recordSession !== session) return; // user stopped mid-roll
+    if(blob && blob.size > 500) session.blobs.push(blob);
+    const next = startRecorderOnStream(session.stream);
+    session.recorder = next.recorder;
+    session.chunks = next.chunks;
+    scheduleChunkRoll();
+  }finally{
+    if(recordSession === session) session.rolling = false;
+  }
+}
+
+function scheduleChunkRoll(){
+  if(!recordSession) return;
+  if(recordSession.chunkTimer) clearTimeout(recordSession.chunkTimer);
+  recordSession.chunkTimer = setTimeout(() => { rollRecordChunk(); }, CHUNK_MS);
+}
+
+function startElapsedClock(statusId){
+  if(!recordSession) return;
+  const tick = () => {
+    if(!recordSession) return;
+    const elapsed = Date.now() - recordSession.startedAt;
+    setStatus(statusId, `Recording… ${formatRecordClock(elapsed)}`, '');
+  };
+  tick();
+  recordSession.tickInterval = setInterval(tick, 250);
+}
+
+async function beginRecordSession({ btn, statusId }){
+  if(recordSession || activeMicButton) throw new Error('already recording');
+  // User is about to speak — never let TTS talk over them.
+  stopTtsPlayback();
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  const { recorder, chunks } = startRecorderOnStream(stream);
+  recordSession = {
+    stream, recorder, chunks, blobs: [],
+    btn, statusId, startedAt: Date.now(),
+    tickInterval: null, chunkTimer: null, rolling: false
+  };
+  activeMicButton = btn;
+  setMicButtonRecording(btn, true);
+  startElapsedClock(statusId);
+  scheduleChunkRoll();
+}
+
+async function endRecordSession(){
+  if(!recordSession) return [];
+  const session = recordSession;
+  clearRecordTimers();
+  // Wait out an in-flight chunk roll so we don't double-stop the recorder
+  const waitStart = Date.now();
+  while(session.rolling && Date.now() - waitStart < 3000){
+    await new Promise(r => setTimeout(r, 40));
+  }
+  session.rolling = true;
+  try{
+    const last = await stopRecorder(session.recorder, session.chunks);
+    if(last && last.size > 500) session.blobs.push(last);
+  }catch(_){ /* ignore */ }
+  try{ session.stream.getTracks().forEach(t => t.stop()); }catch(_){ /* ignore */ }
+  const blobs = session.blobs.slice();
+  setMicButtonRecording(session.btn, false);
+  if(activeMicButton === session.btn) activeMicButton = null;
+  if(recordSession === session) recordSession = null;
+  return blobs;
+}
+
+/** Append a new dictation take without wiping earlier text. */
+function appendDictatedText(current, next, separator = ' '){
+  const a = String(current || '').trim();
+  const b = String(next || '').trim();
+  if(!b) return a;
+  if(!a) return b;
+  return `${a}${separator}${b}`;
+}
+
+async function transcribeBlobsToEnglish(blobs){
+  const selectedLang = document.getElementById('langSelect').value;
+  lastSpokenLanguage = selectedLang === 'unknown' ? 'hi-IN' : selectedLang;
+  const originals = [];
+  const englishParts = [];
+  let detectedLang = selectedLang;
+  let langMismatch = false;
+
+  for(const blob of blobs){
+    if(!blob || blob.size < 500) continue;
+    const sttResult = await sarvamTranscribe(blob, selectedLang);
+    const original = (sttResult.transcript || '').trim();
+    if(!original) continue;
+    detectedLang = sttResult.language_code || detectedLang;
+    if(detectedLang && detectedLang !== 'unknown') lastSpokenLanguage = detectedLang;
+    log(`STT transcript (${detectedLang}): ${original}`);
+    originals.push(original);
+
+    if(selectedLang !== 'unknown' && detectedLang !== 'unknown'
+      && detectedLang.split('-')[0] !== selectedLang.split('-')[0]){
+      langMismatch = true;
+    }
+
+    // Already English (or same family as en-IN) — skip translate to avoid Sarvam same-lang error.
+    const translated = isEnglishLang(detectedLang)
+      ? original
+      : await sarvamTranslate(original, detectedLang, 'en-IN');
+    const english = await cleanupTranslatedText(translated);
+    log(`cleaned up: ${english}`);
+    if(english.trim()) englishParts.push(english.trim());
+  }
+
+  return {
+    original: originals.join(' '),
+    english: englishParts.join(' '),
+    detectedLang,
+    langMismatch
+  };
+}
+
+/**
+ * Detect empty / tiny / nonsense STT+cleanup results so the interviewer
+ * can ask for a repeat instead of saving garbage and advancing.
+ * Allows short real answers ("Yes", "Remote", "ROS", "5 years").
+ */
+function isUnclearSpeechTranscript(english, original = ''){
+  const text = String(english || '').trim();
+  const raw = String(original || '').trim();
+  const source = text || raw;
+  if(!source) return true;
+
+  const words = source.split(/\s+/).filter(Boolean);
+  const letters = (source.match(/[A-Za-z\u0900-\u097F]/g) || []).join('');
+  const digits = (source.match(/\d/g) || []).join('');
+
+  // Almost no linguistic content
+  if(letters.length + digits.length < 2) return true;
+  if(words.length === 1 && words[0].length < 2 && !digits) return true;
+
+  // Single-token filler / non-answers after cleanup
+  const lone = words.length === 1 ? words[0].toLowerCase().replace(/[^a-z\u0900-\u097F0-9]/gi, '') : '';
+  const fillerOnly = new Set([
+    'um', 'uh', 'uhm', 'hmm', 'hm', 'ah', 'eh', 'oh', 'er', 'erm',
+    'a', 'an', 'the', 'and', 'to', 'of', 'ya', 'haan', 'ha', 'na'
+  ]);
+  if(lone && fillerOnly.has(lone) && !digits) return true;
+
+  // Keyboard smash / repeated character runs (e.g. "aaaa", "asdfasdf")
+  if(/(.)\1{3,}/i.test(source.replace(/\s/g, ''))) return true;
+  if(words.length === 1 && lone.length >= 6){
+    const uniq = new Set(lone.split(''));
+    if(uniq.size <= 3) return true;
+    const half = Math.floor(lone.length / 2);
+    if(half >= 3 && lone.slice(0, half) === lone.slice(half, half * 2)) return true;
+  }
+
+  // Latin text with almost no vowels → likely garble (skip if Devanagari-heavy)
+  const hasDevanagari = /[\u0900-\u097F]/.test(source);
+  if(!hasDevanagari && letters.length >= 4){
+    const vowels = (letters.match(/[aeiou]/gi) || []).length;
+    if(vowels / letters.length < 0.12) return true;
+  }
+
+  // Mostly punctuation / symbols
+  const alnum = (source.match(/[A-Za-z0-9\u0900-\u097F]/g) || []).length;
+  if(alnum > 0 && alnum / source.replace(/\s/g, '').length < 0.4) return true;
+
+  return false;
+}
+
+function bindMicButton({ buttonId, statusId, onResult, requireClearSpeech = false }){
+  const btn = document.getElementById(buttonId);
+  let busy = false;
+
+  async function startMic(){
+    if(busy || recordSession || activeMicButton) return;
+    try{
+      await beginRecordSession({ btn, statusId });
+    }catch(err){
+      setMicButtonRecording(btn, false);
+      setStatus(statusId, `mic error: ${err.message}`, 'err');
+    }
+  }
+
+  async function stopMic(){
+    if(busy || !recordSession || recordSession.btn !== btn) return;
+    busy = true;
+    setStatus(statusId, '', '');
+    document.getElementById(statusId).innerHTML = '<span class="spinner"></span>writing in English…';
+    try{
+      const blobs = await endRecordSession();
+      if(!blobs.length){
+        setStatus(statusId, 'didn\'t catch that — try again', 'err');
+        return;
+      }
+      const { original, english, langMismatch } = await transcribeBlobsToEnglish(blobs);
+      if(!english.trim() && !original.trim()){
+        setStatus(statusId, 'didn\'t catch that — try again', 'err');
+        return;
+      }
+
+      if(requireClearSpeech && isUnclearSpeechTranscript(english, original)){
+        log(`unclear speech rejected: english="${english}" original="${original}"`);
+        setStatus(statusId, 'didn\'t catch that clearly — please say it again', 'err');
+        return;
+      }
+
+      onResult(english, { original, english, langMismatch });
+
+      if(langMismatch){
+        setStatus(statusId, 'added — language sounded different from your selection', 'err');
+      }else{
+        setStatus(statusId, 'added', 'ok');
+      }
+    }catch(err){
+      log(`ERROR: ${err.message}`);
+      if(recordSession) await endRecordSession().catch(() => {});
+      setStatus(statusId, err.message, 'err');
+    }finally{
+      busy = false;
+    }
+  }
+
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    if(recordSession && recordSession.btn === btn) stopMic();
+    else startMic();
+  });
+}
+
+bindMicButton({
+  buttonId: 'micBtn', statusId: 'micStatus',
+  onResult: (english, meta) => appendSearchDictation(english, meta)
+});
+
+// ---------- voice profile agent (AI interviewer) ----------
+const GUIDED_OPENING_QUESTION =
+  "Let's build your profile for job search. To start — what kind of role are you looking for, and what are you strongest at?";
+const GUIDED_OPENING_QUESTION_WITH_CV =
+  "I see you've uploaded a CV — we'll dig into your experience next. First, what kind of role are you looking for right now?";
+const GUIDED_MAX_QUESTIONS = 8;
+const GUIDED_STORAGE_KEY = 'vjr_guided_answers';
+// Used only to migrate older fixed-question saves.
+const LEGACY_GUIDED_QUESTIONS = [
+  "What are you really good at? Tell us your strongest skills or the work you do best.",
+  "What's something you're still learning, or could use a bit of coaching or practice on?",
+  "Is there something you used to do professionally that you don't really do anymore, but still know how to do?",
+  "Tell us about a piece of work you're genuinely proud of.",
+  "What kind of role are you focused on finding right now?"
+];
+
+let guidedTurns = []; // { question: string, answer?: string|null }
+let guidedQuestionIndex = 0;
+let guidedAnswerReady = false;
+let guidedConvoActive = false;
+let guidedInterviewDone = false;
+let guidedSummary = '';
+let guidedFetchingNext = false;
+
+function isGuidedAnswered(a){
+  return typeof a === 'string' && a.trim().length > 0;
+}
+
+function turnVisited(turn){
+  return turn && Object.prototype.hasOwnProperty.call(turn, 'answer');
+}
+
+function answeredCount(turns = guidedTurns){
+  return turns.filter(t => isGuidedAnswered(t?.answer)).length;
+}
+
+function visitedCount(turns = guidedTurns){
+  return turns.filter(turnVisited).length;
+}
+
+function formatGuidedAnswersText(turns = guidedTurns){
+  return turns
+    .map((t, i) => {
+      if(!t || !isGuidedAnswered(t.answer)) return null;
+      return `Q${i + 1}: ${t.question}\nA: ${t.answer.trim()}`;
+    })
+    .filter(Boolean)
+    .join('\n\n');
+}
+
+function composeStanceFromGuided(){
+  if(guidedSummary && guidedSummary.trim()) return guidedSummary.trim();
+  return guidedTurns
+    .map(t => {
+      if(!t || !isGuidedAnswered(t.answer)) return null;
+      return `${t.question}\n${t.answer.trim()}`;
+    })
+    .filter(Boolean)
+    .join('\n\n');
+}
+
+function syncStanceFromGuidedAnswers({ force = false } = {}){
+  const composed = composeStanceFromGuided();
+  if(composed) setStanceText(composed);
+  else if(force) setStanceText('');
+  updateSearchMemoryCue();
+  updateInterviewReadyPanel();
+}
+
+function saveGuidedAnswers(){
+  localStorage.setItem(GUIDED_STORAGE_KEY, JSON.stringify({
+    version: 2,
+    turns: guidedTurns.map(t => ({
+      question: t.question,
+      ...(Object.prototype.hasOwnProperty.call(t, 'answer') ? { answer: t.answer } : {})
+    })),
+    summary: guidedSummary || '',
+    done: !!guidedInterviewDone
+  }));
+  syncStanceFromGuidedAnswers();
+  renderGuidedAnswersReview();
+  updateGuidedStartUI();
+}
+
+function loadGuidedState(){
+  try{
+    const raw = JSON.parse(localStorage.getItem(GUIDED_STORAGE_KEY) || 'null');
+    if(!raw) return { turns: [], summary: '', done: false };
+
+    // v2: AI interviewer turns
+    if(raw.version === 2 && Array.isArray(raw.turns)){
+      const turns = raw.turns
+        .filter(t => t && typeof t.question === 'string' && t.question.trim())
+        .map(t => {
+          const turn = { question: t.question.trim() };
+          if(Object.prototype.hasOwnProperty.call(t, 'answer')){
+            turn.answer = t.answer === null ? null : String(t.answer);
+          }
+          return turn;
+        });
+      return {
+        turns,
+        summary: typeof raw.summary === 'string' ? raw.summary : '',
+        done: !!raw.done
+      };
+    }
+
+    // v1: fixed question list (array or index map)
+    const out = [];
+    if(Array.isArray(raw)){
+      raw.forEach((a, i) => {
+        if(i >= LEGACY_GUIDED_QUESTIONS.length) return;
+        const turn = { question: LEGACY_GUIDED_QUESTIONS[i] };
+        if(a === null) turn.answer = null;
+        else if(typeof a === 'string' && a.trim()) turn.answer = a;
+        else return;
+        out.push(turn);
+      });
+    }else if(raw && typeof raw === 'object'){
+      for(let i = 0; i < LEGACY_GUIDED_QUESTIONS.length; i++){
+        if(!Object.prototype.hasOwnProperty.call(raw, i) && !Object.prototype.hasOwnProperty.call(raw, String(i))) continue;
+        const a = raw[i] ?? raw[String(i)];
+        const turn = { question: LEGACY_GUIDED_QUESTIONS[i] };
+        if(a === null) turn.answer = null;
+        else if(typeof a === 'string') turn.answer = a;
+        else continue;
+        out.push(turn);
+      }
+    }
+    const allVisited = out.length >= LEGACY_GUIDED_QUESTIONS.length
+      && out.every(t => turnVisited(t));
+    return { turns: out, summary: '', done: allVisited };
+  }catch{
+    return { turns: [], summary: '', done: false };
+  }
+}
+
+function firstOpenGuidedIndex(){
+  for(let i = 0; i < guidedTurns.length; i++){
+    if(!turnVisited(guidedTurns[i])) return i;
+  }
+  return Math.max(0, guidedTurns.length - 1);
+}
+
+function ensureProviderKeyForInterview(){
+  const provider = getProvider();
+  if(provider === 'openai' && !getOpenAIKey()){
+    throw new Error('Add your OpenAI API key first');
+  }
+  if(provider !== 'openai' && !getAnthropicKey()){
+    throw new Error('Add your Claude API key first');
+  }
+}
+
+function parseInterviewJson(text){
+  let cleaned = String(text || '').trim();
+  const fence = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if(fence) cleaned = fence[1].trim();
+  const start = cleaned.indexOf('{');
+  const end = cleaned.lastIndexOf('}');
+  if(start === -1 || end === -1 || end <= start){
+    throw new Error('Interview response was not valid JSON');
+  }
+  const obj = JSON.parse(cleaned.slice(start, end + 1));
+  if(obj && obj.done === true){
+    return {
+      done: true,
+      summary: typeof obj.summary === 'string' ? obj.summary.trim() : ''
+    };
+  }
+  const question = typeof obj?.question === 'string' ? obj.question.trim() : '';
+  if(!question) throw new Error('Interview response missing a next question');
+  return { done: false, question };
+}
+
+function interviewHistoryForPrompt(){
+  if(!guidedTurns.length) return '(none yet)';
+  return guidedTurns.map((t, i) => {
+    let a;
+    if(!turnVisited(t)) a = '(not answered yet)';
+    else if(t.answer === null) a = '(skipped)';
+    else if(isGuidedAnswered(t.answer)) a = t.answer.trim();
+    else a = '(empty)';
+    return `${i + 1}. Q: ${t.question}\n   A: ${a}`;
+  }).join('\n');
+}
+
+function lastGuidedAnswerMeta(){
+  for(let i = guidedTurns.length - 1; i >= 0; i--){
+    const t = guidedTurns[i];
+    if(!isGuidedAnswered(t?.answer)) continue;
+    const answer = t.answer.trim();
+    const words = answer.split(/\s+/).filter(Boolean);
+    return { answer, wordCount: words.length, question: t.question };
+  }
+  return null;
+}
+
+function cvExcerptForInterview(){
+  const raw = (cvText || '').trim();
+  if(!raw) return '';
+  return truncateForPrompt(raw, MAX_CV_CHARS);
+}
+
+function guidedOpeningQuestion(){
+  return cvExcerptForInterview() ? GUIDED_OPENING_QUESTION_WITH_CV : GUIDED_OPENING_QUESTION;
+}
+
+function buildNextQuestionPrompt({ forceDone = false } = {}){
+  const asked = guidedTurns.length;
+  const remaining = Math.max(0, GUIDED_MAX_QUESTIONS - asked);
+  const cvExcerpt = cvExcerptForInterview();
+  const cvBlock = cvExcerpt
+    ? `\nUploaded CV (authoritative for experience/skills; may be truncated):\n${cvExcerpt}\n`
+    : '';
+  if(forceDone || remaining <= 0){
+    return `You are wrapping up a short job-seeker interview. Using only the Q&A below${cvExcerpt ? ' and the uploaded CV' : ''}, write a compact profile for matching jobs (skills, experience signals, role goals, constraints). Do not invent facts.
+
+Interview so far:
+${interviewHistoryForPrompt()}
+${cvBlock}
+Respond ONLY with raw JSON (no fences, no preamble):
+{"done":true,"summary":"2-4 sentence English profile for job search"}`;
+  }
+
+  const last = lastGuidedAnswerMeta();
+  const lastBlock = last
+    ? `\nLatest answer (must ground your next question in this and/or the CV):\nQ: ${last.question}\nA (${last.wordCount} words): ${last.answer}\n`
+    : '\nLatest answer: (none yet — ask an opening follow-up grounded in any CV signals if present)\n';
+  const pacingHint = last && last.wordCount >= 40
+    ? '- Their last answer was long — ask a shorter, sharper follow-up (one short sentence).\n'
+    : last && last.wordCount > 0 && last.wordCount <= 8
+      ? '- Their last answer was brief — one concrete probe is fine; do not pad with filler.\n'
+      : '';
+
+  return `You are a sharp, natural AI interviewer building a job-search profile — not a phone tree and not a fixed HR script.
+
+Before choosing the next question, silently extract signals from the Q&A and CV (do not output this list):
+- Target role / function
+- Years of experience / seniority (junior / mid / senior / lead — infer only from evidence)
+- Domain (e.g. robotics, SaaS, fintech) and concrete skills/tools (e.g. ROS, retention, Python, PLC)
+- Constraints (location, remote, visa, notice) and goals
+- Gaps vs the stated target role
+
+Mix across the interview:
+- Goals and preferences (role target, location/remote, constraints)
+- ${cvExcerpt
+    ? 'CV-grounded probes (named projects, stack, impact metrics, and gaps vs their stated target — e.g. robotics if that is the goal)'
+    : 'Skills, experience depth, and gaps useful for job matching'}
+
+Hard rules:
+- The next question MUST reference something concrete from the latest answer and/or the CV (a role, tool, project, metric, constraint, or phrase they used). Forbidden: generic openers like "tell me about your most recent role", "what are your strengths", "walk me through your background" when they already covered that.
+- Do not invent employers, titles, skills, projects, or outcomes — only ask from the CV text and answers so far.
+- Do not repeat earlier questions or re-ask facts already answered.
+- Language: the candidate may code-switch Hindi–English when speaking; transcripts arrive in English after STT. Treat meaning, not surface language. Never re-ask something already answered just because wording was mixed or translated.
+- If the latest answer says they are confused, unclear, or asks you to repeat: rephrase the previous question more simply. Do not advance to a new topic. Do not claim you "sense" emotions (anxiety, etc.) — only respond to what they said.
+- Vary depth by seniority/goal: juniors → clearer, narrower questions; seniors/leads → dig into scope, tradeoffs, ownership, impact. Know when one short question is enough vs when to go deeper.
+- Ban stock / empty empathy phrases ("I understand your concern", "That's great", "Thank you for sharing", "I appreciate that"). No phone-tree filler.
+- Prefer short, natural spoken questions (good for TTS): usually one sentence, max two. Conversational, not formal survey wording.
+${pacingHint}- Prefer concrete, answerable questions.
+- After about 4–${GUIDED_MAX_QUESTIONS} questions you may finish if you have enough signal for job matching.
+- You have asked ${asked} question(s); at most ${remaining} more allowed (including the next one).
+${cvExcerpt ? '- When a CV is present, prefer follow-ups that cite real CV items over generic HR questions.\n' : ''}
+Interview so far:
+${interviewHistoryForPrompt()}
+${lastBlock}${cvBlock}
+Respond ONLY with raw JSON (no fences, no preamble), either:
+{"done":false,"question":"..."}
+or when enough information:
+{"done":true,"summary":"2-4 sentence English profile for job search"}`;
+}
+
+async function callInterviewLlm({ forceDone = false } = {}){
+  ensureProviderKeyForInterview();
+  const prompt = buildNextQuestionPrompt({ forceDone });
+  const provider = getProvider();
+  const raw = provider === 'openai'
+    ? await callOpenAI(prompt, { webSearch: false })
+    : await callClaude(prompt, { webSearch: false, maxTokens: 500 });
+  return parseInterviewJson(raw);
+}
+
+function setGuidedNavBusy(busy){
+  guidedFetchingNext = busy;
+  const nextBtn = document.getElementById('guidedNextBtn');
+  const skipBtn = document.getElementById('guidedSkipBtn');
+  const startBtn = document.getElementById('startGuidedBtn');
+  nextBtn.disabled = busy;
+  skipBtn.disabled = busy;
+  startBtn.disabled = busy;
+  if(busy){
+    document.getElementById('guidedProgress').innerHTML =
+      `<span class="spinner"></span>thinking of next question…`;
+  }
+}
+
+function closeGuidedConvo(){
+  stopTtsPlayback();
+  guidedConvoActive = false;
+  document.getElementById('guidedConvo').style.display = 'none';
+  document.getElementById('guidedAskSpeakBtn').style.display = '';
+  document.getElementById('guidedMicBtn').style.display = 'inline-block';
+  document.getElementById('guidedAnswerInput').style.display = 'block';
+  renderGuidedAnswersReview();
+  updateGuidedStartUI();
+  updateInterviewReadyPanel();
+}
+
+/** Pull likely role / skill phrases from interview text to seed search fields. */
+function suggestSearchFromStance(stanceText){
+  const text = String(stanceText || '').trim();
+  if(!text) return { roles: '', keywords: '' };
+  const roleRe = /\b((?:senior|staff|lead|principal|junior|mid[- ]level)?\s*)?(?:robotics|backend|frontend|full[- ]?stack|software|ml|machine learning|data|devops|embedded|firmware|perception|controls?|product|android|ios|mobile|qa|sre|platform|infrastructure)?\s*(?:engineer|developer|scientist|architect|analyst|manager|designer|specialist)s?\b/gi;
+  const roles = [];
+  let m;
+  while((m = roleRe.exec(text)) && roles.length < 3){
+    const phrase = m[0].replace(/\s+/g, ' ').trim();
+    if(phrase.length < 4) continue;
+    const key = phrase.toLowerCase();
+    if(!roles.some(r => r.toLowerCase() === key)) roles.push(phrase);
+  }
+  const skillHints = [];
+  const skillRe = /\b(ROS2?|OpenCV|Python|C\+\+|STM32|Gazebo|SLAM|LiDAR|PLC|Kubernetes|React|Node\.?js|TypeScript|Java|Go|SQL|AWS|GCP|Azure)\b/gi;
+  while((m = skillRe.exec(text)) && skillHints.length < 4){
+    const s = m[0];
+    if(!skillHints.some(x => x.toLowerCase() === s.toLowerCase())) skillHints.push(s);
+  }
+  return {
+    roles: roles.join(', '),
+    keywords: skillHints.join(', ')
+  };
+}
+
+function seedSearchFieldsFromInterview({ overwrite = false } = {}){
+  const suggestions = suggestSearchFromStance(getStanceText());
+  let seeded = false;
+  if(suggestions.roles){
+    const input = getSearchInput('roles');
+    if(input && (overwrite || !input.value.trim())){
+      input.value = suggestions.roles;
+      saveSearchField('roles');
+      seeded = true;
+    }
+  }
+  if(suggestions.keywords){
+    const input = getSearchInput('keywords');
+    if(input && (overwrite || !input.value.trim())){
+      input.value = suggestions.keywords;
+      saveSearchField('keywords');
+      seeded = true;
+    }
+  }
+  if(seeded) setActiveFieldCat(suggestions.roles ? 'roles' : 'keywords');
+  return seeded;
+}
+
+function updateInterviewReadyPanel(){
+  const panel = document.getElementById('interviewReady');
+  if(!panel) return;
+  if(!guidedInterviewDone || guidedConvoActive || !getStanceText().trim()){
+    panel.classList.remove('show');
+    return;
+  }
+  const summary = (guidedSummary || getStanceText()).trim();
+  const blurb = summary.length > 220 ? `${summary.slice(0, 217).trim()}…` : summary;
+  document.getElementById('interviewReadySummary').textContent = blurb;
+  panel.classList.add('show');
+}
+
+function goSearchWithInterviewProfile(){
+  seedSearchFieldsFromInterview({ overwrite: false });
+  updateSearchMemoryCue();
+  showView('search');
+  const roles = getSearchInput('roles');
+  if(roles && roles.value.trim()){
+    setStatus('searchStatus', 'Profile loaded — tap Search jobs when ready', 'ok');
+  }else{
+    setStatus('searchStatus', 'Add a role if needed — your interview will rank matches', 'ok');
+  }
+  const btn = document.getElementById('searchBtn');
+  if(btn) btn.focus();
+}
+
+async function finishGuidedInterview(){
+  try{
+    setGuidedNavBusy(true);
+    ensureProviderKeyForInterview();
+    let summary = '';
+    try{
+      const result = await callInterviewLlm({ forceDone: true });
+      summary = result.summary || '';
+    }catch(err){
+      log(`interview summary failed, composing from Q&A: ${err.message}`);
+    }
+    guidedInterviewDone = true;
+    guidedSummary = summary || composeStanceFromGuided();
+    if(!guidedSummary) guidedSummary = formatGuidedAnswersText() || '';
+    saveGuidedAnswers();
+    seedSearchFieldsFromInterview({ overwrite: false });
+    closeGuidedConvo();
+    setStatus('guidedMicStatus', '', '');
+    updateInterviewReadyPanel();
+  }catch(err){
+    setStatus('guidedMicStatus', err.message || 'Could not finish interview', 'err');
+    throw err;
+  }finally{
+    setGuidedNavBusy(false);
+  }
+}
+
+async function fetchAndShowNextGuidedQuestion(){
+  if(guidedTurns.length >= GUIDED_MAX_QUESTIONS){
+    await finishGuidedInterview();
+    return;
+  }
+  try{
+    setGuidedNavBusy(true);
+    const result = await callInterviewLlm({ forceDone: false });
+    if(result.done){
+      guidedInterviewDone = true;
+      guidedSummary = result.summary || composeStanceFromGuided();
+      saveGuidedAnswers();
+      seedSearchFieldsFromInterview({ overwrite: false });
+      closeGuidedConvo();
+      updateInterviewReadyPanel();
+      return;
+    }
+    guidedTurns.push({ question: result.question });
+    guidedQuestionIndex = guidedTurns.length - 1;
+    saveGuidedAnswers();
+    showGuidedQuestion({ speak: true });
+    renderGuidedAnswersReview();
+  }catch(err){
+    log(`next interview question ERROR: ${err.message}`);
+    setStatus('guidedMicStatus', err.message || 'Could not get next question', 'err');
+    updateGuidedNextFromInput();
+    document.getElementById('guidedProgress').textContent =
+      `Question ${guidedQuestionIndex + 1} of up to ${GUIDED_MAX_QUESTIONS}`;
+  }finally{
+    setGuidedNavBusy(false);
+  }
+}
+
+function renderGuidedAnswersReview(){
+  const review = document.getElementById('guidedAnswersReview');
+  const list = document.getElementById('guidedAnswersList');
+  if(!guidedTurns.length){
+    list.innerHTML = '';
+    review.classList.add('hidden');
+    return;
+  }
+
+  list.innerHTML = guidedTurns.map((t, i) => {
+    const val = turnVisited(t) ? t.answer : undefined;
+    let body;
+    let actions = '';
+    if(isGuidedAnswered(val)){
+      body = `<div class="a">${escapeHtml(val.trim())}</div>`;
+      const id = `guided-ans-${i}`;
+      setLangActionText(id, val.trim());
+      actions = langActionsHtml(id);
+    }else if(val === null) body = `<div class="a muted">Skipped</div>`;
+    else if(guidedConvoActive && i === guidedQuestionIndex) body = `<div class="a muted">Answering now…</div>`;
+    else body = `<div class="a muted">Tap to answer</div>`;
+
+    const current = guidedConvoActive && i === guidedQuestionIndex ? ' current' : '';
+    const editLabel = isGuidedAnswered(val) || val === null
+      ? `Edit question ${i + 1}`
+      : `Answer question ${i + 1}`;
+    return `<div class="guided-answer${current}">
+      <button type="button" class="guided-answer-main" data-guided-index="${i}" aria-label="${editLabel}">
+        <div class="q">${i + 1}. ${escapeHtml(t.question)}</div>
+        ${body}
+      </button>
+      ${actions}
+    </div>`;
+  }).join('');
+
+  review.classList.remove('hidden');
+}
+
+function updateGuidedStartUI(){
+  const startBtn = document.getElementById('startGuidedBtn');
+  const clearBtn = document.getElementById('clearGuidedBtn');
+  if(guidedConvoActive){
+    startBtn.style.display = 'none';
+    clearBtn.style.display = 'none';
+    return;
+  }
+  startBtn.style.display = 'inline-block';
+  const visited = visitedCount();
+  if(guidedInterviewDone){
+    startBtn.textContent = 'Review again';
+  }else if(visited > 0 || guidedTurns.length > 0){
+    startBtn.textContent = 'Continue';
+  }else{
+    startBtn.textContent = 'Start';
+  }
+  clearBtn.style.display = (visited || guidedTurns.length) ? 'inline-block' : 'none';
+}
+
+function updateCvReviewUI(){
+  const btn = document.getElementById('reviewCvBtn');
+  btn.style.display = cvText.trim() ? 'inline-block' : 'none';
+}
+
+function currentGuidedQuestionText(){
+  return guidedTurns[guidedQuestionIndex]?.question || '';
+}
+
+function speakCurrentGuidedQuestion(){
+  const q = currentGuidedQuestionText();
+  if(!q) return;
+  const btn = document.getElementById('guidedAskSpeakBtn');
+  speakEnglishAloud(q, 'guidedAskStatus', 'guided-ask', btn);
+}
+
+function beginGuidedAt(index, { speak = true } = {}){
+  if(!guidedTurns.length){
+    guidedTurns = [{ question: guidedOpeningQuestion() }];
+    guidedInterviewDone = false;
+    guidedSummary = '';
+  }
+  guidedConvoActive = true;
+  guidedQuestionIndex = Math.max(0, Math.min(index, guidedTurns.length - 1));
+  document.getElementById('guidedConvo').style.display = 'block';
+  document.getElementById('startGuidedBtn').style.display = 'none';
+  document.getElementById('clearGuidedBtn').style.display = 'none';
+  document.getElementById('guidedMicBtn').style.display = 'inline-block';
+  document.getElementById('guidedAnswerInput').style.display = 'block';
+  document.getElementById('guidedSkipBtn').style.display = 'inline-block';
+  document.getElementById('guidedAskSpeakBtn').style.display = '';
+  const ready = document.getElementById('interviewReady');
+  if(ready) ready.classList.remove('show');
+  showGuidedQuestion({ speak });
+  renderGuidedAnswersReview();
+}
+
+function onLastCommittedTurn(){
+  return guidedQuestionIndex >= guidedTurns.length - 1;
+}
+
+function guidedNextLabel(){
+  if(guidedInterviewDone) return 'Done';
+  if(onLastCommittedTurn() && guidedTurns.length >= GUIDED_MAX_QUESTIONS) return 'Done';
+  return 'Next';
+}
+
+function commitGuidedAnswerFromInput(){
+  const input = document.getElementById('guidedAnswerInput');
+  const raw = input.value.trim();
+  if(!raw) return false;
+  if(!guidedTurns[guidedQuestionIndex]) return false;
+  const prev = guidedTurns[guidedQuestionIndex].answer;
+  guidedTurns[guidedQuestionIndex].answer = raw;
+  // Edits invalidate a prior LLM summary; search falls back to Q&A compose.
+  // Re-answering after "done" should allow wrap-up to rebuild — do not restart from Q1.
+  if(guidedSummary) guidedSummary = '';
+  if(guidedInterviewDone && prev !== raw) guidedInterviewDone = false;
+  saveGuidedAnswers();
+  guidedAnswerReady = true;
+  document.getElementById('guidedNativePeek').classList.remove('show');
+  return true;
+}
+
+function updateGuidedNextFromInput(){
+  if(guidedFetchingNext) return;
+  const hasTyped = document.getElementById('guidedAnswerInput').value.trim().length > 0;
+  const existing = guidedTurns[guidedQuestionIndex]?.answer;
+  if(hasTyped || isGuidedAnswered(existing) || existing === null){
+    document.getElementById('guidedNextBtn').style.display = 'inline-block';
+    document.getElementById('guidedNextBtn').textContent = guidedNextLabel();
+  }else{
+    document.getElementById('guidedNextBtn').style.display = 'none';
+    guidedAnswerReady = false;
+  }
+}
+
+function showGuidedQuestion({ speak = false } = {}){
+  const turn = guidedTurns[guidedQuestionIndex];
+  const qEl = document.getElementById('guidedQuestion');
+  qEl.classList.remove('enter');
+  // Restart enter animation when the question text changes.
+  void qEl.offsetWidth;
+  qEl.textContent = turn?.question || '';
+  qEl.classList.add('enter');
+
+  const answered = answeredCount();
+  const progressPct = Math.min(100, Math.round(
+    ((guidedInterviewDone ? GUIDED_MAX_QUESTIONS : Math.max(answered, guidedQuestionIndex + 1)) / GUIDED_MAX_QUESTIONS) * 100
+  ));
+  const fill = document.getElementById('guidedProgressFill');
+  if(fill) fill.style.width = `${progressPct}%`;
+
+  document.getElementById('guidedProgress').textContent =
+    `Question ${guidedQuestionIndex + 1} of up to ${GUIDED_MAX_QUESTIONS}` +
+    (answered ? ` · ${answered} answered` : '');
+  document.getElementById('guidedNextBtn').style.display = 'none';
+  document.getElementById('guidedSkipBtn').style.display = 'inline-block';
+  document.getElementById('guidedAnswerInput').style.display = 'block';
+  setStatus('guidedMicStatus', '', '');
+  setStatus('guidedLangStatus', '', '');
+  setStatus('guidedAskStatus', '', '');
+  document.getElementById('guidedNativePeek').classList.remove('show');
+  guidedAnswerReady = false;
+
+  const input = document.getElementById('guidedAnswerInput');
+  const existing = turn && turnVisited(turn) ? turn.answer : undefined;
+  if(isGuidedAnswered(existing)){
+    input.value = existing.trim();
+    document.getElementById('guidedNextBtn').style.display = 'inline-block';
+    document.getElementById('guidedNextBtn').textContent = guidedNextLabel();
+    guidedAnswerReady = true;
+    setStatus('guidedMicStatus', 'saved — edit, speak again, or skip', 'ok');
+  }else if(existing === null){
+    input.value = '';
+    setStatus('guidedMicStatus', 'previously skipped — type, speak, or skip again', '');
+    document.getElementById('guidedNextBtn').style.display = 'inline-block';
+    document.getElementById('guidedNextBtn').textContent = guidedNextLabel();
+  }else{
+    input.value = '';
+  }
+  syncClearButton(input, document.getElementById('guidedClearBtn'));
+  if(speak) speakCurrentGuidedQuestion();
+}
+
+async function advanceGuided(){
+  if(guidedFetchingNext) return;
+
+  // Editing after interview already complete: walk saved turns, then close.
+  if(guidedInterviewDone){
+    if(guidedQuestionIndex >= guidedTurns.length - 1){
+      closeGuidedConvo();
+      return;
+    }
+    guidedQuestionIndex++;
+    showGuidedQuestion({ speak: true });
+    renderGuidedAnswersReview();
+    return;
+  }
+
+  // Mid-list navigation (user jumped back via review list)
+  if(guidedQuestionIndex < guidedTurns.length - 1){
+    guidedQuestionIndex++;
+    showGuidedQuestion({ speak: true });
+    renderGuidedAnswersReview();
+    return;
+  }
+
+  // On the latest turn — ask LLM for next question or finish
+  if(guidedTurns.length >= GUIDED_MAX_QUESTIONS){
+    await finishGuidedInterview();
+    return;
+  }
+  await fetchAndShowNextGuidedQuestion();
+}
+
+document.getElementById('startGuidedBtn').addEventListener('click', async () => {
+  try{
+    if(!guidedTurns.length){
+      ensureProviderKeyForInterview();
+      beginGuidedAt(0, { speak: true });
+      saveGuidedAnswers();
+      return;
+    }
+    // Continue: open first unanswered, or fetch next if all current turns answered
+    const openIdx = firstOpenGuidedIndex();
+    const allVisited = guidedTurns.every(turnVisited);
+    if(!guidedInterviewDone && allVisited && guidedTurns.length < GUIDED_MAX_QUESTIONS){
+      beginGuidedAt(guidedTurns.length - 1, { speak: false });
+      await fetchAndShowNextGuidedQuestion();
+      return;
+    }
+    beginGuidedAt(openIdx, { speak: true });
+  }catch(err){
+    setStatus('guidedMicStatus', err.message || 'Cannot start interview', 'err');
+    document.getElementById('guidedConvo').style.display = 'block';
+    document.getElementById('guidedQuestion').textContent = '';
+    document.getElementById('guidedProgress').textContent = '';
+    document.getElementById('guidedMicBtn').style.display = 'none';
+    document.getElementById('guidedAnswerInput').style.display = 'none';
+    document.getElementById('guidedSkipBtn').style.display = 'none';
+    document.getElementById('guidedNextBtn').style.display = 'none';
+    document.getElementById('guidedAskSpeakBtn').style.display = 'none';
+    guidedConvoActive = true;
+    updateGuidedStartUI();
+  }
+});
+
+document.getElementById('interviewReadySearchBtn').addEventListener('click', () => {
+  goSearchWithInterviewProfile();
+});
+document.getElementById('interviewReadyCvBtn').addEventListener('click', () => {
+  const cvTab = document.querySelector('.method-pick[data-tab="cv"]');
+  if(cvTab) cvTab.click();
+  const drop = document.querySelector('#profilePanel-cv .cv-drop');
+  if(drop) drop.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+});
+
+document.getElementById('clearGuidedBtn').addEventListener('click', () => {
+  if(!confirm('Clear all saved answers?')) return;
+  stopTtsPlayback();
+  guidedTurns = [];
+  guidedQuestionIndex = 0;
+  guidedInterviewDone = false;
+  guidedSummary = '';
+  guidedConvoActive = false;
+  saveGuidedAnswers();
+  syncStanceFromGuidedAnswers({ force: true });
+  updateInterviewReadyPanel();
+  document.getElementById('guidedConvo').style.display = 'none';
+  document.getElementById('guidedAskSpeakBtn').style.display = '';
+});
+
+document.getElementById('guidedCancelBtn').addEventListener('click', () => {
+  commitGuidedAnswerFromInput();
+  closeGuidedConvo();
+});
+
+document.getElementById('guidedNextBtn').addEventListener('click', async () => {
+  if(guidedFetchingNext) return;
+  commitGuidedAnswerFromInput();
+  await advanceGuided();
+});
+
+document.getElementById('guidedAnswerInput').addEventListener('input', () => {
+  updateGuidedNextFromInput();
+  syncClearButton(document.getElementById('guidedAnswerInput'), document.getElementById('guidedClearBtn'));
+  document.getElementById('guidedNativePeek').classList.remove('show');
+});
+
+document.getElementById('guidedClearBtn').addEventListener('click', () => {
+  const input = document.getElementById('guidedAnswerInput');
+  input.value = '';
+  const turn = guidedTurns[guidedQuestionIndex];
+  if(turn && Object.prototype.hasOwnProperty.call(turn, 'answer')){
+    delete turn.answer;
+    if(guidedSummary) guidedSummary = '';
+    if(guidedInterviewDone) guidedInterviewDone = false;
+    saveGuidedAnswers();
+  }
+  syncClearButton(input, document.getElementById('guidedClearBtn'));
+  document.getElementById('guidedNativePeek').classList.remove('show');
+  setStatus('guidedMicStatus', '', '');
+  setStatus('guidedLangStatus', '', '');
+  updateGuidedNextFromInput();
+  input.focus();
+});
+
+document.getElementById('guidedTranslateBtn').addEventListener('click', () => {
+  peekNativeTranslation(
+    document.getElementById('guidedAnswerInput').value,
+    'guidedNativePeek', 'guidedNativePeekText', 'guidedLangStatus'
+  );
+});
+document.getElementById('guidedSpeakBtn').addEventListener('click', () => {
+  const btn = document.getElementById('guidedSpeakBtn');
+  speakEnglishAloud(document.getElementById('guidedAnswerInput').value, 'guidedLangStatus', 'guided', btn);
+});
+document.getElementById('guidedAskSpeakBtn').addEventListener('click', () => {
+  speakCurrentGuidedQuestion();
+});
+
+document.getElementById('guidedSkipBtn').addEventListener('click', async () => {
+  if(guidedFetchingNext) return;
+  if(!guidedTurns[guidedQuestionIndex]) return;
+  guidedTurns[guidedQuestionIndex].answer = null;
+  if(guidedSummary) guidedSummary = '';
+  saveGuidedAnswers();
+  await advanceGuided();
+});
+
+document.getElementById('guidedAnswersList').addEventListener('click', (e) => {
+  // Translate / Speak sit beside the edit control — never treat them as "tap to edit".
+  if(e.target.closest('[data-lang-translate], [data-lang-speak], .native-peek')) return;
+  const btn = e.target.closest('[data-guided-index]');
+  if(!btn) return;
+  const index = Number(btn.dataset.guidedIndex);
+  if(Number.isNaN(index)) return;
+  // Jump to that turn only — keep full Q&A history; do not restart from Q1.
+  if(!guidedConvoActive) beginGuidedAt(index, { speak: true });
+  else {
+    commitGuidedAnswerFromInput();
+    guidedQuestionIndex = index;
+    showGuidedQuestion({ speak: true });
+    renderGuidedAnswersReview();
+  }
+});
+
+const CV_REVIEW_MAX_BULLETS = 6;
+const CV_REVIEW_MAX_WORDS = 15;
+
+function clearCvNotesPanel(){
+  const panel = document.getElementById('cvNotesPanel');
+  document.getElementById('cvReviewBlock').innerHTML = '';
+  setStatus('cvNotesStatus', '', '');
+  setStatus('cvUpdatedStatus', '', '');
+  document.getElementById('cvApplyPrompt').classList.add('hidden');
+  document.getElementById('cvEditDual').classList.add('hidden');
+  document.getElementById('cvUpdatedFoot').classList.add('hidden');
+  setCvDownloadButtonsVisible(false);
+  document.getElementById('cvOriginalPreview').innerHTML = '';
+  setCvUpdatedEditor('', { busy: false });
+  lastCvReview = '';
+  updatedCvText = '';
+  panel.classList.add('hidden');
+}
+
+function getCvUpdatedEditor(){
+  return document.getElementById('cvUpdatedEditor');
+}
+
+function setCvUpdatedEditor(text, { busy = false, placeholder } = {}){
+  const editor = getCvUpdatedEditor();
+  const wrap = document.getElementById('cvUpdatedEditorWrap');
+  editor.value = text || '';
+  editor.readOnly = !!busy;
+  editor.classList.toggle('is-busy', !!busy);
+  wrap.classList.toggle('is-busy', !!busy);
+  if(placeholder !== undefined) editor.placeholder = placeholder;
+  updatedCvText = editor.value;
+}
+
+function syncUpdatedCvFromEditor(){
+  const editor = getCvUpdatedEditor();
+  updatedCvText = editor ? editor.value : '';
+  return updatedCvText;
+}
+
+function cleanCvReviewBullet(s){
+  return String(s || '')
+    .replace(/[*_#>`]+/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/^(?:[-*•]|\d+[.)])\s+/, '')
+    .trim();
+}
+
+/** Hard-cap bullet length; drop trailing punctuation left by mid-sentence cuts. */
+function enforceCvReviewWordLimit(s, maxWords = CV_REVIEW_MAX_WORDS){
+  const words = String(s || '').split(/\s+/).filter(Boolean);
+  if(!words.length) return '';
+  if(words.length <= maxWords) return words.join(' ');
+  return words.slice(0, maxWords).join(' ')
+    .replace(/[,;:–—\-…/\\]+$/u, '')
+    .trim();
+}
+
+/** Normalize model output to 4–6 sharp improvement bullets (cap at 6; ≤15 words each). */
+function normalizeBulletReview(text){
+  let t = String(text || '').trim();
+  if(!t) return [];
+  t = t
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/^#{1,6}\s+.*$/gm, '')
+    .trim();
+
+  const lines = t.split(/\n+/).map(l => l.trim()).filter(Boolean);
+  let bullets = [];
+
+  for(const line of lines){
+    const marked = line.match(/^(?:[-*•]|\d+[.)])\s+(.+)$/);
+    if(marked) bullets.push(cleanCvReviewBullet(marked[1]));
+  }
+
+  if(!bullets.length){
+    if(lines.length >= 2){
+      bullets = lines.map(cleanCvReviewBullet);
+    } else {
+      const plain = cleanCvReviewBullet(t);
+      const parts = plain.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [plain];
+      bullets = parts.map(cleanCvReviewBullet);
+    }
+  }
+
+  bullets = bullets
+    .map(cleanCvReviewBullet)
+    .map(b => enforceCvReviewWordLimit(b, CV_REVIEW_MAX_WORDS))
+    .filter(b => b && b.split(/\s+/).filter(Boolean).length >= 3)
+    .slice(0, CV_REVIEW_MAX_BULLETS);
+
+  return bullets;
+}
+
+function formatCvReviewPlain(bullets){
+  return bullets.map(b => `• ${b}`).join('\n');
+}
+
+function renderCvReview(text){
+  const panel = document.getElementById('cvNotesPanel');
+  const block = document.getElementById('cvReviewBlock');
+  const bullets = normalizeBulletReview(text);
+  const review = bullets.length
+    ? formatCvReviewPlain(bullets)
+    : 'No review returned.';
+  lastCvReview = review;
+  updatedCvText = '';
+  setLangActionText('cvreview', review);
+  const body = bullets.length
+    ? `<ul class="cv-review-list">${bullets.map(b => `<li>${escapeHtml(b)}</li>`).join('')}</ul>`
+    : `<div class="note-body">${escapeHtml(review)}</div>`;
+  block.innerHTML = `${body}${langActionsHtml('cvreview')}`;
+  document.getElementById('cvApplyPrompt').classList.remove('hidden');
+  document.getElementById('cvEditDual').classList.add('hidden');
+  document.getElementById('cvUpdatedFoot').classList.add('hidden');
+  setCvDownloadButtonsVisible(false);
+  setCvUpdatedEditor('', {
+    busy: false,
+    placeholder: 'Your updated CV will appear here — you can edit it before downloading.'
+  });
+  setStatus('cvUpdatedStatus', '', '');
+  panel.classList.remove('hidden');
+}
+
+function downloadTextFile(filename, text){
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function setCvDownloadButtonsVisible(visible){
+  const display = visible ? 'inline-block' : 'none';
+  document.getElementById('cvDownloadPdfBtn').style.display = display;
+  document.getElementById('cvDownloadTxtBtn').style.display = display;
+}
+
+async function downloadUpdatedCvPdf(text){
+  const JsPDF = await loadJsPdf();
+  const doc = new JsPDF({ unit: 'pt', format: 'a4' });
+  const margin = 48;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const maxWidth = pageWidth - margin * 2;
+  const fontSize = 11;
+  const lineHeight = fontSize * 1.35;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(fontSize);
+
+  let y = margin;
+  const paragraphs = String(text).replace(/\r\n/g, '\n').split('\n');
+  for(const para of paragraphs){
+    const wrapped = para.length ? doc.splitTextToSize(para, maxWidth) : [''];
+    for(const line of wrapped){
+      if(y + lineHeight > pageHeight - margin){
+        doc.addPage();
+        y = margin;
+      }
+      if(line) doc.text(line, margin, y);
+      y += lineHeight;
+    }
+  }
+  doc.save('CV-updated.pdf');
+}
+
+function requireProviderKeyForCv(panel){
+  const provider = getProvider();
+  if(provider === 'openai' && !getOpenAIKey()){
+    panel.classList.remove('hidden');
+    document.getElementById('cvReviewBlock').innerHTML = '';
+    setStatus('cvNotesStatus', 'Add your OpenAI API key first', 'err');
+    return null;
+  }
+  if(provider !== 'openai' && !getAnthropicKey()){
+    panel.classList.remove('hidden');
+    document.getElementById('cvReviewBlock').innerHTML = '';
+    setStatus('cvNotesStatus', 'Add your Claude API key first', 'err');
+    return null;
+  }
+  return provider;
+}
+
+function renderOriginalCvTextFallback(){
+  const el = document.getElementById('cvOriginalPreview');
+  el.innerHTML = `<pre class="cv-text-fallback">${escapeHtml(cvText || '(empty)')}</pre>`;
+}
+
+async function renderOriginalCvPreview(){
+  const el = document.getElementById('cvOriginalPreview');
+  el.innerHTML = '';
+  if(cvIsPdf && cvPdfBuffer){
+    try{
+      const pdfjs = await loadPdfJs();
+      const pdf = await pdfjs.getDocument({ data: cvPdfBuffer.slice(0) }).promise;
+      const maxPages = Math.min(pdf.numPages, 8);
+      for(let i = 1; i <= maxPages; i++){
+        const page = await pdf.getPage(i);
+        const base = page.getViewport({ scale: 1 });
+        const scale = Math.min(1.35, (el.clientWidth || 320) / base.width);
+        const viewport = page.getViewport({ scale: Math.max(0.75, scale) });
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        el.appendChild(canvas);
+        await page.render({ canvasContext: ctx, viewport }).promise;
+      }
+      if(pdf.numPages > maxPages){
+        const note = document.createElement('p');
+        note.className = 'status';
+        note.style.margin = '0';
+        note.textContent = `Showing first ${maxPages} of ${pdf.numPages} pages`;
+        el.appendChild(note);
+      }
+      return;
+    }catch(err){
+      log(`CV PDF preview ERROR: ${err.message}`);
+    }
+  }
+  renderOriginalCvTextFallback();
+}
+
+function showCvEditDualPane(){
+  const dual = document.getElementById('cvEditDual');
+  dual.classList.remove('hidden');
+  document.getElementById('cvUpdatedFoot').classList.remove('hidden');
+  setCvDownloadButtonsVisible(false);
+  setCvUpdatedEditor('', {
+    busy: false,
+    placeholder: 'Your updated CV will appear here — you can edit it before downloading.'
+  });
+  setStatus('cvUpdatedStatus', '', '');
+  renderOriginalCvPreview();
+}
+
+async function reviewMyCv(){
+  const panel = document.getElementById('cvNotesPanel');
+  const block = document.getElementById('cvReviewBlock');
+  const btn = document.getElementById('reviewCvBtn');
+
+  if(!cvText.trim()){
+    panel.classList.remove('hidden');
+    block.innerHTML = '';
+    document.getElementById('cvApplyPrompt').classList.add('hidden');
+    document.getElementById('cvEditDual').classList.add('hidden');
+    setStatus('cvNotesStatus', 'Upload a CV first', 'err');
+    return;
+  }
+  const provider = requireProviderKeyForCv(panel);
+  if(!provider) return;
+
+  panel.classList.remove('hidden');
+  block.innerHTML = '';
+  document.getElementById('cvApplyPrompt').classList.add('hidden');
+  document.getElementById('cvEditDual').classList.add('hidden');
+  setCvDownloadButtonsVisible(false);
+  updatedCvText = '';
+  lastCvReview = '';
+  document.getElementById('cvNotesStatus').innerHTML = '<span class="spinner"></span>reviewing your CV…';
+  btn.disabled = true;
+
+  try{
+    const cvExcerpt = truncateForPrompt(cvText, MAX_CV_CHARS);
+    const answersText = formatGuidedAnswersText();
+    const prompt = `You are a CV coach. Review this CV and return ONLY 4–6 sharp improvement bullets.
+Each bullet: one concrete, actionable change (what to add, cut, rewrite, quantify, or reorder) — specific to THIS CV.
+Hard limit: each bullet must be at most 15 words (count carefully; shorter is fine).
+Rules: pointed and actionable; improvement-focused; plain bullets only (- or •); no headers; no preamble; no closing; no praise essay; no vague advice. Do not invent employers, dates, or credentials.
+${answersText ? `\nProfile answers for optional context:\n${answersText}\n` : ''}
+CV text (may be truncated):
+${cvExcerpt}`;
+
+    const notes = provider === 'openai'
+      ? await callOpenAI(prompt, { webSearch: false })
+      : await callClaude(prompt, { webSearch: false, maxTokens: 500 });
+    setStatus('cvNotesStatus', '', '');
+    document.getElementById('cvNotesStatus').innerHTML = '';
+    renderCvReview(notes);
+    const bulletCount = (lastCvReview.match(/^• /gm) || []).length;
+    log(`CV review: ${bulletCount} bullets / ${lastCvReview.length} chars`);
+  }catch(err){
+    log(`CV review ERROR: ${err.message}`);
+    block.innerHTML = '';
+    document.getElementById('cvApplyPrompt').classList.add('hidden');
+    setStatus('cvNotesStatus', err.message || 'Review failed', 'err');
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+async function applyCvUpdates(){
+  const panel = document.getElementById('cvNotesPanel');
+  const updateBtn = document.getElementById('cvUpdateBtn');
+
+  if(!cvText.trim() || !lastCvReview.trim()){
+    showCvEditDualPane();
+    setStatus('cvUpdatedStatus', 'Review a CV first', 'err');
+    return;
+  }
+  const provider = requireProviderKeyForCv(panel);
+  if(!provider) return;
+
+  showCvEditDualPane();
+  setCvUpdatedEditor('', {
+    busy: true,
+    placeholder: 'Updating CV… rewrite will appear here shortly.'
+  });
+  document.getElementById('cvUpdatedStatus').innerHTML = '<span class="spinner"></span>applying updates…';
+  updateBtn.disabled = true;
+
+  try{
+    const cvExcerpt = truncateForPrompt(cvText, MAX_CV_CHARS);
+    const prompt = `You are a CV editor. Rewrite the CV below so it incorporates this coach feedback.
+Coach feedback (apply these points):
+${lastCvReview}
+
+Rules:
+- Keep every fact accurate — do not invent employers, dates, titles, degrees, or credentials.
+- Apply the feedback with clearer wording, stronger bullets, and tighter structure where helpful.
+- Output the full updated CV as plain text only (sections and bullets fine). No preamble, no commentary, no markdown fences.
+
+Original CV (may be truncated):
+${cvExcerpt}`;
+
+    const updated = provider === 'openai'
+      ? await callOpenAI(prompt, { webSearch: false })
+      : await callClaude(prompt, { webSearch: false, maxTokens: 4000 });
+    updatedCvText = String(updated || '').trim()
+      .replace(/^```(?:markdown|md|text)?\s*/i, '')
+      .replace(/\s*```$/i, '')
+      .trim();
+    if(!updatedCvText) throw new Error('No updated CV returned');
+    setCvUpdatedEditor(updatedCvText, {
+      busy: false,
+      placeholder: 'Edit the updated CV here before downloading.'
+    });
+    setStatus('cvUpdatedStatus', 'Updated CV ready — edit freely, then download', 'ok');
+    setCvDownloadButtonsVisible(true);
+    getCvUpdatedEditor().focus();
+    log(`CV update: ${updatedCvText.length} chars`);
+  }catch(err){
+    log(`CV update ERROR: ${err.message}`);
+    setCvUpdatedEditor('', {
+      busy: false,
+      placeholder: 'Update failed — try again, or write your own draft here.'
+    });
+    setCvDownloadButtonsVisible(false);
+    setStatus('cvUpdatedStatus', err.message || 'Update failed', 'err');
+  }finally{
+    updateBtn.disabled = false;
+  }
+}
+
+document.getElementById('reviewCvBtn').addEventListener('click', () => {
+  reviewMyCv();
+});
+
+document.getElementById('cvUpdateBtn').addEventListener('click', () => {
+  applyCvUpdates();
+});
+
+document.getElementById('cvUpdatedEditor').addEventListener('input', () => {
+  syncUpdatedCvFromEditor();
+  setCvDownloadButtonsVisible(!!updatedCvText.trim());
+});
+
+document.getElementById('cvDownloadPdfBtn').addEventListener('click', async () => {
+  const text = syncUpdatedCvFromEditor().trim();
+  if(!text){
+    setStatus('cvUpdatedStatus', 'Nothing to download yet', 'err');
+    return;
+  }
+  const btn = document.getElementById('cvDownloadPdfBtn');
+  btn.disabled = true;
+  try{
+    await downloadUpdatedCvPdf(text);
+    setStatus('cvUpdatedStatus', 'Downloaded CV-updated.pdf', 'ok');
+  }catch(err){
+    log(`CV PDF download ERROR: ${err.message}`);
+    setStatus('cvUpdatedStatus', err.message || 'PDF download failed', 'err');
+  }finally{
+    btn.disabled = false;
+  }
+});
+
+document.getElementById('cvDownloadTxtBtn').addEventListener('click', () => {
+  const text = syncUpdatedCvFromEditor().trim();
+  if(!text){
+    setStatus('cvUpdatedStatus', 'Nothing to download yet', 'err');
+    return;
+  }
+  downloadTextFile('CV-updated.txt', text);
+  setStatus('cvUpdatedStatus', 'Downloaded CV-updated.txt', 'ok');
+});
+
+bindMicButton({
+  buttonId: 'guidedMicBtn', statusId: 'guidedMicStatus',
+  requireClearSpeech: true,
+  onResult: (text) => {
+    const input = document.getElementById('guidedAnswerInput');
+    input.value = appendDictatedText(input.value, text);
+    if(guidedTurns[guidedQuestionIndex]){
+      const prev = guidedTurns[guidedQuestionIndex].answer;
+      const next = input.value.trim();
+      guidedTurns[guidedQuestionIndex].answer = next;
+      if(guidedSummary) guidedSummary = '';
+      // Correction of this turn only — never wipe earlier Q&A or jump back to Q1.
+      if(guidedInterviewDone && prev !== next) guidedInterviewDone = false;
+      saveGuidedAnswers();
+    }
+    guidedAnswerReady = true;
+    document.getElementById('guidedNextBtn').style.display = 'inline-block';
+    document.getElementById('guidedNextBtn').textContent = guidedNextLabel();
+    syncClearButton(input, document.getElementById('guidedClearBtn'));
+    document.getElementById('guidedNativePeek').classList.remove('show');
+  }
+});
+
+// Restore saved interview on load
+(() => {
+  const state = loadGuidedState();
+  guidedTurns = state.turns;
+  guidedSummary = state.summary;
+  guidedInterviewDone = state.done;
+  renderGuidedAnswersReview();
+  updateGuidedStartUI();
+  updateCvReviewUI();
+  if(answeredCount() > 0 || guidedSummary) syncStanceFromGuidedAnswers();
+  else updateSearchMemoryCue();
+  updateInterviewReadyPanel();
+})();
+
+// ---------- job chat history (Translate/Speak via shared langActionsHtml) ----------
+function renderJobChatHistory(index){
+  const history = jobChatHistories[index] || [];
+  const el = document.getElementById(`jobChatHistory-${index}`);
+  el.innerHTML = history.map((msg, msgIndex) => {
+    const id = `jobchat-${index}-${msgIndex}`;
+    setLangActionText(id, msg.text);
+    return `
+    <div class="job-chat-msg ${msg.role}">
+      <div class="msg-label">${msg.role === 'user' ? 'you asked' : 'answer'}</div>
+      ${escapeHtml(msg.text)}
+      ${langActionsHtml(id)}
+    </div>`;
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+// ---------- chat with a job ----------
+const jobChatHistories = {}; // { [jobIndex]: [{role, text}] }
+
+function toggleJobChat(index){
+  const panel = document.getElementById(`jobChatPanel-${index}`);
+  const opening = panel.style.display === 'none';
+  panel.style.display = opening ? 'block' : 'none';
+  if(opening){
+    const statusId = `jobChatMicStatus-${index}`;
+    if(hasProfileMemory()){
+      setStatus(statusId, 'using your interview' + ((cvText || '').trim() ? ' + CV' : '') + ' for answers', 'ok');
+    }
+  }
+}
+
+function buildJobContextForChat(job){
+  const lines = [
+    `Title: ${job.title}`, `Company: ${job.company}`, `Location: ${job.location}`,
+    `Why it fits: ${job.fit}`
+  ];
+  if(job.gate) lines.push(`Known blocker: ${job.gate}`);
+  if(job.skills_required && job.skills_required.length) lines.push(`Required skills mentioned in posting: ${job.skills_required.join(', ')}`);
+  if(job.matched_skills && job.matched_skills.length) lines.push(`Candidate already has: ${job.matched_skills.join(', ')}`);
+  if(job.missing_skills && job.missing_skills.length) lines.push(`Candidate is missing: ${job.missing_skills.join(', ')}`);
+  if(job.next_step) lines.push(`Suggested next step: ${job.next_step}`);
+  if(job.source) lines.push(`Found via: ${job.source}`);
+  return lines.join('\n');
+}
+
+async function answerJobChatQuestion(index, question){
+  const job = lastResults[index];
+  const history = jobChatHistories[index] || [];
+  const historyText = history.map(m => `${m.role === 'user' ? 'Candidate' : 'You'}: ${m.text}`).join('\n');
+  const memory = buildCandidateMemoryBlock({ maxStance: 700, maxCv: 900 });
+  const memoryBlock = memory
+    ? `\nCandidate memory (reuse when answering fit, gaps, or "should I apply" — do not invent beyond this + job details):\n${memory}\n`
+    : '';
+  const prompt = `You are answering a candidate's question about one specific job listing they're considering. Answer using ONLY the job details below, their candidate memory when relevant, plus your general knowledge (e.g. explaining what a technology or term means, general industry context) — do not claim to have searched for new information, and do not invent anything about this specific company or posting beyond what's given.
+
+Job details:
+${buildJobContextForChat(job)}
+${memoryBlock}
+${historyText ? `Earlier in this conversation (continue coherently; do not ignore prior turns):\n${historyText}\n` : ''}
+Candidate's question: "${question}"
+
+Answer directly and concisely — 2-4 sentences, plain language, no headers or markdown. When the question is about fit or readiness, ground the reply in their interview/CV memory and this listing. If the answer isn't knowable from the job details given (e.g. something only the employer would know, like exact salary or interview process), say so honestly instead of guessing.`;
+
+  const provider = getProvider();
+  // 400 truncated mid-answer (and TTS); 1200 is enough for a short chat reply.
+  return provider === 'openai'
+    ? callOpenAI(prompt, { webSearch: false })
+    : callClaude(prompt, { webSearch: false, maxTokens: 1200 });
+}
+
+async function handleJobChatQuestionFromText(index, englishQuestion){
+  const statusId = `jobChatMicStatus-${index}`;
+  try{
+    if(!jobChatHistories[index]) jobChatHistories[index] = [];
+    jobChatHistories[index].push({ role: 'user', text: englishQuestion.trim() });
+    renderJobChatHistory(index);
+    document.getElementById(statusId).innerHTML = '<span class="spinner"></span>thinking…';
+    const englishAnswer = await answerJobChatQuestion(index, englishQuestion.trim());
+    jobChatHistories[index].push({ role: 'assistant', text: englishAnswer.trim() });
+    renderJobChatHistory(index);
+    setStatus(statusId, 'answered — Translate or Speak on each message if you want', 'ok');
+  }catch(err){
+    log(`job chat ERROR: ${err.message}`);
+    setStatus(statusId, err.message, 'err');
+  }
+}
+
+// Event delegation: chat mic buttons are created dynamically per card.
+let jobChatBusy = false;
+
+document.getElementById('resultsList').addEventListener('click', async (e) => {
+  const btn = e.target.closest('.job-chat-mic');
+  if(!btn) return;
+  e.preventDefault();
+  const index = btn.dataset.jobIndex;
+  const statusId = `jobChatMicStatus-${index}`;
+
+  if(recordSession && recordSession.btn === btn){
+    if(jobChatBusy) return;
+    jobChatBusy = true;
+    setStatus(statusId, '', '');
+    document.getElementById(statusId).innerHTML = '<span class="spinner"></span>transcribing…';
+    try{
+      const blobs = await endRecordSession();
+      if(!blobs.length){
+        setStatus(statusId, 'didn\'t catch that — try again', 'err');
+        return;
+      }
+      document.getElementById(statusId).innerHTML = '<span class="spinner"></span>cleaning up…';
+      const { english } = await transcribeBlobsToEnglish(blobs);
+      if(!english.trim()){
+        setStatus(statusId, 'didn\'t catch that — try again', 'err');
+        return;
+      }
+      await handleJobChatQuestionFromText(index, english);
+    }catch(err){
+      log(`job chat mic ERROR: ${err.message}`);
+      if(recordSession) await endRecordSession().catch(() => {});
+      setStatus(statusId, err.message, 'err');
+    }finally{
+      jobChatBusy = false;
+    }
+    return;
+  }
+
+  if(jobChatBusy || recordSession || activeMicButton) return;
+  try{
+    await beginRecordSession({ btn, statusId });
+  }catch(err){
+    setMicButtonRecording(btn, false);
+    setStatus(statusId, `mic error: ${err.message}`, 'err');
+  }
+});
+
+function playBase64Wav(b64){
+  return new Promise((resolve, reject) => {
+    const gen = ttsPlayback.generation;
+    if(ttsPlayback.generation !== gen){
+      resolve();
+      return;
+    }
+    // Only one Audio element may play; drop any stray previous handle.
+    if(ttsPlayback.audio){
+      try{
+        ttsPlayback.audio.pause();
+        ttsPlayback.audio.removeAttribute('src');
+        ttsPlayback.audio.load();
+      }catch(_){}
+      ttsPlayback.audio = null;
+    }
+    // Strip whitespace — some APIs insert newlines in base64 that break later chunks.
+    const audio = new Audio('data:audio/wav;base64,' + String(b64 || '').replace(/\s+/g, ''));
+    ttsPlayback.audio = audio;
+    let settled = false;
+    const done = (err) => {
+      if(settled) return;
+      settled = true;
+      if(ttsPlayback.cancelPlay) ttsPlayback.cancelPlay = null;
+      if(ttsPlayback.audio === audio) ttsPlayback.audio = null;
+      // Cancelled mid-play: resolve so chunk loops can exit on generation check.
+      if(ttsPlayback.generation !== gen){
+        resolve();
+        return;
+      }
+      if(err) reject(err);
+      else resolve();
+    };
+    ttsPlayback.cancelPlay = () => done();
+    audio.onended = () => done();
+    audio.onerror = () => done(new Error('audio playback failed'));
+    audio.play().catch(err => done(err));
+  });
+}
+</script>
+</body>
+</html>
