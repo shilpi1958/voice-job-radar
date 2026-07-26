@@ -1170,8 +1170,15 @@ function updateResultsMemoryCue(used){
     cue.textContent = '';
     return;
   }
-  cue.innerHTML = 'Matched using <em>your interview</em>' +
-    ((cvText || '').trim() ? ' <em>+ CV</em>' : '') + '.';
+  const bits = [];
+  if(getStanceText().trim()) bits.push('your interview');
+  if((cvText || '').trim()) bits.push('your CV');
+  if(!bits.length){
+    cue.classList.remove('show');
+    cue.textContent = '';
+    return;
+  }
+  cue.innerHTML = `Matched using <em>${bits.join(' + ')}</em>.`;
   cue.classList.add('show');
 }
 
@@ -1405,7 +1412,6 @@ document.getElementById('setupGoSearch').addEventListener('click', () => {
   // First 30s: land on voice profile, not an empty search form.
   showView(getStanceText().trim() ? 'search' : 'profile');
 });
-document.getElementById('setupGoSearch').textContent = 'Build voice profile';
 document.getElementById('setupEditKeys').addEventListener('click', () => showSetupStep(1));
 
 loadKeyInputs();
