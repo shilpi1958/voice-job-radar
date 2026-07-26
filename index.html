@@ -210,10 +210,7 @@
 </section>
 
 <section id="resultsSection" style="display:none;">
-  <div class="row" style="justify-content:space-between;">
-    <label style="margin:0;">results</label>
-    <button class="secondary" id="readBackBtn" style="display:none;">&#128266; read results aloud</button>
-  </div>
+  <label style="margin:0;">results</label>
   <div id="resultsList" style="margin-top:10px;"></div>
 </section>
 
@@ -545,15 +542,13 @@ function renderResults(jobs){
   lastResults = jobs;
   const list = document.getElementById('resultsList');
   const section = document.getElementById('resultsSection');
-  const readBtn = document.getElementById('readBackBtn');
   list.innerHTML = '';
   if(!jobs.length){
     list.innerHTML = '<div class="status">no results found — try broadening the search or stance.</div>';
     section.style.display = 'block';
-    readBtn.style.display = 'none';
     return;
   }
-  jobs.forEach(job => {
+  jobs.forEach((job, index) => {
     const card = document.createElement('div');
     card.className = 'card';
     const skills = (job.skills_required || []).map(s => `<span>${escapeHtml(s)}</span>`).join('');
@@ -567,7 +562,11 @@ function renderResults(jobs){
       <div class="fit">${escapeHtml(job.fit || '')}</div>
       ${job.gate ? `<div class="gate">&#9888; ${escapeHtml(job.gate)}</div>` : ''}
       <div class="skills">${skills}</div>
-      ${job.url ? `<a href="${escapeHtml(job.url)}" target="_blank" rel="noopener">view posting &rarr;</a>` : ''}
+      <div class="row" style="margin-top:8px; justify-content:space-between; align-items:center;">
+        ${job.url ? `<a href="${escapeHtml(job.url)}" target="_blank" rel="noopener">view posting &rarr;</a>` : '<span></span>'}
+        <button class="secondary read-job-btn" data-job-index="${index}">&#128266; read aloud</button>
+      </div>
+      <span class="status" id="readJobStatus-${index}"></span>
       ${hasGapAnalysis ? `
       <div class="skill-gap">
         ${matchedSkills ? `<div class="row-label">you already have</div><div class="skills have">${matchedSkills}</div>` : ''}
@@ -575,10 +574,10 @@ function renderResults(jobs){
         ${job.next_step ? `<div class="row-label">what to do next</div><div class="next-step">${escapeHtml(job.next_step)}</div>` : ''}
       </div>` : ''}
     `;
+    card.querySelector('.read-job-btn').addEventListener('click', () => readJobAloud(index));
     list.appendChild(card);
   });
   section.style.display = 'block';
-  readBtn.style.display = 'inline-block';
 }
 
 function escapeHtml(str){
@@ -802,37 +801,52 @@ bindMicButton({
   speakBackAfter: true, readbackStatusId: 'stanceReadbackStatus'
 });
 
-// ---------- TTS readback ----------
-document.getElementById('readBackBtn').addEventListener('click', async () => {
-  if(!lastResults.length) return;
-  const btn = document.getElementById('readBackBtn');
+// ---------- TTS readback, one job at a time ----------
+function buildJobReadbackText(job){
+  const parts = [
+    `${job.title} at ${job.company}, in ${job.location}.`,
+    job.fit
+  ];
+  if(job.gate) parts.push(`Note: ${job.gate}.`);
+  if(job.matched_skills && job.matched_skills.length){
+    parts.push(`You already have: ${job.matched_skills.join(', ')}.`);
+  }
+  if(job.missing_skills && job.missing_skills.length){
+    parts.push(`Skills to close the gap: ${job.missing_skills.join(', ')}.`);
+  }
+  if(job.next_step){
+    parts.push(`What to do next: ${job.next_step}`);
+  }
+  return parts.filter(Boolean).join(' ');
+}
+
+async function readJobAloud(index){
+  const job = lastResults[index];
+  if(!job) return;
+  const btn = document.querySelector(`.read-job-btn[data-job-index="${index}"]`);
+  const statusId = `readJobStatus-${index}`;
   btn.disabled = true;
   const originalLabel = btn.textContent;
   btn.textContent = 'reading…';
+  setStatus(statusId, '', '');
   try{
-    const top = lastResults.slice(0, 3);
-    const summary = top.map((job, i) =>
-      `Result ${i+1}: ${job.title} at ${job.company}, in ${job.location}. ${job.fit}`
-    );
-    let textsToSpeak = summary;
+    const englishText = buildJobReadbackText(job);
+    let textToSpeak = englishText;
     if(!lastSpokenLanguage.startsWith('en')){
-      textsToSpeak = [];
-      for(const line of summary){
-        textsToSpeak.push(await sarvamTranslate(line, 'en-IN', lastSpokenLanguage));
-      }
+      textToSpeak = await sarvamTranslate(englishText, 'en-IN', lastSpokenLanguage);
     }
-    const audios = await sarvamSpeak(textsToSpeak, lastSpokenLanguage);
+    const audios = await sarvamSpeak([textToSpeak], lastSpokenLanguage);
     for(const b64 of audios){
       await playBase64Wav(b64);
     }
   }catch(err){
     log(`TTS ERROR: ${err.message}`);
-    setStatus('searchStatus', `readback failed: ${err.message}`, 'err');
+    setStatus(statusId, `couldn't read this aloud: ${err.message}`, 'err');
   }finally{
     btn.disabled = false;
     btn.textContent = originalLabel;
   }
-});
+}
 
 function playBase64Wav(b64){
   return new Promise((resolve, reject) => {
