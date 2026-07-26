@@ -319,6 +319,35 @@
   }
   .cv-notes .status{margin:0 0 8px;}
   .cv-notes .status:empty{display:none; margin:0;}
+  .text-actions{
+    display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+    margin:8px 0 0;
+  }
+  .text-actions .status{margin:0;}
+  .field-head{
+    display:flex; align-items:baseline; justify-content:space-between;
+    gap:10px; margin:8px 0 6px;
+  }
+  .field-head label{margin:0;}
+  button.field-clear{
+    background:transparent; color:var(--muted); border:none;
+    padding:2px 0; font:inherit; font-size:0.82rem; font-weight:600;
+    cursor:pointer; text-decoration:underline; text-underline-offset:2px;
+  }
+  button.field-clear:hover:not(:disabled){
+    color:var(--danger); background:transparent; filter:none;
+  }
+  button.field-clear[hidden]{display:none;}
+  .native-peek{
+    display:none; margin-top:8px; padding:10px 12px;
+    border-radius:8px; background:var(--field-bg); border:1px solid var(--border);
+    font-size:0.9rem; color:var(--text); line-height:1.45;
+  }
+  .native-peek.show{display:block;}
+  .native-peek .label{
+    color:var(--muted); font-size:0.72rem; text-transform:uppercase;
+    letter-spacing:0.06em; font-weight:600; margin-bottom:4px;
+  }
   .search-compose-row{
     display:flex; gap:8px; align-items:center;
   }
@@ -327,6 +356,13 @@
     color:var(--text); font-family:inherit; font-size:0.95rem; width:auto;
   }
   .search-compose-row input:focus{outline:none;}
+  .search-compose-row .field-clear{
+    flex:none; padding:4px 6px; text-decoration:none;
+    border-radius:6px; line-height:1;
+  }
+  .search-compose-row .field-clear:hover:not(:disabled){
+    background:color-mix(in srgb, var(--danger) 10%, transparent);
+  }
   .search-fields{display:flex; flex-direction:column; gap:12px; margin-top:4px;}
   .search-field{
     border:1px solid var(--border-strong); border-radius:10px;
@@ -513,7 +549,7 @@
   </div>
 
   <div class="profile-panel active" id="profilePanel-speak">
-    <p class="hint">Speak freely — tap Speak, then Stop when you're done. No time limit.</p>
+    <p class="hint">Speak in your language — we write English. Translate and Speak only run when you tap them.</p>
     <div class="mic-control">
       <button id="stanceMicBtn" class="mic" type="button" aria-label="Speak">
         <span class="mic-ico" aria-hidden="true"></span>
@@ -521,19 +557,25 @@
       </button>
       <span class="status" id="stanceMicStatus"></span>
     </div>
-    <div class="transcript-box" id="stanceTranscriptBox">
-      <div class="label">heard</div>
-      <div id="stanceTranscriptOriginal"></div>
-      <div class="label" style="margin-top:8px;">in English</div>
-      <div id="stanceTranscriptEnglish"></div>
+    <div class="field-head">
+      <label for="stanceText">Your profile <span style="color:var(--muted); font-weight:400;">(English)</span></label>
+      <button type="button" class="field-clear" id="stanceClearBtn" hidden>Clear</button>
     </div>
-    <label for="stanceText" style="margin-top:16px;">Your profile</label>
-    <textarea id="stanceText" rows="5" style="min-height:120px;" placeholder="Experience, preferences, deal-breakers…"></textarea>
-    <span class="status" id="stanceReadbackStatus"></span>
+    <textarea id="stanceText" rows="5" style="min-height:120px;" placeholder="Experience, preferences, deal-breakers… (saved in English)"></textarea>
+    <div class="text-actions">
+      <button type="button" id="stanceToEnglishBtn" class="secondary">To English</button>
+      <button type="button" id="stanceTranslateBtn" class="secondary">Translate</button>
+      <button type="button" id="stanceSpeakBtn" class="secondary">Speak</button>
+      <span class="status" id="stanceReadbackStatus"></span>
+    </div>
+    <div class="native-peek" id="stanceNativePeek" aria-live="polite">
+      <div class="label">in your language</div>
+      <div id="stanceNativePeekText"></div>
+    </div>
   </div>
 
   <div class="profile-panel" id="profilePanel-cv">
-    <p class="hint">Used to spot skill gaps on each job match.</p>
+    <p class="hint">Used to spot skill gaps on each job match. Upload a CV, then review it for concrete update pointers.</p>
     <div class="cv-drop">
       <label for="cvFileInput" class="cv-upload-btn">Choose file</label>
       <input type="file" id="cvFileInput" accept=".pdf,.txt" style="display:none;">
@@ -542,12 +584,28 @@
         <button type="button" id="cvClearBtn" class="secondary" style="display:none;">Remove</button>
       </div>
     </div>
+    <div class="guided-start" style="margin-top:14px;">
+      <button type="button" id="reviewCvBtn" class="secondary" style="display:none;">Review my CV</button>
+    </div>
+    <div id="cvNotesPanel" class="cv-notes hidden" aria-live="polite">
+      <h3>How to update your CV</h3>
+      <p class="status" id="cvNotesStatus"></p>
+      <ul class="cv-notes-list" id="cvNotesList"></ul>
+      <div class="text-actions">
+        <button type="button" id="cvNotesTranslateBtn" class="secondary">Translate</button>
+        <button type="button" id="cvNotesSpeakBtn" class="secondary">Speak</button>
+        <span class="status" id="cvNotesLangStatus"></span>
+      </div>
+      <div class="native-peek" id="cvNotesNativePeek" aria-live="polite">
+        <div class="label">in your language</div>
+        <div id="cvNotesNativePeekText"></div>
+      </div>
+    </div>
   </div>
 
   <div class="profile-panel" id="profilePanel-guided">
-    <p class="hint">Five questions — speak or type. Tap Speak, then Stop when you're done — no time limit. Skip any you want.</p>
+    <p class="hint">Speak or type in your language — answers are saved in English when you use Speak (mic) or To English. Translate and Speak only run when you tap them.</p>
     <div class="guided-start">
-      <button type="button" id="reviewGuidedBtn" class="secondary" style="display:none;">Review</button>
       <button type="button" id="clearGuidedBtn" class="secondary" style="display:none;">Clear answers</button>
     </div>
 
@@ -564,12 +622,20 @@
         </button>
         <span class="status" id="guidedMicStatus"></span>
       </div>
-      <textarea id="guidedAnswerInput" class="guided-answer-input" rows="3" placeholder="Or type your answer" aria-label="Or type your answer" autocomplete="off"></textarea>
-      <div class="transcript-box" id="guidedTranscriptBox">
-        <div class="label">heard</div>
-        <div id="guidedTranscriptOriginal"></div>
-        <div class="label" style="margin-top:8px;">in English</div>
-        <div id="guidedTranscriptEnglish"></div>
+      <div class="field-head">
+        <label for="guidedAnswerInput">Your answer <span style="color:var(--muted); font-weight:400;">(English)</span></label>
+        <button type="button" class="field-clear" id="guidedClearBtn" hidden>Clear</button>
+      </div>
+      <textarea id="guidedAnswerInput" class="guided-answer-input" rows="3" placeholder="Speak, or type — we'll keep this in English" aria-label="Your answer in English" autocomplete="off"></textarea>
+      <div class="text-actions">
+        <button type="button" id="guidedToEnglishBtn" class="secondary">To English</button>
+        <button type="button" id="guidedTranslateBtn" class="secondary">Translate</button>
+        <button type="button" id="guidedSpeakBtn" class="secondary">Speak</button>
+        <span class="status" id="guidedLangStatus"></span>
+      </div>
+      <div class="native-peek" id="guidedNativePeek" aria-live="polite">
+        <div class="label">in your language</div>
+        <div id="guidedNativePeekText"></div>
       </div>
       <div class="guided-nav">
         <button type="button" id="guidedSkipBtn" class="secondary">Skip</button>
@@ -578,14 +644,8 @@
     </div>
 
     <div id="guidedAnswersReview" class="guided-answers" aria-live="polite">
-      <h3>Your answers</h3>
+      <h3>Your answers <span style="font-weight:400; text-transform:none; letter-spacing:0;">(English)</span></h3>
       <div id="guidedAnswersList"></div>
-    </div>
-
-    <div id="cvNotesPanel" class="cv-notes hidden" aria-live="polite">
-      <h3>How to update your CV</h3>
-      <p class="status" id="cvNotesStatus"></p>
-      <ul class="cv-notes-list" id="cvNotesList"></ul>
     </div>
   </div>
 </section>
@@ -600,7 +660,7 @@
     <p class="step-title">Search for jobs</p>
   </div>
   <p class="hint" style="color:var(--muted); font-size:0.9rem; margin:4px 0 14px;">
-    Type or speak into Roles, Companies, or Keywords. Tap Speak, then Stop when you're done — no time limit.
+    Type or speak into Roles, Companies, or Keywords. Spoken terms are added in English. Translate and Speak only when you tap them.
   </p>
 
   <div class="voice-target" role="tablist" aria-label="Voice adds to">
@@ -625,6 +685,17 @@
       </div>
       <div class="search-compose-row">
         <input type="text" id="searchInput-roles" data-field-cat="roles" placeholder="Backend Engineer, Full Stack" autocomplete="off">
+        <button type="button" class="field-clear" data-clear-field="roles" hidden aria-label="Clear roles">Clear</button>
+      </div>
+      <div class="text-actions">
+        <button type="button" class="secondary" data-field-to-english="roles">To English</button>
+        <button type="button" class="secondary" data-field-translate="roles">Translate</button>
+        <button type="button" class="secondary" data-field-speak="roles">Speak</button>
+        <span class="status" id="searchLangStatus-roles"></span>
+      </div>
+      <div class="native-peek" id="searchNativePeek-roles" aria-live="polite">
+        <div class="label">in your language</div>
+        <div id="searchNativePeekText-roles"></div>
       </div>
     </div>
 
@@ -635,6 +706,17 @@
       </div>
       <div class="search-compose-row">
         <input type="text" id="searchInput-companies" data-field-cat="companies" placeholder="Razorpay, PhonePe" autocomplete="off">
+        <button type="button" class="field-clear" data-clear-field="companies" hidden aria-label="Clear companies">Clear</button>
+      </div>
+      <div class="text-actions">
+        <button type="button" class="secondary" data-field-to-english="companies">To English</button>
+        <button type="button" class="secondary" data-field-translate="companies">Translate</button>
+        <button type="button" class="secondary" data-field-speak="companies">Speak</button>
+        <span class="status" id="searchLangStatus-companies"></span>
+      </div>
+      <div class="native-peek" id="searchNativePeek-companies" aria-live="polite">
+        <div class="label">in your language</div>
+        <div id="searchNativePeekText-companies"></div>
       </div>
     </div>
 
@@ -645,15 +727,19 @@
       </div>
       <div class="search-compose-row">
         <input type="text" id="searchInput-keywords" data-field-cat="keywords" placeholder="fintech, remote" autocomplete="off">
+        <button type="button" class="field-clear" data-clear-field="keywords" hidden aria-label="Clear keywords">Clear</button>
+      </div>
+      <div class="text-actions">
+        <button type="button" class="secondary" data-field-to-english="keywords">To English</button>
+        <button type="button" class="secondary" data-field-translate="keywords">Translate</button>
+        <button type="button" class="secondary" data-field-speak="keywords">Speak</button>
+        <span class="status" id="searchLangStatus-keywords"></span>
+      </div>
+      <div class="native-peek" id="searchNativePeek-keywords" aria-live="polite">
+        <div class="label">in your language</div>
+        <div id="searchNativePeekText-keywords"></div>
       </div>
     </div>
-  </div>
-
-  <div class="transcript-box" id="transcriptBox">
-    <div class="label">heard</div>
-    <div id="transcriptOriginal"></div>
-    <div class="label" style="margin-top:8px;">added as</div>
-    <div id="transcriptEnglish"></div>
   </div>
 
   <div class="search-actions">
@@ -811,11 +897,29 @@ function loadKeyInputs(){
 }
 
 // ---------- profile / stance persistence ----------
+function syncClearButton(inputEl, clearBtn){
+  if(!inputEl || !clearBtn) return;
+  clearBtn.hidden = !String(inputEl.value || '').trim();
+}
+
 function loadStance(){
   document.getElementById('stanceText').value = localStorage.getItem('vjr_stance') || '';
+  syncClearButton(document.getElementById('stanceText'), document.getElementById('stanceClearBtn'));
 }
 document.getElementById('stanceText').addEventListener('input', (e)=>{
   localStorage.setItem('vjr_stance', e.target.value);
+  syncClearButton(e.target, document.getElementById('stanceClearBtn'));
+  document.getElementById('stanceNativePeek').classList.remove('show');
+});
+document.getElementById('stanceClearBtn').addEventListener('click', () => {
+  const el = document.getElementById('stanceText');
+  el.value = '';
+  localStorage.setItem('vjr_stance', '');
+  syncClearButton(el, document.getElementById('stanceClearBtn'));
+  document.getElementById('stanceNativePeek').classList.remove('show');
+  setStatus('stanceMicStatus', '', '');
+  setStatus('stanceReadbackStatus', '', '');
+  el.focus();
 });
 loadStance();
 
@@ -896,11 +1000,14 @@ document.getElementById('cvFileInput').addEventListener('change', async (e) => {
     log(`CV parsed: ${cvText.length} chars from ${file.name}`);
     setStatus('cvStatus', `${file.name} added (${cvText.length} chars)`, 'ok');
     document.getElementById('cvClearBtn').style.display = 'inline-block';
+    updateCvReviewUI();
   }catch(err){
     log(`CV parse ERROR: ${err.message}`);
     setStatus('cvStatus', err.message, 'err');
     cvText = '';
     document.getElementById('cvClearBtn').style.display = 'none';
+    clearCvNotesPanel();
+    updateCvReviewUI();
   }
 });
 
@@ -909,6 +1016,8 @@ document.getElementById('cvClearBtn').addEventListener('click', () => {
   document.getElementById('cvFileInput').value = '';
   setStatus('cvStatus', '', '');
   document.getElementById('cvClearBtn').style.display = 'none';
+  clearCvNotesPanel();
+  updateCvReviewUI();
 });
 
 // ---------- setup wizard events ----------
@@ -1131,6 +1240,86 @@ async function sarvamTranslate(text, sourceLang, targetLang){
   return out.join(' ').trim();
 }
 
+function getPreferredLanguage(){
+  const selected = document.getElementById('langSelect').value;
+  if(selected && selected !== 'unknown') return selected;
+  return lastSpokenLanguage || 'hi-IN';
+}
+
+function isEnglishLang(code){
+  return String(code || '').toLowerCase().startsWith('en');
+}
+
+/** Canonical rule: editable answers are English. Translate into English when needed. */
+async function ensureTextIsEnglish(text, statusId){
+  const raw = String(text || '').trim();
+  if(!raw) return '';
+  const lang = getPreferredLanguage();
+  if(isEnglishLang(lang)) return raw;
+  // Skip if text is already mostly Latin (mic path already wrote English)
+  const letters = raw.replace(/[^A-Za-z\u0900-\u097F\u0B80-\u0BFF\u0C00-\u0C7F\u0C80-\u0CFF\u0D00-\u0D7F\u0A80-\u0AFF\u0980-\u09FF]/g, '');
+  const latin = (letters.match(/[A-Za-z]/g) || []).length;
+  if(letters.length >= 12 && latin / letters.length >= 0.85) return raw;
+  if(statusId){
+    setStatus(statusId, '', '');
+    document.getElementById(statusId).innerHTML = '<span class="spinner"></span>writing in English…';
+  }
+  const translated = await sarvamTranslate(raw, 'auto', 'en-IN');
+  const english = await cleanupTranslatedText(translated || raw);
+  if(statusId) setStatus(statusId, 'saved in English', 'ok');
+  return english.trim() || raw;
+}
+
+async function peekNativeTranslation(englishText, peekId, textId, statusId){
+  const english = String(englishText || '').trim();
+  if(!english){
+    setStatus(statusId, 'nothing to translate yet', 'err');
+    return;
+  }
+  const lang = getPreferredLanguage();
+  const peek = document.getElementById(peekId);
+  if(isEnglishLang(lang)){
+    document.getElementById(textId).textContent = english;
+    peek.classList.add('show');
+    setStatus(statusId, 'already English', 'ok');
+    return;
+  }
+  setStatus(statusId, '', '');
+  document.getElementById(statusId).innerHTML = '<span class="spinner"></span>translating…';
+  try{
+    const native = await sarvamTranslate(english, 'en-IN', lang);
+    document.getElementById(textId).textContent = native || english;
+    peek.classList.add('show');
+    setStatus(statusId, '', '');
+  }catch(err){
+    setStatus(statusId, err.message, 'err');
+  }
+}
+
+async function speakEnglishAloud(englishText, statusId){
+  const english = String(englishText || '').trim();
+  if(!english){
+    setStatus(statusId, 'nothing to speak yet', 'err');
+    return;
+  }
+  const lang = getPreferredLanguage();
+  setStatus(statusId, '', '');
+  document.getElementById(statusId).innerHTML = '<span class="spinner"></span>speaking…';
+  try{
+    let textToSpeak = english;
+    if(!isEnglishLang(lang)){
+      textToSpeak = await sarvamTranslate(english, 'en-IN', lang);
+    }
+    const audios = await sarvamSpeak([textToSpeak], lang);
+    for(const b64 of audios){
+      await playBase64Wav(b64);
+    }
+    setStatus(statusId, '', '');
+  }catch(err){
+    setStatus(statusId, err.message, 'err');
+  }
+}
+
 // ---------- Claude / OpenAI: web-search job scan ----------
 // Keep prompts small: full CVs and long profiles dominate latency on Responses + web_search.
 const MAX_CV_CHARS = 6000;
@@ -1319,11 +1508,18 @@ function renderResults(jobs){
       <div class="fit">${escapeHtml(job.fit || '')}</div>
       ${job.gate ? `<div class="gate">&#9888; ${escapeHtml(job.gate)}</div>` : ''}
       <div class="skills">${skills}</div>
-      <div class="row" style="margin-top:8px; justify-content:space-between; align-items:center;">
+      <div class="row" style="margin-top:8px; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
         ${job.url ? `<a href="${escapeHtml(job.url)}" target="_blank" rel="noopener">view posting &rarr;</a>` : '<span></span>'}
-        <button class="secondary read-job-btn" data-job-index="${index}">&#128266; read aloud</button>
+        <div class="text-actions" style="margin:0;">
+          <button type="button" class="secondary job-translate-btn" data-job-index="${index}">Translate</button>
+          <button type="button" class="secondary job-speak-btn" data-job-index="${index}">Speak</button>
+        </div>
       </div>
       <span class="status" id="readJobStatus-${index}"></span>
+      <div class="native-peek" id="jobNativePeek-${index}" aria-live="polite">
+        <div class="label">in your language</div>
+        <div id="jobNativePeekText-${index}"></div>
+      </div>
       ${hasGapAnalysis ? `
       <div class="skill-gap">
         ${matchedSkills ? `<div class="row-label">you already have</div><div class="skills have">${matchedSkills}</div>` : ''}
@@ -1334,7 +1530,7 @@ function renderResults(jobs){
         <button type="button" class="secondary job-chat-toggle" data-job-index="${index}">&#128172; ask a question about this job</button>
         <div class="job-chat-panel" id="jobChatPanel-${index}" style="display:none;">
           <div class="job-chat-history" id="jobChatHistory-${index}"></div>
-          <p class="hint" style="margin:0 0 8px; font-size:0.85rem;">Tap Speak, then Stop when you're done — no time limit.</p>
+          <p class="hint" style="margin:0 0 8px; font-size:0.85rem;">Answers stay in English. Tap Translate or Speak yourself — nothing plays automatically.</p>
           <div class="mic-control">
             <button class="mic job-chat-mic" data-job-index="${index}" type="button" aria-label="Speak">
               <span class="mic-ico" aria-hidden="true"></span>
@@ -1345,7 +1541,6 @@ function renderResults(jobs){
         </div>
       </div>
     `;
-    card.querySelector('.read-job-btn').addEventListener('click', () => readJobAloud(index));
     card.querySelector('.job-chat-toggle').addEventListener('click', () => toggleJobChat(index));
     list.appendChild(card);
   });
@@ -1403,6 +1598,14 @@ function migrateLegacyChips(cat){
   }
 }
 
+function getSearchClearBtn(cat){
+  return document.querySelector(`.field-clear[data-clear-field="${cat}"]`);
+}
+
+function syncSearchClearBtn(cat){
+  syncClearButton(getSearchInput(cat), getSearchClearBtn(cat));
+}
+
 function loadSearchFields(){
   FIELD_CATS.forEach((cat) => {
     let value = localStorage.getItem(FIELD_STORAGE_KEYS[cat]);
@@ -1412,6 +1615,7 @@ function loadSearchFields(){
     }
     const input = getSearchInput(cat);
     if(input) input.value = value || '';
+    syncSearchClearBtn(cat);
   });
 }
 
@@ -1419,6 +1623,7 @@ function saveSearchField(cat){
   const input = getSearchInput(cat);
   if(!input || !FIELD_CATS.includes(cat)) return;
   localStorage.setItem(FIELD_STORAGE_KEYS[cat], input.value);
+  syncSearchClearBtn(cat);
 }
 
 function setActiveFieldCat(cat){
@@ -1443,6 +1648,14 @@ function appendToActiveField(text, cat = activeFieldCat){
   input.value = current ? `${current}, ${trimmed}` : trimmed;
   saveSearchField(cat);
   setActiveFieldCat(cat);
+}
+
+function clearSearchField(cat){
+  const input = getSearchInput(cat);
+  if(!input || !FIELD_CATS.includes(cat)) return;
+  input.value = '';
+  saveSearchField(cat);
+  input.focus();
 }
 
 function getChipQuery(){
@@ -1473,7 +1686,56 @@ FIELD_CATS.forEach((cat) => {
   const input = getSearchInput(cat);
   if(!input) return;
   input.addEventListener('focus', () => setActiveFieldCat(cat));
-  input.addEventListener('input', () => saveSearchField(cat));
+  input.addEventListener('input', () => {
+    saveSearchField(cat);
+    const peek = document.getElementById(`searchNativePeek-${cat}`);
+    if(peek) peek.classList.remove('show');
+  });
+  const clearBtn = getSearchClearBtn(cat);
+  if(clearBtn){
+    clearBtn.addEventListener('click', () => {
+      clearSearchField(cat);
+      setActiveFieldCat(cat);
+      const peek = document.getElementById(`searchNativePeek-${cat}`);
+      if(peek) peek.classList.remove('show');
+    });
+  }
+});
+
+document.getElementById('searchFields').addEventListener('click', async (e) => {
+  const toEn = e.target.closest('[data-field-to-english]');
+  const translate = e.target.closest('[data-field-translate]');
+  const speak = e.target.closest('[data-field-speak]');
+  const cat = (toEn || translate || speak)?.dataset?.fieldToEnglish
+    || (toEn || translate || speak)?.dataset?.fieldTranslate
+    || (toEn || translate || speak)?.dataset?.fieldSpeak;
+  if(!cat || !FIELD_CATS.includes(cat)) return;
+  e.preventDefault();
+  const input = getSearchInput(cat);
+  const statusId = `searchLangStatus-${cat}`;
+  if(toEn){
+    try{
+      const english = await ensureTextIsEnglish(input.value, statusId);
+      input.value = english;
+      saveSearchField(cat);
+      document.getElementById(`searchNativePeek-${cat}`).classList.remove('show');
+    }catch(err){
+      setStatus(statusId, err.message, 'err');
+    }
+    return;
+  }
+  if(translate){
+    peekNativeTranslation(
+      input.value,
+      `searchNativePeek-${cat}`,
+      `searchNativePeekText-${cat}`,
+      statusId
+    );
+    return;
+  }
+  if(speak){
+    speakEnglishAloud(input.value, statusId);
+  }
 });
 
 // ---------- search flow ----------
@@ -1699,27 +1961,7 @@ async function transcribeBlobsToEnglish(blobs){
   };
 }
 
-async function speakBackForConfirmation(englishText, spokenLanguage, statusId){
-  if(!statusId) return;
-  try{
-    setStatus(statusId, '', '');
-    document.getElementById(statusId).innerHTML = '<span class="spinner"></span>reading it back…';
-    let textToSpeak = englishText;
-    if(!spokenLanguage.startsWith('en')){
-      textToSpeak = await sarvamTranslate(englishText, 'en-IN', spokenLanguage);
-    }
-    const audios = await sarvamSpeak([textToSpeak], spokenLanguage);
-    for(const b64 of audios){
-      await playBase64Wav(b64);
-    }
-    setStatus(statusId, 'added — edit anything that looks off', 'ok');
-  }catch(err){
-    log(`readback ERROR: ${err.message}`);
-    setStatus(statusId, `couldn't read it back: ${err.message}`, 'err');
-  }
-}
-
-function bindMicButton({ buttonId, statusId, onResult, originalBoxId, englishBoxId, transcriptBoxId, speakBackAfter = false, readbackStatusId = null }){
+function bindMicButton({ buttonId, statusId, onResult }){
   const btn = document.getElementById(buttonId);
   let busy = false;
 
@@ -1737,39 +1979,28 @@ function bindMicButton({ buttonId, statusId, onResult, originalBoxId, englishBox
     if(busy || !recordSession || recordSession.btn !== btn) return;
     busy = true;
     setStatus(statusId, '', '');
-    document.getElementById(statusId).innerHTML = '<span class="spinner"></span>transcribing…';
+    document.getElementById(statusId).innerHTML = '<span class="spinner"></span>writing in English…';
     try{
       const blobs = await endRecordSession();
       if(!blobs.length){
         setStatus(statusId, 'didn\'t catch that — try again', 'err');
         return;
       }
-      document.getElementById(statusId).innerHTML = '<span class="spinner"></span>cleaning up…';
-      const { original, english, langMismatch } = await transcribeBlobsToEnglish(blobs);
+      const { english, langMismatch } = await transcribeBlobsToEnglish(blobs);
       if(!english.trim()){
         setStatus(statusId, 'didn\'t catch that — try again', 'err');
         return;
       }
 
-      const prevOriginal = document.getElementById(originalBoxId).textContent || '';
-      const prevEnglish = document.getElementById(englishBoxId).textContent || '';
-      document.getElementById(originalBoxId).textContent = appendDictatedText(prevOriginal, original);
-      document.getElementById(englishBoxId).textContent = appendDictatedText(prevEnglish, english);
-      document.getElementById(transcriptBoxId).classList.add('show');
       onResult(english);
 
       if(langMismatch){
-        setStatus(statusId, 'added — language sounded different from your selection. Review below.', 'err');
+        setStatus(statusId, 'added in English — language sounded different from your selection', 'err');
       }else{
-        setStatus(statusId, 'added', 'ok');
-      }
-
-      if(speakBackAfter && !langMismatch){
-        await speakBackForConfirmation(english, lastSpokenLanguage, readbackStatusId);
+        setStatus(statusId, 'added in English', 'ok');
       }
     }catch(err){
       log(`ERROR: ${err.message}`);
-      // Ensure we don't leave a dangling session
       if(recordSession) await endRecordSession().catch(() => {});
       setStatus(statusId, err.message, 'err');
     }finally{
@@ -1785,8 +2016,7 @@ function bindMicButton({ buttonId, statusId, onResult, originalBoxId, englishBox
 }
 
 bindMicButton({
-  buttonId: 'micBtn', statusId: 'micStatus', onResult: appendToActiveField,
-  originalBoxId: 'transcriptOriginal', englishBoxId: 'transcriptEnglish', transcriptBoxId: 'transcriptBox'
+  buttonId: 'micBtn', statusId: 'micStatus', onResult: appendToActiveField
 });
 bindMicButton({
   buttonId: 'stanceMicBtn', statusId: 'stanceMicStatus',
@@ -1794,9 +2024,32 @@ bindMicButton({
     const el = document.getElementById('stanceText');
     el.value = appendDictatedText(el.value, text, '\n\n');
     localStorage.setItem('vjr_stance', el.value);
-  },
-  originalBoxId: 'stanceTranscriptOriginal', englishBoxId: 'stanceTranscriptEnglish', transcriptBoxId: 'stanceTranscriptBox',
-  speakBackAfter: true, readbackStatusId: 'stanceReadbackStatus'
+    syncClearButton(el, document.getElementById('stanceClearBtn'));
+    document.getElementById('stanceNativePeek').classList.remove('show');
+  }
+});
+
+document.getElementById('stanceToEnglishBtn').addEventListener('click', async () => {
+  const el = document.getElementById('stanceText');
+  const statusId = 'stanceReadbackStatus';
+  try{
+    const english = await ensureTextIsEnglish(el.value, statusId);
+    el.value = english;
+    localStorage.setItem('vjr_stance', el.value);
+    syncClearButton(el, document.getElementById('stanceClearBtn'));
+    document.getElementById('stanceNativePeek').classList.remove('show');
+  }catch(err){
+    setStatus(statusId, err.message, 'err');
+  }
+});
+document.getElementById('stanceTranslateBtn').addEventListener('click', () => {
+  peekNativeTranslation(
+    document.getElementById('stanceText').value,
+    'stanceNativePeek', 'stanceNativePeekText', 'stanceReadbackStatus'
+  );
+});
+document.getElementById('stanceSpeakBtn').addEventListener('click', () => {
+  speakEnglishAloud(document.getElementById('stanceText').value, 'stanceReadbackStatus');
 });
 
 // ---------- guided CV-building conversation ----------
@@ -1892,20 +2145,19 @@ function renderGuidedAnswersReview(){
 
 function updateGuidedStartUI(){
   if(guidedConvoActive) return;
-  const reviewBtn = document.getElementById('reviewGuidedBtn');
   const clearBtn = document.getElementById('clearGuidedBtn');
-  const n = answeredCount();
-  const visited = visitedCount();
+  clearBtn.style.display = visitedCount() ? 'inline-block' : 'none';
+}
 
-  clearBtn.style.display = visited ? 'inline-block' : 'none';
-  reviewBtn.style.display = n > 0 ? 'inline-block' : 'none';
+function updateCvReviewUI(){
+  const btn = document.getElementById('reviewCvBtn');
+  btn.style.display = cvText.trim() ? 'inline-block' : 'none';
 }
 
 function beginGuidedAt(index){
   guidedConvoActive = true;
   guidedQuestionIndex = Math.max(0, Math.min(index, GUIDED_QUESTIONS.length - 1));
   document.getElementById('guidedConvo').style.display = 'block';
-  document.getElementById('reviewGuidedBtn').style.display = 'none';
   document.getElementById('clearGuidedBtn').style.display = 'none';
   document.getElementById('guidedMicBtn').style.display = 'inline-block';
   document.getElementById('guidedAnswerInput').style.display = 'block';
@@ -1916,8 +2168,7 @@ function beginGuidedAt(index){
 
 function advanceGuided(){
   if(guidedQuestionIndex >= GUIDED_QUESTIONS.length - 1){
-    // Done with the set — close the editor; profile stays on Speak tab
-    commitGuidedAnswerFromInput();
+    // Done with the set — close the editor (answer already committed in English by Next)
     guidedConvoActive = false;
     document.getElementById('guidedConvo').style.display = 'none';
     renderGuidedAnswersReview();
@@ -1934,12 +2185,36 @@ function guidedNextLabel(){
 }
 
 function commitGuidedAnswerFromInput(){
-  const val = document.getElementById('guidedAnswerInput').value.trim();
-  if(!val) return false;
-  guidedAnswers[guidedQuestionIndex] = val;
+  const input = document.getElementById('guidedAnswerInput');
+  const raw = input.value.trim();
+  if(!raw) return false;
+  guidedAnswers[guidedQuestionIndex] = raw;
   saveGuidedAnswers();
   guidedAnswerReady = true;
+  document.getElementById('guidedNativePeek').classList.remove('show');
   return true;
+}
+
+async function guidedConvertToEnglish(){
+  const input = document.getElementById('guidedAnswerInput');
+  const raw = input.value.trim();
+  if(!raw){
+    setStatus('guidedLangStatus', 'nothing to convert', 'err');
+    return false;
+  }
+  try{
+    const english = await ensureTextIsEnglish(raw, 'guidedLangStatus');
+    input.value = english;
+    guidedAnswers[guidedQuestionIndex] = english;
+    saveGuidedAnswers();
+    guidedAnswerReady = true;
+    syncClearButton(input, document.getElementById('guidedClearBtn'));
+    document.getElementById('guidedNativePeek').classList.remove('show');
+    return true;
+  }catch(err){
+    setStatus('guidedLangStatus', err.message, 'err');
+    return false;
+  }
 }
 
 function updateGuidedNextFromInput(){
@@ -1959,24 +2234,22 @@ function showGuidedQuestion(){
   document.getElementById('guidedQuestion').textContent = GUIDED_QUESTIONS[guidedQuestionIndex];
   document.getElementById('guidedProgress').textContent =
     `Question ${guidedQuestionIndex + 1} of ${GUIDED_QUESTIONS.length}`;
-  document.getElementById('guidedTranscriptBox').classList.remove('show');
   document.getElementById('guidedNextBtn').style.display = 'none';
   document.getElementById('guidedSkipBtn').style.display = 'inline-block';
   document.getElementById('guidedAnswerInput').style.display = 'block';
   setStatus('guidedMicStatus', '', '');
+  setStatus('guidedLangStatus', '', '');
+  document.getElementById('guidedNativePeek').classList.remove('show');
   guidedAnswerReady = false;
 
   const input = document.getElementById('guidedAnswerInput');
   const existing = guidedAnswers[guidedQuestionIndex];
   if(isGuidedAnswered(existing)){
     input.value = existing.trim();
-    document.getElementById('guidedTranscriptEnglish').textContent = existing.trim();
-    document.getElementById('guidedTranscriptOriginal').textContent = '(saved answer)';
-    document.getElementById('guidedTranscriptBox').classList.add('show');
     document.getElementById('guidedNextBtn').style.display = 'inline-block';
     document.getElementById('guidedNextBtn').textContent = guidedNextLabel();
     guidedAnswerReady = true;
-    setStatus('guidedMicStatus', 'saved — edit, speak again, or skip', 'ok');
+    setStatus('guidedMicStatus', 'saved in English — edit, speak again, or skip', 'ok');
   }else if(existing === null){
     input.value = '';
     setStatus('guidedMicStatus', 'previously skipped — type, speak, or skip again', '');
@@ -1985,6 +2258,7 @@ function showGuidedQuestion(){
   }else{
     input.value = '';
   }
+  syncClearButton(input, document.getElementById('guidedClearBtn'));
 }
 
 document.getElementById('clearGuidedBtn').addEventListener('click', () => {
@@ -1993,7 +2267,6 @@ document.getElementById('clearGuidedBtn').addEventListener('click', () => {
   guidedConvoActive = false;
   saveGuidedAnswers();
   document.getElementById('guidedConvo').style.display = 'none';
-  clearCvNotesPanel();
 });
 
 document.getElementById('guidedCancelBtn').addEventListener('click', () => {
@@ -2011,6 +2284,37 @@ document.getElementById('guidedNextBtn').addEventListener('click', () => {
 
 document.getElementById('guidedAnswerInput').addEventListener('input', () => {
   updateGuidedNextFromInput();
+  syncClearButton(document.getElementById('guidedAnswerInput'), document.getElementById('guidedClearBtn'));
+  document.getElementById('guidedNativePeek').classList.remove('show');
+});
+
+document.getElementById('guidedClearBtn').addEventListener('click', () => {
+  const input = document.getElementById('guidedAnswerInput');
+  input.value = '';
+  if(Object.prototype.hasOwnProperty.call(guidedAnswers, guidedQuestionIndex)){
+    delete guidedAnswers[guidedQuestionIndex];
+    saveGuidedAnswers();
+  }
+  syncClearButton(input, document.getElementById('guidedClearBtn'));
+  document.getElementById('guidedNativePeek').classList.remove('show');
+  setStatus('guidedMicStatus', '', '');
+  setStatus('guidedLangStatus', '', '');
+  updateGuidedNextFromInput();
+  input.focus();
+});
+
+document.getElementById('guidedToEnglishBtn').addEventListener('click', async () => {
+  await guidedConvertToEnglish();
+  updateGuidedNextFromInput();
+});
+document.getElementById('guidedTranslateBtn').addEventListener('click', () => {
+  peekNativeTranslation(
+    document.getElementById('guidedAnswerInput').value,
+    'guidedNativePeek', 'guidedNativePeekText', 'guidedLangStatus'
+  );
+});
+document.getElementById('guidedSpeakBtn').addEventListener('click', () => {
+  speakEnglishAloud(document.getElementById('guidedAnswerInput').value, 'guidedLangStatus');
 });
 
 document.getElementById('guidedSkipBtn').addEventListener('click', () => {
@@ -2037,7 +2341,16 @@ function clearCvNotesPanel(){
   const panel = document.getElementById('cvNotesPanel');
   document.getElementById('cvNotesList').innerHTML = '';
   setStatus('cvNotesStatus', '', '');
+  setStatus('cvNotesLangStatus', '', '');
+  document.getElementById('cvNotesNativePeek').classList.remove('show');
   panel.classList.add('hidden');
+}
+
+function getCvNotesPlainText(){
+  return Array.from(document.querySelectorAll('#cvNotesList li'))
+    .map(li => li.textContent.trim())
+    .filter(Boolean)
+    .join('\n');
 }
 
 function parseCvNotesBullets(text){
@@ -2070,49 +2383,47 @@ function renderCvNotes(text){
   panel.classList.remove('hidden');
 }
 
-async function reviewGuidedCv(){
-  if(answeredCount() === 0){
-    const panel = document.getElementById('cvNotesPanel');
+async function reviewMyCv(){
+  const panel = document.getElementById('cvNotesPanel');
+  const list = document.getElementById('cvNotesList');
+  const btn = document.getElementById('reviewCvBtn');
+
+  if(!cvText.trim()){
     panel.classList.remove('hidden');
-    document.getElementById('cvNotesList').innerHTML = '';
-    setStatus('cvNotesStatus', 'Answer at least one question first', 'err');
+    list.innerHTML = '';
+    setStatus('cvNotesStatus', 'Upload a CV first', 'err');
     return;
   }
   const provider = getProvider();
   if(provider === 'openai' && !getOpenAIKey()){
-    const panel = document.getElementById('cvNotesPanel');
     panel.classList.remove('hidden');
-    document.getElementById('cvNotesList').innerHTML = '';
+    list.innerHTML = '';
     setStatus('cvNotesStatus', 'Add your OpenAI API key first', 'err');
     return;
   }
   if(provider !== 'openai' && !getAnthropicKey()){
-    const panel = document.getElementById('cvNotesPanel');
     panel.classList.remove('hidden');
-    document.getElementById('cvNotesList').innerHTML = '';
+    list.innerHTML = '';
     setStatus('cvNotesStatus', 'Add your Claude API key first', 'err');
     return;
   }
 
-  const panel = document.getElementById('cvNotesPanel');
-  const list = document.getElementById('cvNotesList');
-  const btn = document.getElementById('reviewGuidedBtn');
   panel.classList.remove('hidden');
   list.innerHTML = '';
-  document.getElementById('cvNotesStatus').innerHTML = '<span class="spinner"></span>reviewing…';
+  document.getElementById('cvNotesStatus').innerHTML = '<span class="spinner"></span>reviewing your CV…';
   btn.disabled = true;
 
   try{
+    const cvExcerpt = truncateForPrompt(cvText, MAX_CV_CHARS);
     const answersText = guidedAnswers
       .map((a, i) => isGuidedAnswered(a) ? `Q: ${GUIDED_QUESTIONS[i]}\nA: ${a.trim()}` : null)
       .filter(Boolean)
       .join('\n\n');
-    const cvExcerpt = cvText ? truncateForPrompt(cvText, MAX_CV_CHARS) : '';
-    const prompt = `You are a CV coach. Given this person's answers to guided questions${cvExcerpt ? ' and (if useful) their current CV text' : ''}, give concrete pointers on how to update their CV.
+    const prompt = `You are a CV coach. Review this person's CV and give concrete pointers on how to improve it.
+${answersText ? `\nThey also answered a few profile questions — use these only as extra context if helpful:\n${answersText}\n` : ''}
+CV text (may be truncated):
+${cvExcerpt}
 
-Answers:
-${answersText}
-${cvExcerpt ? `\nCurrent CV text (may be truncated):\n${cvExcerpt}\n` : '\n(No CV uploaded — base advice on answers only.)\n'}
 Cover briefly: what's already strong, what's missing or weak, and specific edits (bullet rewrites or sections to add). Do not invent employers, dates, or credentials they did not mention. Prefer actionable, specific wording they can paste or adapt.
 
 Respond with 5–8 plain bullet points only. No preamble, no headers, no closing. Each bullet one concrete pointer.`;
@@ -2123,9 +2434,9 @@ Respond with 5–8 plain bullet points only. No preamble, no headers, no closing
     setStatus('cvNotesStatus', '', '');
     document.getElementById('cvNotesStatus').innerHTML = '';
     renderCvNotes(notes);
-    log(`guided CV review: ${notes.trim().length} chars`);
+    log(`CV review: ${notes.trim().length} chars`);
   }catch(err){
-    log(`guided CV review ERROR: ${err.message}`);
+    log(`CV review ERROR: ${err.message}`);
     list.innerHTML = '';
     setStatus('cvNotesStatus', err.message || 'Review failed', 'err');
   }finally{
@@ -2133,8 +2444,18 @@ Respond with 5–8 plain bullet points only. No preamble, no headers, no closing
   }
 }
 
-document.getElementById('reviewGuidedBtn').addEventListener('click', () => {
-  reviewGuidedCv();
+document.getElementById('reviewCvBtn').addEventListener('click', () => {
+  reviewMyCv();
+});
+
+document.getElementById('cvNotesTranslateBtn').addEventListener('click', () => {
+  peekNativeTranslation(
+    getCvNotesPlainText(),
+    'cvNotesNativePeek', 'cvNotesNativePeekText', 'cvNotesLangStatus'
+  );
+});
+document.getElementById('cvNotesSpeakBtn').addEventListener('click', () => {
+  speakEnglishAloud(getCvNotesPlainText(), 'cvNotesLangStatus');
 });
 
 bindMicButton({
@@ -2147,16 +2468,18 @@ bindMicButton({
     guidedAnswerReady = true;
     document.getElementById('guidedNextBtn').style.display = 'inline-block';
     document.getElementById('guidedNextBtn').textContent = guidedNextLabel();
-  },
-  originalBoxId: 'guidedTranscriptOriginal', englishBoxId: 'guidedTranscriptEnglish', transcriptBoxId: 'guidedTranscriptBox'
+    syncClearButton(input, document.getElementById('guidedClearBtn'));
+    document.getElementById('guidedNativePeek').classList.remove('show');
+  }
 });
 
 // Restore saved guided answers on load
 guidedAnswers = loadGuidedAnswers();
 renderGuidedAnswersReview();
 updateGuidedStartUI();
+updateCvReviewUI();
 
-// ---------- TTS readback, one job at a time ----------
+// ---------- job card Translate / Speak (user-initiated only) ----------
 function buildJobReadbackText(job){
   const parts = [
     `${job.title} at ${job.company}, in ${job.location}.`,
@@ -2175,32 +2498,71 @@ function buildJobReadbackText(job){
   return parts.filter(Boolean).join(' ');
 }
 
-async function readJobAloud(index){
-  const job = lastResults[index];
-  if(!job) return;
-  const btn = document.querySelector(`.read-job-btn[data-job-index="${index}"]`);
-  const statusId = `readJobStatus-${index}`;
-  btn.disabled = true;
-  const originalLabel = btn.textContent;
-  btn.textContent = 'reading…';
-  setStatus(statusId, '', '');
-  try{
+document.getElementById('resultsList').addEventListener('click', async (e) => {
+  const translateBtn = e.target.closest('.job-translate-btn');
+  const speakBtn = e.target.closest('.job-speak-btn');
+  if(translateBtn || speakBtn){
+    const index = Number((translateBtn || speakBtn).dataset.jobIndex);
+    const job = lastResults[index];
+    if(!job) return;
+    e.preventDefault();
     const englishText = buildJobReadbackText(job);
-    let textToSpeak = englishText;
-    if(!lastSpokenLanguage.startsWith('en')){
-      textToSpeak = await sarvamTranslate(englishText, 'en-IN', lastSpokenLanguage);
+    const statusId = `readJobStatus-${index}`;
+    if(translateBtn){
+      peekNativeTranslation(
+        englishText,
+        `jobNativePeek-${index}`,
+        `jobNativePeekText-${index}`,
+        statusId
+      );
+    }else{
+      speakEnglishAloud(englishText, statusId);
     }
-    const audios = await sarvamSpeak([textToSpeak], lastSpokenLanguage);
-    for(const b64 of audios){
-      await playBase64Wav(b64);
-    }
-  }catch(err){
-    log(`TTS ERROR: ${err.message}`);
-    setStatus(statusId, `couldn't read this aloud: ${err.message}`, 'err');
-  }finally{
-    btn.disabled = false;
-    btn.textContent = originalLabel;
+    return;
   }
+
+  const chatTranslate = e.target.closest('[data-chat-translate]');
+  const chatSpeak = e.target.closest('[data-chat-speak]');
+  if(chatTranslate || chatSpeak){
+    e.preventDefault();
+    const btn = chatTranslate || chatSpeak;
+    const index = Number(btn.dataset.jobIndex);
+    const msgIndex = Number(btn.dataset.msgIndex);
+    const msg = (jobChatHistories[index] || [])[msgIndex];
+    if(!msg?.text) return;
+    const statusId = `jobChatMsgStatus-${index}-${msgIndex}`;
+    if(chatTranslate){
+      peekNativeTranslation(
+        msg.text,
+        `jobChatNativePeek-${index}-${msgIndex}`,
+        `jobChatNativePeekText-${index}-${msgIndex}`,
+        statusId
+      );
+    }else{
+      speakEnglishAloud(msg.text, statusId);
+    }
+  }
+});
+
+function renderJobChatHistory(index){
+  const history = jobChatHistories[index] || [];
+  const el = document.getElementById(`jobChatHistory-${index}`);
+  el.innerHTML = history.map((msg, msgIndex) => `
+    <div class="job-chat-msg ${msg.role}">
+      <div class="msg-label">${msg.role === 'user' ? 'you asked' : 'answer'} (English)</div>
+      ${escapeHtml(msg.text)}
+      <div class="text-actions" style="margin-top:8px;">
+        <button type="button" class="secondary" data-chat-translate data-job-index="${index}" data-msg-index="${msgIndex}">Translate</button>
+        <button type="button" class="secondary" data-chat-speak data-job-index="${index}" data-msg-index="${msgIndex}">Speak</button>
+        <span class="status" id="jobChatMsgStatus-${index}-${msgIndex}"></span>
+      </div>
+      <div class="native-peek" id="jobChatNativePeek-${index}-${msgIndex}" aria-live="polite">
+        <div class="label">in your language</div>
+        <div id="jobChatNativePeekText-${index}-${msgIndex}"></div>
+      </div>
+    </div>
+  `).join('');
+  el.scrollTop = el.scrollHeight;
 }
 
 // ---------- chat with a job ----------
@@ -2209,18 +2571,6 @@ const jobChatHistories = {}; // { [jobIndex]: [{role, text}] }
 function toggleJobChat(index){
   const panel = document.getElementById(`jobChatPanel-${index}`);
   panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-}
-
-function renderJobChatHistory(index){
-  const history = jobChatHistories[index] || [];
-  const el = document.getElementById(`jobChatHistory-${index}`);
-  el.innerHTML = history.map(msg => `
-    <div class="job-chat-msg ${msg.role}">
-      <div class="msg-label">${msg.role === 'user' ? 'you asked' : 'answer'}</div>
-      ${escapeHtml(msg.text)}
-    </div>
-  `).join('');
-  el.scrollTop = el.scrollHeight;
 }
 
 function buildJobContextForChat(job){
@@ -2260,9 +2610,6 @@ Answer directly and concisely — 2-4 sentences, plain language, no headers or m
 
 async function handleJobChatQuestionFromText(index, englishQuestion){
   const statusId = `jobChatMicStatus-${index}`;
-  const spokenLang = document.getElementById('langSelect').value === 'unknown'
-    ? lastSpokenLanguage
-    : document.getElementById('langSelect').value;
   try{
     if(!jobChatHistories[index]) jobChatHistories[index] = [];
     jobChatHistories[index].push({ role: 'user', text: englishQuestion.trim() });
@@ -2271,18 +2618,7 @@ async function handleJobChatQuestionFromText(index, englishQuestion){
     const englishAnswer = await answerJobChatQuestion(index, englishQuestion.trim());
     jobChatHistories[index].push({ role: 'assistant', text: englishAnswer.trim() });
     renderJobChatHistory(index);
-
-    document.getElementById(statusId).innerHTML = '<span class="spinner"></span>reading answer aloud…';
-    let answerToSpeak = englishAnswer.trim();
-    const replyLang = lastSpokenLanguage || spokenLang;
-    if(!replyLang.startsWith('en')){
-      answerToSpeak = await sarvamTranslate(englishAnswer.trim(), 'en-IN', replyLang);
-    }
-    const audios = await sarvamSpeak([answerToSpeak], replyLang);
-    for(const b64 of audios){
-      await playBase64Wav(b64);
-    }
-    setStatus(statusId, '', '');
+    setStatus(statusId, 'answered in English — Translate or Speak if you want', 'ok');
   }catch(err){
     log(`job chat ERROR: ${err.message}`);
     setStatus(statusId, err.message, 'err');
