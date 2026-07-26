@@ -1,10 +1,9 @@
-// Vercel serverless OpenAI proxy — mirrors server.js BYOK relay.
+// Vercel serverless OpenAI proxy — mirrors local-server.js BYOK relay.
 // Browser sends { prompt, apiKey }; we forward to Responses API and never store the key.
 // CORS allows GitHub Pages (or any origin) to call this when the app is not same-origin.
 
 module.exports = async function handler(req, res) {
-  const origin = req.headers.origin || '*';
-  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('Vary', 'Origin');
@@ -15,6 +14,7 @@ module.exports = async function handler(req, res) {
   }
 
   if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST, OPTIONS');
     res.status(405).json({
       error:
         'Method Not Allowed — OpenAI proxy only accepts POST /api/openai-search.',

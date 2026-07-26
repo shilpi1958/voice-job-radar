@@ -12,7 +12,7 @@ No auth, no database, no persistence — session-only state. No code reused
 from the original job radar; this is a fresh build that extends the idea.
 
 **Provider note:** OpenAI is the real, tested, demo-day path, run through
-the small local proxy in `server.js` since OpenAI's API blocks direct
+the small local proxy in `local-server.js` (or Vercel `/api/openai-search`) since OpenAI's API blocks direct
 browser calls (unlike Claude's). Claude is supported as a toggleable
 alternate — same prompt, no backend needed — but has never been run
 against a live key; no Anthropic key was available during the build.
@@ -55,7 +55,7 @@ adding a second call to build, wire, and test under time pressure.
    yet) — deferred since translate proves the same auth path.
 2. Wired typed English text + stance into a job-search call, with the
    Claude and OpenAI paths both implemented. Verified end-to-end on the
-   OpenAI path (via `server.js`, since a Claude key wasn't available at
+   OpenAI path (via `local-server.js` / Vercel, since a Claude key wasn't available at
    test time) — 5 real, scored, sourced job results came back correctly.
    Claude path is written but not yet run live.
 3–4. Build the actual UI (mic input, stance box, results cards) around the

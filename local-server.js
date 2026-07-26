@@ -3,8 +3,9 @@
 // BYOK: each browser sends its own OpenAI key (from its localStorage) in the
 // request body. This process never holds or stores a key of its own — it
 // only relays the caller's key straight through to OpenAI, per request.
-// Run: node server.js
+// Run: node local-server.js
 // Open: http://127.0.0.1:8788 (prefer 127.0.0.1 — Cursor often binds ::1)
+// Named local-server.js (not server.js) so Vercel does not treat this as the app entrypoint.
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -45,7 +46,7 @@ function createAppServer(){
     if(pathname === API_PATH){
       if(req.method !== 'POST'){
         json(res, 405, {
-          error: 'Method Not Allowed — OpenAI proxy only accepts POST /api/openai-search. If you see this from GitHub Pages or another static host, run node server.js and open the printed URL.'
+          error: 'Method Not Allowed — OpenAI proxy only accepts POST /api/openai-search. If you see this from GitHub Pages or another static host, use the Vercel app or run node local-server.js and open the printed URL.'
         }, { Allow: 'POST' });
         return;
       }

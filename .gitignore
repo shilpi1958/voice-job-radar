@@ -1,5 +1,6 @@
 .env
 .env.local
+.env*
 *.key
 .mcp.json
 .DS_Store

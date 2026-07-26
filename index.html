@@ -431,7 +431,7 @@
           OpenAI’s API blocks browser CORS, so calls go through a small BYOK
           proxy (key is never stored). Works on the
           <a href="https://voice-job-radar.vercel.app/" target="_blank" rel="noopener">Vercel app</a>
-          and locally via <code>node server.js</code>
+          and locally via <code>node local-server.js</code>
           (<code>http://127.0.0.1:8788</code>). On GitHub Pages, use Claude
           or open the Vercel URL for OpenAI.
         </p>
@@ -690,7 +690,7 @@ function isGitHubPages(){
   return /\.github\.io$/i.test(location.hostname);
 }
 
-/** True when this page is served by local server.js (OpenAI same-origin proxy). */
+/** True when this page is served by local-server.js (OpenAI same-origin proxy). */
 function isLocalOpenAIProxyHost(){
   if(location.protocol === 'file:') return false;
   const h = location.hostname;
@@ -732,15 +732,15 @@ function updateProviderFields(){
   if(isOpenAI && isGitHubPages()){
     note.classList.remove('err');
     note.innerHTML =
-      `On GitHub Pages, OpenAI calls the ${vercelLink} proxy (BYOK, key not stored). Prefer opening that URL for same-origin, or use <strong>Claude</strong> here. Local: <code>node server.js</code> → <code>http://127.0.0.1:8788</code>.`;
+      `On GitHub Pages, OpenAI calls the ${vercelLink} proxy (BYOK, key not stored). Prefer opening that URL for same-origin, or use <strong>Claude</strong> here. Local: <code>node local-server.js</code> → <code>http://127.0.0.1:8788</code>.`;
   }else if(isOpenAI && !openAIProxyReady()){
     note.classList.add('err');
     note.innerHTML =
-      `OpenAI needs a proxy — open the ${vercelLink}, or run <code>node server.js</code> at <code>http://127.0.0.1:8788</code>. Or use Claude.`;
+      `OpenAI needs a proxy — open the ${vercelLink}, or run <code>node local-server.js</code> at <code>http://127.0.0.1:8788</code>. Or use Claude.`;
   }else{
     note.classList.remove('err');
     note.innerHTML =
-      `OpenAI’s API blocks browser CORS, so calls go through a small BYOK proxy (key is never stored). Works on the ${vercelLink} and locally via <code>node server.js</code> (<code>http://127.0.0.1:8788</code>). On GitHub Pages, use Claude or open the Vercel URL for OpenAI.`;
+      `OpenAI’s API blocks browser CORS, so calls go through a small BYOK proxy (key is never stored). Works on the ${vercelLink} and locally via <code>node local-server.js</code> (<code>http://127.0.0.1:8788</code>). On GitHub Pages, use Claude or open the Vercel URL for OpenAI.`;
   }
 }
 
@@ -938,7 +938,7 @@ document.getElementById('setupNext2').addEventListener('click', () => {
   if(provider === 'openai' && !openAIProxyReady()){
     setStatus(
       'keysStatus',
-      `OpenAI needs the Vercel app (${VERCEL_APP_URL}) or local node server.js — or switch to Claude`,
+      `OpenAI needs the Vercel app (${VERCEL_APP_URL}) or local node local-server.js — or switch to Claude`,
       'err'
     );
     return;
@@ -1135,7 +1135,7 @@ async function callOpenAI(prompt){
   const proxyUrl = getOpenAIProxyUrl();
   if(!proxyUrl){
     throw new Error(
-      `OpenAI needs a proxy. Open ${VERCEL_APP_URL}, run node server.js at http://127.0.0.1:8788, or switch to Claude. This page is at ${location.origin}.`
+      `OpenAI needs a proxy. Open ${VERCEL_APP_URL}, run node local-server.js at http://127.0.0.1:8788, or switch to Claude. This page is at ${location.origin}.`
     );
   }
   let response;
@@ -1148,8 +1148,8 @@ async function callOpenAI(prompt){
   }catch(err){
     throw new Error(
       proxyUrl.startsWith('/')
-        ? `OpenAI proxy unreachable at ${location.origin}. On Vercel use the deployed app; locally run node server.js (prefer http://127.0.0.1:8788).`
-        : `OpenAI proxy unreachable at ${proxyUrl}. Check the Vercel deployment, or run node server.js locally.`
+        ? `OpenAI proxy unreachable at ${location.origin}. On Vercel use the deployed app; locally run node local-server.js (prefer http://127.0.0.1:8788).`
+        : `OpenAI proxy unreachable at ${proxyUrl}. Check the Vercel deployment, or run node local-server.js locally.`
     );
   }
   const data = await response.json().catch(()=>({}));
@@ -1158,7 +1158,7 @@ async function callOpenAI(prompt){
     if(msg) throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
     if(response.status === 405 || response.status === 404){
       throw new Error(
-        `OpenAI proxy missing (HTTP ${response.status}). Use ${VERCEL_APP_URL}, run node server.js at http://127.0.0.1:8788, or switch to Claude.`
+        `OpenAI proxy missing (HTTP ${response.status}). Use ${VERCEL_APP_URL}, run node local-server.js at http://127.0.0.1:8788, or switch to Claude.`
       );
     }
     throw new Error(`OpenAI proxy HTTP ${response.status}`);

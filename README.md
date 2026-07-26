@@ -104,9 +104,9 @@ product: the customization is structural, not decorative.
 - OpenAI — web search + ranking against the stated profile, in one call.
   This is the real, tested, demo-day path. OpenAI’s API blocks direct
   browser calls, so this path runs through a small BYOK proxy that relays
-  the browser’s key per request and never stores one: local `server.js`,
-  or the same handler as a Vercel serverless function at
-  `/api/openai-search`.
+  the browser’s key per request and never stores one: local
+  `local-server.js`, or the same handler as a Vercel serverless function
+  at `/api/openai-search`.
 - Claude (Anthropic) — supported as an alternate provider (toggle in the
   UI), called directly from the browser with no backend needed. The code
   path exists and mirrors the OpenAI prompt exactly, but it has not been
@@ -121,16 +121,17 @@ product: the customization is structural, not decorative.
 Live: https://voice-job-radar.vercel.app/
 
 Hosts the static app (`index.html`, `vendor/`) plus serverless
-`POST /api/openai-search` (same BYOK relay as `server.js`). Same-origin
-relative fetch — OpenAI works out of the box.
+`POST /api/openai-search` (same BYOK relay as `local-server.js`).
+Same-origin relative fetch — OpenAI works out of the box.
 
 ```bash
 npx vercel          # preview
 npx vercel --prod   # production
 ```
 
-Link the GitHub repo in the Vercel dashboard (or `vercel link`) so pushes
-to `main` auto-deploy.
+Connect the GitHub repo in the [Vercel dashboard](https://vercel.com/dashboard)
+(Git integration) so pushes to `main` auto-deploy. CLI `vercel link` creates
+the project; GitHub auto-deploy needs the Vercel GitHub app installed.
 
 ### GitHub Pages
 
@@ -141,9 +142,9 @@ Pushes to `main` update that branch via `.github/workflows/pages.yml`.
 
 On Pages, **Claude** works directly from the browser. **OpenAI** POSTs
 cross-origin to the Vercel proxy (or open the Vercel URL for a cleaner
-same-origin path). For local OpenAI, run `node server.js` and open the
-printed URL (prefer `http://127.0.0.1:8788`; `localhost` can hit Cursor’s
-IPv6 listener on some machines).
+same-origin path). For local OpenAI, run `node local-server.js` and open
+the printed URL (prefer `http://127.0.0.1:8788`; `localhost` can hit
+Cursor’s IPv6 listener on some machines).
 
 If the Pages site ever 404s, re-enable under
 [Pages settings](https://github.com/shilpi1958/voice-job-radar/settings/pages):
