@@ -513,11 +513,11 @@
   </div>
 
   <div class="profile-panel active" id="profilePanel-speak">
-    <p class="hint">Speak freely — tap Start, then Stop when you're done. Longer answers are fine.</p>
+    <p class="hint">Speak freely — tap Speak, then Stop when you're done. No time limit.</p>
     <div class="mic-control">
-      <button id="stanceMicBtn" class="mic" type="button" aria-label="Start recording">
+      <button id="stanceMicBtn" class="mic" type="button" aria-label="Speak">
         <span class="mic-ico" aria-hidden="true"></span>
-        <span class="mic-text"><span class="full">Start</span><span class="short">Start</span></span>
+        <span class="mic-text"><span class="full">Speak</span><span class="short">Speak</span></span>
       </button>
       <span class="status" id="stanceMicStatus"></span>
     </div>
@@ -545,7 +545,7 @@
   </div>
 
   <div class="profile-panel" id="profilePanel-guided">
-    <p class="hint">Five questions — speak or type. Skip any you want. Click a question to answer.</p>
+    <p class="hint">Five questions — speak or type. Tap Speak, then Stop when you're done — no time limit. Skip any you want.</p>
     <div class="guided-start">
       <button type="button" id="reviewGuidedBtn" class="secondary" style="display:none;">Review</button>
       <button type="button" id="clearGuidedBtn" class="secondary" style="display:none;">Clear answers</button>
@@ -558,9 +558,9 @@
       </div>
       <div class="guided-q" id="guidedQuestion"></div>
       <div class="mic-control">
-        <button id="guidedMicBtn" class="mic" type="button" aria-label="Start recording">
+        <button id="guidedMicBtn" class="mic" type="button" aria-label="Speak">
           <span class="mic-ico" aria-hidden="true"></span>
-          <span class="mic-text"><span class="full">Start</span><span class="short">Start</span></span>
+          <span class="mic-text"><span class="full">Speak</span><span class="short">Speak</span></span>
         </button>
         <span class="status" id="guidedMicStatus"></span>
       </div>
@@ -600,7 +600,7 @@
     <p class="step-title">Search for jobs</p>
   </div>
   <p class="hint" style="color:var(--muted); font-size:0.9rem; margin:4px 0 14px;">
-    Type or speak into Roles, Companies, or Keywords.
+    Type or speak into Roles, Companies, or Keywords. Tap Speak, then Stop when you're done — no time limit.
   </p>
 
   <div class="voice-target" role="tablist" aria-label="Voice adds to">
@@ -610,9 +610,9 @@
   </div>
 
   <div class="mic-control">
-    <button id="micBtn" class="mic" type="button" aria-label="Start recording">
+    <button id="micBtn" class="mic" type="button" aria-label="Speak">
       <span class="mic-ico" aria-hidden="true"></span>
-      <span class="mic-text"><span class="full">Start</span><span class="short">Start</span></span>
+      <span class="mic-text"><span class="full">Speak</span><span class="short">Speak</span></span>
     </button>
     <span class="status" id="micStatus"></span>
   </div>
@@ -1334,10 +1334,11 @@ function renderResults(jobs){
         <button type="button" class="secondary job-chat-toggle" data-job-index="${index}">&#128172; ask a question about this job</button>
         <div class="job-chat-panel" id="jobChatPanel-${index}" style="display:none;">
           <div class="job-chat-history" id="jobChatHistory-${index}"></div>
+          <p class="hint" style="margin:0 0 8px; font-size:0.85rem;">Tap Speak, then Stop when you're done — no time limit.</p>
           <div class="mic-control">
-            <button class="mic job-chat-mic" data-job-index="${index}" type="button" aria-label="Start recording">
+            <button class="mic job-chat-mic" data-job-index="${index}" type="button" aria-label="Speak">
               <span class="mic-ico" aria-hidden="true"></span>
-              <span class="mic-text"><span class="full">Start</span><span class="short">Start</span></span>
+              <span class="mic-text"><span class="full">Speak</span><span class="short">Speak</span></span>
             </button>
             <span class="status" id="jobChatMicStatus-${index}"></span>
           </div>
@@ -1554,11 +1555,11 @@ function formatRecordClock(ms){
 function setMicButtonRecording(btn, recording){
   if(!btn) return;
   btn.classList.toggle('recording', recording);
-  btn.setAttribute('aria-label', recording ? 'Stop recording' : 'Start recording');
+  btn.setAttribute('aria-label', recording ? 'Stop recording' : 'Speak');
   const full = btn.querySelector('.mic-text .full');
   const short = btn.querySelector('.mic-text .short');
-  if(full) full.textContent = recording ? 'Stop' : 'Start';
-  if(short) short.textContent = recording ? 'Stop' : 'Start';
+  if(full) full.textContent = recording ? 'Stop' : 'Speak';
+  if(short) short.textContent = recording ? 'Stop' : 'Speak';
 }
 
 function startRecorderOnStream(stream){
