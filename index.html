@@ -572,30 +572,6 @@
   .voice-target-btn.active{
     background:var(--accent-tint); border-color:var(--accent); color:var(--accent-strong);
   }
-  .search-prompt{
-    margin-top:16px;
-    border:1px solid var(--border-strong);
-    border-radius:10px;
-    background:var(--field-bg);
-    padding:12px;
-  }
-  .search-prompt-head{
-    display:flex; align-items:baseline; justify-content:space-between;
-    gap:8px; margin-bottom:8px;
-  }
-  .search-prompt-head label{margin:0; color:var(--text); font-weight:600; font-size:0.88rem;}
-  .search-prompt-head .hint{
-    color:var(--muted); font-size:0.78rem; font-weight:400;
-  }
-  .search-prompt textarea{
-    width:100%;
-    min-height:88px;
-    margin:0;
-    font-family:inherit;
-    font-size:0.9rem;
-    line-height:1.45;
-    box-sizing:border-box;
-  }
   .search-actions{
     display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:16px;
   }
@@ -906,14 +882,6 @@
         <button type="button" class="field-clear" data-clear-field="keywords" hidden aria-label="Clear keywords">Clear</button>
       </div>
     </div>
-  </div>
-
-  <div class="search-prompt">
-    <div class="search-prompt-head">
-      <label for="searchPrompt">Search prompt (edit to refine)</label>
-      <span class="hint">sent to job search — tweak freely</span>
-    </div>
-    <textarea id="searchPrompt" rows="4" spellcheck="true" placeholder="Roles: …&#10;Companies: …&#10;Keywords: …" aria-label="Search prompt"></textarea>
   </div>
 
   <div class="search-actions">
@@ -1962,7 +1930,6 @@ function saveSearchField(cat){
   if(!input || !FIELD_CATS.includes(cat)) return;
   localStorage.setItem(FIELD_STORAGE_KEYS[cat], input.value);
   syncSearchClearBtn(cat);
-  syncSearchPromptFromFields();
 }
 
 function setActiveFieldCat(cat){
@@ -2016,33 +1983,11 @@ function getChipQuery(){
   return lines.join('\n');
 }
 
-function getSearchPromptEl(){
-  return document.getElementById('searchPrompt');
-}
-
-/** Rebuild the editable prompt from Roles / Companies / Keywords. */
-function syncSearchPromptFromFields(){
-  const el = getSearchPromptEl();
-  if(!el) return;
-  el.value = getChipQuery();
-}
-
-function getSearchPromptQuery(){
-  const el = getSearchPromptEl();
-  let query = el ? el.value.trim() : '';
-  if(query) return query;
-  // Cleared prompt → rebuild from form fields (and show it).
-  syncSearchPromptFromFields();
-  query = el ? el.value.trim() : getChipQuery();
-  return query;
-}
-
 function hasAnySearchFields(){
   return FIELD_CATS.some((cat) => getFieldValue(cat));
 }
 
 loadSearchFields();
-syncSearchPromptFromFields();
 setActiveFieldCat('roles');
 
 document.querySelectorAll('.voice-target-btn').forEach((btn) => {
@@ -2100,10 +2045,10 @@ function startSearchProgress(statusEl){
 }
 
 document.getElementById('searchBtn').addEventListener('click', async () => {
-  const query = getSearchPromptQuery();
+  const query = getChipQuery();
   const stance = getStanceText().trim();
   if(!query){
-    setStatus('searchStatus', 'Add roles/companies/keywords or write a search prompt', 'err');
+    setStatus('searchStatus', 'Add roles, companies, or keywords first', 'err');
     return;
   }
   const btn = document.getElementById('searchBtn');
