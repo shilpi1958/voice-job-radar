@@ -359,6 +359,11 @@
   }
   .cv-review-block:empty{display:none;}
   .cv-review-block .note-body{margin:0;}
+  .cv-review-block .cv-review-list{
+    margin:0; padding-left:1.15em;
+    display:flex; flex-direction:column; gap:0.45em;
+  }
+  .cv-review-block .cv-review-list li{margin:0;}
   .cv-review-block .text-actions{margin-top:8px;}
   .cv-apply-prompt{margin-top:14px;}
   .cv-apply-prompt.hidden{display:none;}
@@ -369,13 +374,14 @@
     grid-template-columns:1fr 1fr;
     gap:12px;
     align-items:stretch;
+    min-height:min(62vh, 640px);
   }
   .cv-edit-dual.hidden{display:none;}
   .cv-pane{
     border:1px solid var(--border);
     border-radius:10px;
     background:var(--field-bg);
-    min-height:220px;
+    min-height:min(58vh, 560px);
     display:flex;
     flex-direction:column;
     overflow:hidden;
@@ -385,36 +391,90 @@
     font-size:0.72rem; text-transform:uppercase;
     letter-spacing:0.06em; color:var(--muted); font-weight:600;
     border-bottom:1px solid var(--border);
+    flex-shrink:0;
   }
   .cv-pane-body{
-    flex:1; overflow:auto; padding:12px;
-    max-height:min(62vh, 520px);
+    flex:1 1 auto; overflow:auto; padding:12px;
+    min-height:0;
+    display:flex; flex-direction:column;
+  }
+  .cv-pane-body.cv-pane-body-editor{
+    padding:0;
+    position:relative;
   }
   .cv-pane-foot{
     padding:10px 12px; border-top:1px solid var(--border);
     display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+    flex-shrink:0;
   }
   .cv-pane-foot.hidden{display:none;}
+  .cv-original-preview{
+    flex:1; min-height:0;
+  }
   .cv-original-preview canvas{
     display:block; width:100%; height:auto;
     margin:0 0 10px; border:1px solid var(--border); border-radius:6px;
     background:#fff;
   }
-  .cv-original-preview .cv-text-fallback,
-  .cv-updated-preview{
+  .cv-original-preview .cv-text-fallback{
     margin:0; white-space:pre-wrap; word-break:break-word;
     font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
     font-size:0.78rem; line-height:1.45; color:var(--text);
   }
-  .cv-updated-preview:empty::before{
-    content:attr(data-placeholder);
-    color:var(--muted); font-family:inherit; font-size:0.85rem;
+  textarea.cv-updated-editor{
+    flex:1 1 auto;
+    width:100%;
+    min-height:min(52vh, 480px);
+    height:100%;
+    margin:0;
+    resize:none;
+    border:none;
+    border-radius:0;
+    background:transparent;
+    color:var(--text);
+    padding:14px 16px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:0.82rem;
+    line-height:1.5;
+    box-sizing:border-box;
   }
+  textarea.cv-updated-editor:focus{
+    outline:none;
+    box-shadow:inset 0 0 0 2px var(--accent);
+  }
+  textarea.cv-updated-editor.is-busy{
+    color:var(--muted);
+    cursor:wait;
+  }
+  textarea.cv-updated-editor::placeholder{
+    color:var(--muted);
+    font-family:inherit;
+    font-size:0.9rem;
+  }
+  .cv-editor-busy-banner{
+    display:none;
+    position:absolute;
+    top:10px; right:12px;
+    align-items:center; gap:8px;
+    padding:6px 10px;
+    border-radius:8px;
+    background:color-mix(in srgb, var(--field-bg) 88%, var(--accent));
+    border:1px solid var(--border);
+    font-size:0.8rem;
+    color:var(--muted);
+    pointer-events:none;
+    z-index:1;
+  }
+  .cv-pane-body-editor.is-busy .cv-editor-busy-banner{display:inline-flex;}
   .cv-notes .status{margin:0 0 8px;}
   .cv-notes .status:empty{display:none; margin:0;}
   @media (max-width:720px){
-    .cv-edit-dual{grid-template-columns:1fr;}
-    .cv-pane-body{max-height:min(48vh, 360px);}
+    .cv-edit-dual{
+      grid-template-columns:1fr;
+      min-height:0;
+    }
+    .cv-pane{min-height:min(50vh, 420px);}
+    textarea.cv-updated-editor{min-height:min(46vh, 380px);}
   }
   .text-actions{
     display:flex; gap:6px; flex-wrap:wrap; align-items:center;
@@ -704,7 +764,7 @@
   </div>
 
   <div class="profile-panel" id="profilePanel-cv">
-    <p class="hint">Upload a CV, get a short two-sentence review, then update it beside the original.</p>
+    <p class="hint">Upload a CV, get a pointed bullet review, then update it beside the original.</p>
     <div class="cv-drop">
       <label for="cvFileInput" class="cv-upload-btn">Choose file</label>
       <input type="file" id="cvFileInput" accept=".pdf,.txt" style="display:none;">
@@ -733,9 +793,12 @@
           </div>
         </div>
         <div class="cv-pane">
-          <p class="cv-pane-head">Updated</p>
-          <div class="cv-pane-body">
-            <pre id="cvUpdatedPreview" class="cv-updated-preview" data-placeholder="Updates appear here…"></pre>
+          <p class="cv-pane-head">Updated — write or edit here</p>
+          <div class="cv-pane-body cv-pane-body-editor" id="cvUpdatedEditorWrap">
+            <div class="cv-editor-busy-banner" aria-hidden="true">
+              <span class="spinner"></span>Updating CV…
+            </div>
+            <textarea id="cvUpdatedEditor" class="cv-updated-editor" rows="18" spellcheck="true" placeholder="Your updated CV will appear here — you can edit it before downloading." aria-label="Updated CV editor"></textarea>
           </div>
           <div id="cvUpdatedFoot" class="cv-pane-foot hidden">
             <p class="status" id="cvUpdatedStatus" style="margin:0; flex:1;"></p>
@@ -2847,7 +2910,7 @@ document.getElementById('guidedAnswersList').addEventListener('click', (e) => {
   }
 });
 
-const CV_REVIEW_MAX_WORDS = 50;
+const CV_REVIEW_MAX_BULLETS = 6;
 
 function clearCvNotesPanel(){
   const panel = document.getElementById('cvNotesPanel');
@@ -2859,49 +2922,103 @@ function clearCvNotesPanel(){
   document.getElementById('cvUpdatedFoot').classList.add('hidden');
   document.getElementById('cvDownloadBtn').style.display = 'none';
   document.getElementById('cvOriginalPreview').innerHTML = '';
-  document.getElementById('cvUpdatedPreview').textContent = '';
+  setCvUpdatedEditor('', { busy: false });
   lastCvReview = '';
   updatedCvText = '';
   panel.classList.add('hidden');
 }
 
-/** Hard-cap model output to exactly two short sentences (~50 words). */
-function normalizeTwoSentenceReview(text){
+function getCvUpdatedEditor(){
+  return document.getElementById('cvUpdatedEditor');
+}
+
+function setCvUpdatedEditor(text, { busy = false, placeholder } = {}){
+  const editor = getCvUpdatedEditor();
+  const wrap = document.getElementById('cvUpdatedEditorWrap');
+  editor.value = text || '';
+  editor.readOnly = !!busy;
+  editor.classList.toggle('is-busy', !!busy);
+  wrap.classList.toggle('is-busy', !!busy);
+  if(placeholder !== undefined) editor.placeholder = placeholder;
+  updatedCvText = editor.value;
+}
+
+function syncUpdatedCvFromEditor(){
+  const editor = getCvUpdatedEditor();
+  updatedCvText = editor ? editor.value : '';
+  return updatedCvText;
+}
+
+function cleanCvReviewBullet(s){
+  return String(s || '')
+    .replace(/[*_#>`]+/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/^(?:[-*•]|\d+[.)])\s+/, '')
+    .trim();
+}
+
+/** Normalize model output to 4–6 sharp improvement bullets (cap at 6). */
+function normalizeBulletReview(text){
   let t = String(text || '').trim();
-  if(!t) return '';
+  if(!t) return [];
   t = t
     .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/[*_#>`]+/g, '')
-    .replace(/^#{1,6}\s+/gm, '')
-    .replace(/^[-*•]\s+/gm, '')
-    .replace(/^\d+[.)]\s+/gm, '')
-    .replace(/\n+/g, ' ')
-    .replace(/\s*[-*•]\s+/g, ' ')
-    .replace(/\s+/g, ' ')
+    .replace(/^#{1,6}\s+.*$/gm, '')
     .trim();
-  const parts = t.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [t];
-  let review = parts.slice(0, 2).map(s => s.trim()).filter(Boolean).join(' ');
-  const words = review.split(/\s+/).filter(Boolean);
-  if(words.length > CV_REVIEW_MAX_WORDS){
-    review = words.slice(0, CV_REVIEW_MAX_WORDS).join(' ');
-    if(!/[.!?]$/.test(review)) review += '.';
+
+  const lines = t.split(/\n+/).map(l => l.trim()).filter(Boolean);
+  let bullets = [];
+
+  for(const line of lines){
+    const marked = line.match(/^(?:[-*•]|\d+[.)])\s+(.+)$/);
+    if(marked) bullets.push(cleanCvReviewBullet(marked[1]));
   }
-  return review;
+
+  if(!bullets.length){
+    if(lines.length >= 2){
+      bullets = lines.map(cleanCvReviewBullet);
+    } else {
+      const plain = cleanCvReviewBullet(t);
+      const parts = plain.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [plain];
+      bullets = parts.map(cleanCvReviewBullet);
+    }
+  }
+
+  bullets = bullets
+    .map(cleanCvReviewBullet)
+    .filter(b => b && b.split(/\s+/).filter(Boolean).length >= 3)
+    .slice(0, CV_REVIEW_MAX_BULLETS);
+
+  return bullets;
+}
+
+function formatCvReviewPlain(bullets){
+  return bullets.map(b => `• ${b}`).join('\n');
 }
 
 function renderCvReview(text){
   const panel = document.getElementById('cvNotesPanel');
   const block = document.getElementById('cvReviewBlock');
-  const review = normalizeTwoSentenceReview(text) || 'No review returned.';
+  const bullets = normalizeBulletReview(text);
+  const review = bullets.length
+    ? formatCvReviewPlain(bullets)
+    : 'No review returned.';
   lastCvReview = review;
   updatedCvText = '';
   setLangActionText('cvreview', review);
-  block.innerHTML = `<div class="note-body">${escapeHtml(review)}</div>${langActionsHtml('cvreview')}`;
+  const body = bullets.length
+    ? `<ul class="cv-review-list">${bullets.map(b => `<li>${escapeHtml(b)}</li>`).join('')}</ul>`
+    : `<div class="note-body">${escapeHtml(review)}</div>`;
+  block.innerHTML = `${body}${langActionsHtml('cvreview')}`;
   document.getElementById('cvApplyPrompt').classList.remove('hidden');
   document.getElementById('cvEditDual').classList.add('hidden');
   document.getElementById('cvUpdatedFoot').classList.add('hidden');
   document.getElementById('cvDownloadBtn').style.display = 'none';
-  document.getElementById('cvUpdatedPreview').textContent = '';
+  setCvUpdatedEditor('', {
+    busy: false,
+    placeholder: 'Your updated CV will appear here — you can edit it before downloading.'
+  });
   setStatus('cvUpdatedStatus', '', '');
   panel.classList.remove('hidden');
 }
@@ -2980,7 +3097,10 @@ function showCvEditDualPane(){
   dual.classList.remove('hidden');
   document.getElementById('cvUpdatedFoot').classList.remove('hidden');
   document.getElementById('cvDownloadBtn').style.display = 'none';
-  document.getElementById('cvUpdatedPreview').textContent = '';
+  setCvUpdatedEditor('', {
+    busy: false,
+    placeholder: 'Your updated CV will appear here — you can edit it before downloading.'
+  });
   setStatus('cvUpdatedStatus', '', '');
   renderOriginalCvPreview();
 }
@@ -3014,21 +3134,21 @@ async function reviewMyCv(){
   try{
     const cvExcerpt = truncateForPrompt(cvText, MAX_CV_CHARS);
     const answersText = formatGuidedAnswersText();
-    const prompt = `You are a CV coach. Write ONLY two short, pointed improvement sentences (hard max ~45 words total).
-Sentence 1: one concrete strength worth keeping.
-Sentence 2: the single most important change to make (specific and actionable).
-Rules: improvement-focused; no praise essay; no bullets; no headers; no numbered lists; no preamble; no closing. Do not invent employers, dates, or credentials.
+    const prompt = `You are a CV coach. Review this CV and return ONLY 4–6 sharp improvement bullets.
+Each bullet: one concrete, actionable change (what to add, cut, rewrite, quantify, or reorder) — specific to THIS CV.
+Rules: detailed but to the point; improvement-focused; plain bullets only (- or •); no headers; no preamble; no closing; no praise essay; no vague advice. Do not invent employers, dates, or credentials.
 ${answersText ? `\nProfile answers for optional context:\n${answersText}\n` : ''}
 CV text (may be truncated):
 ${cvExcerpt}`;
 
     const notes = provider === 'openai'
       ? await callOpenAI(prompt, { webSearch: false })
-      : await callClaude(prompt, { webSearch: false, maxTokens: 120 });
+      : await callClaude(prompt, { webSearch: false, maxTokens: 500 });
     setStatus('cvNotesStatus', '', '');
     document.getElementById('cvNotesStatus').innerHTML = '';
     renderCvReview(notes);
-    log(`CV review: ${lastCvReview.length} chars / ${lastCvReview.split(/\s+/).length} words`);
+    const bulletCount = (lastCvReview.match(/^• /gm) || []).length;
+    log(`CV review: ${bulletCount} bullets / ${lastCvReview.length} chars`);
   }catch(err){
     log(`CV review ERROR: ${err.message}`);
     block.innerHTML = '';
@@ -3043,7 +3163,6 @@ async function applyCvUpdates(){
   const panel = document.getElementById('cvNotesPanel');
   const updateBtn = document.getElementById('cvUpdateBtn');
   const downloadBtn = document.getElementById('cvDownloadBtn');
-  const preview = document.getElementById('cvUpdatedPreview');
 
   if(!cvText.trim() || !lastCvReview.trim()){
     showCvEditDualPane();
@@ -3054,14 +3173,17 @@ async function applyCvUpdates(){
   if(!provider) return;
 
   showCvEditDualPane();
-  preview.textContent = '';
+  setCvUpdatedEditor('', {
+    busy: true,
+    placeholder: 'Updating CV… rewrite will appear here shortly.'
+  });
   document.getElementById('cvUpdatedStatus').innerHTML = '<span class="spinner"></span>applying updates…';
   updateBtn.disabled = true;
 
   try{
     const cvExcerpt = truncateForPrompt(cvText, MAX_CV_CHARS);
     const prompt = `You are a CV editor. Rewrite the CV below so it incorporates this coach feedback.
-Coach feedback (apply these two points):
+Coach feedback (apply these points):
 ${lastCvReview}
 
 Rules:
@@ -3080,14 +3202,20 @@ ${cvExcerpt}`;
       .replace(/\s*```$/i, '')
       .trim();
     if(!updatedCvText) throw new Error('No updated CV returned');
-    preview.textContent = updatedCvText;
-    setStatus('cvUpdatedStatus', 'Updated CV ready', 'ok');
+    setCvUpdatedEditor(updatedCvText, {
+      busy: false,
+      placeholder: 'Edit the updated CV here before downloading.'
+    });
+    setStatus('cvUpdatedStatus', 'Updated CV ready — edit freely, then download', 'ok');
     downloadBtn.style.display = 'inline-block';
+    getCvUpdatedEditor().focus();
     log(`CV update: ${updatedCvText.length} chars`);
   }catch(err){
     log(`CV update ERROR: ${err.message}`);
-    updatedCvText = '';
-    preview.textContent = '';
+    setCvUpdatedEditor('', {
+      busy: false,
+      placeholder: 'Update failed — try again, or write your own draft here.'
+    });
     downloadBtn.style.display = 'none';
     setStatus('cvUpdatedStatus', err.message || 'Update failed', 'err');
   }finally{
@@ -3103,12 +3231,19 @@ document.getElementById('cvUpdateBtn').addEventListener('click', () => {
   applyCvUpdates();
 });
 
+document.getElementById('cvUpdatedEditor').addEventListener('input', () => {
+  syncUpdatedCvFromEditor();
+  const text = updatedCvText.trim();
+  document.getElementById('cvDownloadBtn').style.display = text ? 'inline-block' : 'none';
+});
+
 document.getElementById('cvDownloadBtn').addEventListener('click', () => {
-  if(!updatedCvText.trim()){
+  const text = syncUpdatedCvFromEditor().trim();
+  if(!text){
     setStatus('cvUpdatedStatus', 'Nothing to download yet', 'err');
     return;
   }
-  downloadTextFile('CV-updated.txt', updatedCvText);
+  downloadTextFile('CV-updated.txt', text);
   setStatus('cvUpdatedStatus', 'Downloaded CV-updated.txt', 'ok');
 });
 
