@@ -1008,41 +1008,10 @@ async function sarvamTranscribe(audioBlob, languageCode){
   return data; // { transcript, language_code, ... }
 }
 
-// sarvam-translate:v1 rejects input over 2000 chars (422). Chunk longer text, translate, rejoin.
-const SARVAM_TRANSLATE_MAX_CHARS = 2000;
-
-async function sarvamTranslate(text, sourceLang, targetLang){
-  const key = getSarvamKey();
-  if(!key) throw new Error('add your Sarvam API key first');
-  const input = String(text || '').trim();
-  if(!input) return '';
-
-  const pieces = input.length <= SARVAM_TRANSLATE_MAX_CHARS
-    ? [input]
-    : chunkTextForSarvamTts(input, SARVAM_TRANSLATE_MAX_CHARS);
-  // chunkTextForSarvamTts is defined below; for the rare long input we inline-split if needed.
-  const chunks = pieces.length ? pieces : [input];
-  const out = [];
-  for(const chunk of chunks){
-    const resp = await fetch('https://api.sarvam.ai/translate', {
-      method: 'POST',
-      headers: { 'api-subscription-key': key, 'content-type': 'application/json' },
-      body: JSON.stringify({
-        input: chunk,
-        source_language_code: sourceLang || 'auto',
-        target_language_code: targetLang,
-        model: 'sarvam-translate:v1'
-      })
-    });
-    const data = await resp.json().catch(()=>({}));
-    if(!resp.ok) throw new Error(data.error?.message || `Sarvam translate HTTP ${resp.status}`);
-    if(data.translated_text) out.push(data.translated_text);
-  }
-  return out.join(' ').trim();
-}
-
 // Sarvam TTS validates each inputs[] string at ≤500 chars.
+// sarvam-translate:v1 rejects input over 2000 chars (422).
 const SARVAM_TTS_MAX_CHARS = 500;
+const SARVAM_TRANSLATE_MAX_CHARS = 2000;
 
 // Split long text for TTS: prefer a sentence end in the latter half of the window,
 // then words; mid-word only if unavoidable. Avoids tiny first chunks that waste
@@ -1117,6 +1086,35 @@ async function sarvamSpeak(texts, languageCode){
     allAudios.push(...piece);
   }
   return allAudios; // base64 wav strings, in chunk order
+}
+
+// Translate with the same sentence/word chunking as TTS when over the API input cap.
+async function sarvamTranslate(text, sourceLang, targetLang){
+  const key = getSarvamKey();
+  if(!key) throw new Error('add your Sarvam API key first');
+  const input = String(text || '').trim();
+  if(!input) return '';
+
+  const chunks = input.length <= SARVAM_TRANSLATE_MAX_CHARS
+    ? [input]
+    : chunkTextForSarvamTts(input, SARVAM_TRANSLATE_MAX_CHARS);
+  const out = [];
+  for(const chunk of chunks){
+    const resp = await fetch('https://api.sarvam.ai/translate', {
+      method: 'POST',
+      headers: { 'api-subscription-key': key, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        input: chunk,
+        source_language_code: sourceLang || 'auto',
+        target_language_code: targetLang,
+        model: 'sarvam-translate:v1'
+      })
+    });
+    const data = await resp.json().catch(()=>({}));
+    if(!resp.ok) throw new Error(data.error?.message || `Sarvam translate HTTP ${resp.status}`);
+    if(data.translated_text) out.push(data.translated_text);
+  }
+  return out.join(' ').trim();
 }
 
 // ---------- Claude / OpenAI: web-search job scan ----------
@@ -2219,10 +2217,18 @@ document.getElementById('resultsList').addEventListener('mouseleave', async (e) 
 
 function playBase64Wav(b64){
   return new Promise((resolve, reject) => {
-    const audio = new Audio('data:audio/wav;base64,' + b64);
-    audio.onended = resolve;
-    audio.onerror = reject;
-    audio.play().catch(reject);
+    // Strip whitespace — some APIs insert newlines in base64 that break later chunks.
+    const audio = new Audio('data:audio/wav;base64,' + String(b64 || '').replace(/\s+/g, ''));
+    let settled = false;
+    const done = (err) => {
+      if(settled) return;
+      settled = true;
+      if(err) reject(err);
+      else resolve();
+    };
+    audio.onended = () => done();
+    audio.onerror = () => done(new Error('audio playback failed'));
+    audio.play().catch(err => done(err));
   });
 }
 </script>
