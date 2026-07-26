@@ -739,7 +739,7 @@
         <div class="check" aria-hidden="true">✓</div>
         <h2>You're set</h2>
         <p id="setupReadySummary">Voice and job search keys saved.</p>
-        <button type="button" id="setupGoSearch">Start searching</button>
+        <button type="button" id="setupGoSearch">Build voice profile</button>
         <div style="margin-top:14px;">
           <button type="button" class="secondary" id="setupEditKeys">Edit keys</button>
         </div>
@@ -1106,7 +1106,8 @@ function loadKeyInputs(){
 
   if(keysReady()){
     showSetupStep(3);
-    showView('search');
+    // Returning users with a profile land on Search; otherwise Profile first.
+    showView(getStanceText().trim() ? 'search' : 'profile');
   }else{
     // Land on the first incomplete step
     if(!getSarvamKey()) showSetupStep(1);
@@ -1301,6 +1302,7 @@ document.getElementById('cvFileInput').addEventListener('change', async (e) => {
     document.getElementById('cvClearBtn').style.display = 'inline-block';
     clearCvNotesPanel();
     updateCvReviewUI();
+    updateSearchMemoryCue();
   }catch(err){
     log(`CV parse ERROR: ${err.message}`);
     setStatus('cvStatus', err.message, 'err');
@@ -1313,6 +1315,7 @@ document.getElementById('cvFileInput').addEventListener('change', async (e) => {
     document.getElementById('cvClearBtn').style.display = 'none';
     clearCvNotesPanel();
     updateCvReviewUI();
+    updateSearchMemoryCue();
   }
 });
 
@@ -1328,6 +1331,7 @@ document.getElementById('cvClearBtn').addEventListener('click', () => {
   document.getElementById('cvClearBtn').style.display = 'none';
   clearCvNotesPanel();
   updateCvReviewUI();
+  updateSearchMemoryCue();
 });
 
 // ---------- setup wizard events ----------
@@ -1397,7 +1401,11 @@ document.getElementById('setupNext2').addEventListener('click', () => {
   showSetupStep(3);
 });
 
-document.getElementById('setupGoSearch').addEventListener('click', () => showView('search'));
+document.getElementById('setupGoSearch').addEventListener('click', () => {
+  // First 30s: land on voice profile, not an empty search form.
+  showView(getStanceText().trim() ? 'search' : 'profile');
+});
+document.getElementById('setupGoSearch').textContent = 'Build voice profile';
 document.getElementById('setupEditKeys').addEventListener('click', () => showSetupStep(1));
 
 loadKeyInputs();
@@ -2833,6 +2841,82 @@ function closeGuidedConvo(){
   document.getElementById('guidedAnswerInput').style.display = 'block';
   renderGuidedAnswersReview();
   updateGuidedStartUI();
+  updateInterviewReadyPanel();
+}
+
+/** Pull likely role / skill phrases from interview text to seed search fields. */
+function suggestSearchFromStance(stanceText){
+  const text = String(stanceText || '').trim();
+  if(!text) return { roles: '', keywords: '' };
+  const roleRe = /\b((?:senior|staff|lead|principal|junior|mid[- ]level)?\s*)?(?:robotics|backend|frontend|full[- ]?stack|software|ml|machine learning|data|devops|embedded|firmware|perception|controls?|product|android|ios|mobile|qa|sre|platform|infrastructure)?\s*(?:engineer|developer|scientist|architect|analyst|manager|designer|specialist)s?\b/gi;
+  const roles = [];
+  let m;
+  while((m = roleRe.exec(text)) && roles.length < 3){
+    const phrase = m[0].replace(/\s+/g, ' ').trim();
+    if(phrase.length < 4) continue;
+    const key = phrase.toLowerCase();
+    if(!roles.some(r => r.toLowerCase() === key)) roles.push(phrase);
+  }
+  const skillHints = [];
+  const skillRe = /\b(ROS2?|OpenCV|Python|C\+\+|STM32|Gazebo|SLAM|LiDAR|PLC|Kubernetes|React|Node\.?js|TypeScript|Java|Go|SQL|AWS|GCP|Azure)\b/gi;
+  while((m = skillRe.exec(text)) && skillHints.length < 4){
+    const s = m[0];
+    if(!skillHints.some(x => x.toLowerCase() === s.toLowerCase())) skillHints.push(s);
+  }
+  return {
+    roles: roles.join(', '),
+    keywords: skillHints.join(', ')
+  };
+}
+
+function seedSearchFieldsFromInterview({ overwrite = false } = {}){
+  const suggestions = suggestSearchFromStance(getStanceText());
+  let seeded = false;
+  if(suggestions.roles){
+    const input = getSearchInput('roles');
+    if(input && (overwrite || !input.value.trim())){
+      input.value = suggestions.roles;
+      saveSearchField('roles');
+      seeded = true;
+    }
+  }
+  if(suggestions.keywords){
+    const input = getSearchInput('keywords');
+    if(input && (overwrite || !input.value.trim())){
+      input.value = suggestions.keywords;
+      saveSearchField('keywords');
+      seeded = true;
+    }
+  }
+  if(seeded) setActiveFieldCat(suggestions.roles ? 'roles' : 'keywords');
+  return seeded;
+}
+
+function updateInterviewReadyPanel(){
+  const panel = document.getElementById('interviewReady');
+  if(!panel) return;
+  if(!guidedInterviewDone || guidedConvoActive || !getStanceText().trim()){
+    panel.classList.remove('show');
+    return;
+  }
+  const summary = (guidedSummary || getStanceText()).trim();
+  const blurb = summary.length > 220 ? `${summary.slice(0, 217).trim()}…` : summary;
+  document.getElementById('interviewReadySummary').textContent = blurb;
+  panel.classList.add('show');
+}
+
+function goSearchWithInterviewProfile(){
+  seedSearchFieldsFromInterview({ overwrite: false });
+  updateSearchMemoryCue();
+  showView('search');
+  const roles = getSearchInput('roles');
+  if(roles && roles.value.trim()){
+    setStatus('searchStatus', 'Profile loaded — tap Search jobs when ready', 'ok');
+  }else{
+    setStatus('searchStatus', 'Add a role if needed — your interview will rank matches', 'ok');
+  }
+  const btn = document.getElementById('searchBtn');
+  if(btn) btn.focus();
 }
 
 async function finishGuidedInterview(){
@@ -2850,8 +2934,10 @@ async function finishGuidedInterview(){
     guidedSummary = summary || composeStanceFromGuided();
     if(!guidedSummary) guidedSummary = formatGuidedAnswersText() || '';
     saveGuidedAnswers();
+    seedSearchFieldsFromInterview({ overwrite: false });
     closeGuidedConvo();
     setStatus('guidedMicStatus', '', '');
+    updateInterviewReadyPanel();
   }catch(err){
     setStatus('guidedMicStatus', err.message || 'Could not finish interview', 'err');
     throw err;
@@ -2872,7 +2958,9 @@ async function fetchAndShowNextGuidedQuestion(){
       guidedInterviewDone = true;
       guidedSummary = result.summary || composeStanceFromGuided();
       saveGuidedAnswers();
+      seedSearchFieldsFromInterview({ overwrite: false });
       closeGuidedConvo();
+      updateInterviewReadyPanel();
       return;
     }
     guidedTurns.push({ question: result.question });
@@ -2980,6 +3068,8 @@ function beginGuidedAt(index, { speak = true } = {}){
   document.getElementById('guidedAnswerInput').style.display = 'block';
   document.getElementById('guidedSkipBtn').style.display = 'inline-block';
   document.getElementById('guidedAskSpeakBtn').style.display = '';
+  const ready = document.getElementById('interviewReady');
+  if(ready) ready.classList.remove('show');
   showGuidedQuestion({ speak });
   renderGuidedAnswersReview();
 }
@@ -3026,9 +3116,23 @@ function updateGuidedNextFromInput(){
 
 function showGuidedQuestion({ speak = false } = {}){
   const turn = guidedTurns[guidedQuestionIndex];
-  document.getElementById('guidedQuestion').textContent = turn?.question || '';
+  const qEl = document.getElementById('guidedQuestion');
+  qEl.classList.remove('enter');
+  // Restart enter animation when the question text changes.
+  void qEl.offsetWidth;
+  qEl.textContent = turn?.question || '';
+  qEl.classList.add('enter');
+
+  const answered = answeredCount();
+  const progressPct = Math.min(100, Math.round(
+    ((guidedInterviewDone ? GUIDED_MAX_QUESTIONS : Math.max(answered, guidedQuestionIndex + 1)) / GUIDED_MAX_QUESTIONS) * 100
+  ));
+  const fill = document.getElementById('guidedProgressFill');
+  if(fill) fill.style.width = `${progressPct}%`;
+
   document.getElementById('guidedProgress').textContent =
-    `Question ${guidedQuestionIndex + 1} of up to ${GUIDED_MAX_QUESTIONS}`;
+    `Question ${guidedQuestionIndex + 1} of up to ${GUIDED_MAX_QUESTIONS}` +
+    (answered ? ` · ${answered} answered` : '');
   document.getElementById('guidedNextBtn').style.display = 'none';
   document.getElementById('guidedSkipBtn').style.display = 'inline-block';
   document.getElementById('guidedAnswerInput').style.display = 'block';
@@ -3121,6 +3225,16 @@ document.getElementById('startGuidedBtn').addEventListener('click', async () => 
   }
 });
 
+document.getElementById('interviewReadySearchBtn').addEventListener('click', () => {
+  goSearchWithInterviewProfile();
+});
+document.getElementById('interviewReadyCvBtn').addEventListener('click', () => {
+  const cvTab = document.querySelector('.method-pick[data-tab="cv"]');
+  if(cvTab) cvTab.click();
+  const drop = document.querySelector('#profilePanel-cv .cv-drop');
+  if(drop) drop.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+});
+
 document.getElementById('clearGuidedBtn').addEventListener('click', () => {
   if(!confirm('Clear all saved answers?')) return;
   stopTtsPlayback();
@@ -3131,6 +3245,7 @@ document.getElementById('clearGuidedBtn').addEventListener('click', () => {
   guidedConvoActive = false;
   saveGuidedAnswers();
   syncStanceFromGuidedAnswers({ force: true });
+  updateInterviewReadyPanel();
   document.getElementById('guidedConvo').style.display = 'none';
   document.getElementById('guidedAskSpeakBtn').style.display = '';
 });
@@ -3644,6 +3759,8 @@ bindMicButton({
   updateGuidedStartUI();
   updateCvReviewUI();
   if(answeredCount() > 0 || guidedSummary) syncStanceFromGuidedAnswers();
+  else updateSearchMemoryCue();
+  updateInterviewReadyPanel();
 })();
 
 // ---------- job chat history (Translate/Speak via shared langActionsHtml) ----------
