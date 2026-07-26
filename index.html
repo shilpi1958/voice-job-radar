@@ -814,7 +814,8 @@
           </div>
           <div id="cvUpdatedFoot" class="cv-pane-foot hidden">
             <p class="status" id="cvUpdatedStatus" style="margin:0; flex:1;"></p>
-            <button type="button" id="cvDownloadBtn" class="secondary" style="display:none;">Download CV-updated.txt</button>
+            <button type="button" id="cvDownloadPdfBtn" style="display:none;">Download PDF</button>
+            <button type="button" id="cvDownloadTxtBtn" class="secondary" style="display:none;">Download .txt</button>
           </div>
         </div>
       </div>
@@ -1063,6 +1064,7 @@ let updatedCvText = '';
 // PDF.js v4 is ESM-only — classic pdf.min.js no longer exists on CDN (404).
 // Vendor locally so localhost + GitHub Pages work without third-party CDNs.
 let pdfjsLibPromise = null;
+let jspdfLibPromise = null;
 
 function pageDirUrl(){
   const u = new URL(window.location.href);
@@ -1079,6 +1081,10 @@ function pdfAssetUrl(name){
   return new URL(`vendor/pdfjs/${name}`, pageDirUrl()).href;
 }
 
+function jspdfAssetUrl(){
+  return new URL('vendor/jspdf/jspdf.umd.min.js', pageDirUrl()).href;
+}
+
 function loadPdfJs(){
   if(pdfjsLibPromise) return pdfjsLibPromise;
   pdfjsLibPromise = import(pdfAssetUrl('pdf.min.mjs')).then((mod) => {
@@ -1089,6 +1095,33 @@ function loadPdfJs(){
     throw new Error('PDF reader failed to load — refresh and try again');
   });
   return pdfjsLibPromise;
+}
+
+function loadJsPdf(){
+  if(jspdfLibPromise) return jspdfLibPromise;
+  if(window.jspdf && typeof window.jspdf.jsPDF === 'function'){
+    jspdfLibPromise = Promise.resolve(window.jspdf.jsPDF);
+    return jspdfLibPromise;
+  }
+  jspdfLibPromise = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = jspdfAssetUrl();
+    script.async = true;
+    script.onload = () => {
+      if(window.jspdf && typeof window.jspdf.jsPDF === 'function'){
+        resolve(window.jspdf.jsPDF);
+      }else{
+        jspdfLibPromise = null;
+        reject(new Error('PDF writer failed to load — refresh and try again'));
+      }
+    };
+    script.onerror = () => {
+      jspdfLibPromise = null;
+      reject(new Error('PDF writer failed to load — refresh and try again'));
+    };
+    document.head.appendChild(script);
+  });
+  return jspdfLibPromise;
 }
 
 async function extractPdfTextFromBuffer(buffer){
@@ -2956,7 +2989,7 @@ function clearCvNotesPanel(){
   document.getElementById('cvApplyPrompt').classList.add('hidden');
   document.getElementById('cvEditDual').classList.add('hidden');
   document.getElementById('cvUpdatedFoot').classList.add('hidden');
-  document.getElementById('cvDownloadBtn').style.display = 'none';
+  setCvDownloadButtonsVisible(false);
   document.getElementById('cvOriginalPreview').innerHTML = '';
   setCvUpdatedEditor('', { busy: false });
   lastCvReview = '';
@@ -3061,7 +3094,7 @@ function renderCvReview(text){
   document.getElementById('cvApplyPrompt').classList.remove('hidden');
   document.getElementById('cvEditDual').classList.add('hidden');
   document.getElementById('cvUpdatedFoot').classList.add('hidden');
-  document.getElementById('cvDownloadBtn').style.display = 'none';
+  setCvDownloadButtonsVisible(false);
   setCvUpdatedEditor('', {
     busy: false,
     placeholder: 'Your updated CV will appear here — you can edit it before downloading.'
@@ -3080,6 +3113,40 @@ function downloadTextFile(filename, text){
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+}
+
+function setCvDownloadButtonsVisible(visible){
+  const display = visible ? 'inline-block' : 'none';
+  document.getElementById('cvDownloadPdfBtn').style.display = display;
+  document.getElementById('cvDownloadTxtBtn').style.display = display;
+}
+
+async function downloadUpdatedCvPdf(text){
+  const JsPDF = await loadJsPdf();
+  const doc = new JsPDF({ unit: 'pt', format: 'a4' });
+  const margin = 48;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const maxWidth = pageWidth - margin * 2;
+  const fontSize = 11;
+  const lineHeight = fontSize * 1.35;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(fontSize);
+
+  let y = margin;
+  const paragraphs = String(text).replace(/\r\n/g, '\n').split('\n');
+  for(const para of paragraphs){
+    const wrapped = para.length ? doc.splitTextToSize(para, maxWidth) : [''];
+    for(const line of wrapped){
+      if(y + lineHeight > pageHeight - margin){
+        doc.addPage();
+        y = margin;
+      }
+      if(line) doc.text(line, margin, y);
+      y += lineHeight;
+    }
+  }
+  doc.save('CV-updated.pdf');
 }
 
 function requireProviderKeyForCv(panel){
@@ -3143,7 +3210,7 @@ function showCvEditDualPane(){
   const dual = document.getElementById('cvEditDual');
   dual.classList.remove('hidden');
   document.getElementById('cvUpdatedFoot').classList.remove('hidden');
-  document.getElementById('cvDownloadBtn').style.display = 'none';
+  setCvDownloadButtonsVisible(false);
   setCvUpdatedEditor('', {
     busy: false,
     placeholder: 'Your updated CV will appear here — you can edit it before downloading.'
@@ -3172,7 +3239,7 @@ async function reviewMyCv(){
   block.innerHTML = '';
   document.getElementById('cvApplyPrompt').classList.add('hidden');
   document.getElementById('cvEditDual').classList.add('hidden');
-  document.getElementById('cvDownloadBtn').style.display = 'none';
+  setCvDownloadButtonsVisible(false);
   updatedCvText = '';
   lastCvReview = '';
   document.getElementById('cvNotesStatus').innerHTML = '<span class="spinner"></span>reviewing your CV…';
@@ -3210,7 +3277,6 @@ ${cvExcerpt}`;
 async function applyCvUpdates(){
   const panel = document.getElementById('cvNotesPanel');
   const updateBtn = document.getElementById('cvUpdateBtn');
-  const downloadBtn = document.getElementById('cvDownloadBtn');
 
   if(!cvText.trim() || !lastCvReview.trim()){
     showCvEditDualPane();
@@ -3255,7 +3321,7 @@ ${cvExcerpt}`;
       placeholder: 'Edit the updated CV here before downloading.'
     });
     setStatus('cvUpdatedStatus', 'Updated CV ready — edit freely, then download', 'ok');
-    downloadBtn.style.display = 'inline-block';
+    setCvDownloadButtonsVisible(true);
     getCvUpdatedEditor().focus();
     log(`CV update: ${updatedCvText.length} chars`);
   }catch(err){
@@ -3264,7 +3330,7 @@ ${cvExcerpt}`;
       busy: false,
       placeholder: 'Update failed — try again, or write your own draft here.'
     });
-    downloadBtn.style.display = 'none';
+    setCvDownloadButtonsVisible(false);
     setStatus('cvUpdatedStatus', err.message || 'Update failed', 'err');
   }finally{
     updateBtn.disabled = false;
@@ -3281,11 +3347,29 @@ document.getElementById('cvUpdateBtn').addEventListener('click', () => {
 
 document.getElementById('cvUpdatedEditor').addEventListener('input', () => {
   syncUpdatedCvFromEditor();
-  const text = updatedCvText.trim();
-  document.getElementById('cvDownloadBtn').style.display = text ? 'inline-block' : 'none';
+  setCvDownloadButtonsVisible(!!updatedCvText.trim());
 });
 
-document.getElementById('cvDownloadBtn').addEventListener('click', () => {
+document.getElementById('cvDownloadPdfBtn').addEventListener('click', async () => {
+  const text = syncUpdatedCvFromEditor().trim();
+  if(!text){
+    setStatus('cvUpdatedStatus', 'Nothing to download yet', 'err');
+    return;
+  }
+  const btn = document.getElementById('cvDownloadPdfBtn');
+  btn.disabled = true;
+  try{
+    await downloadUpdatedCvPdf(text);
+    setStatus('cvUpdatedStatus', 'Downloaded CV-updated.pdf', 'ok');
+  }catch(err){
+    log(`CV PDF download ERROR: ${err.message}`);
+    setStatus('cvUpdatedStatus', err.message || 'PDF download failed', 'err');
+  }finally{
+    btn.disabled = false;
+  }
+});
+
+document.getElementById('cvDownloadTxtBtn').addEventListener('click', () => {
   const text = syncUpdatedCvFromEditor().trim();
   if(!text){
     setStatus('cvUpdatedStatus', 'Nothing to download yet', 'err');
