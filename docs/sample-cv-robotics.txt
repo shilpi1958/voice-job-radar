@@ -1,0 +1,52 @@
+Arjun Mehra
+Robotics / Perception Engineer  |  Bangalore / Hyderabad / Remote IST  |  Daytime hours preferred
+arjun.mehra.robotics@email.com  |  +91 98123 45670  |  linkedin.com/in/arjunmehra-robotics
+
+SUMMARY
+Robotics engineer with ~2.5 years building perception and ROS2 software for mobile robots.
+Strong in Python, C++, OpenCV, and embedded (STM32). Experience shipping camera + ranging
+based obstacle avoidance on warehouse AMRs, validating in Gazebo before field trials.
+Looking for Robotics Engineer roles in perception, control, ROS, or embedded — warehouse,
+industrial automation, or deep-tech hardware+software teams in India.
+
+EXPERIENCE
+
+Robotics Software Engineer — NovaBot Labs, Bangalore
+Mar 2024 – Present
+- Owned ROS2 perception nodes for warehouse AMRs: camera + ultrasonic fusion for obstacle avoidance.
+- Reduced end-to-end perception latency by restructuring node graph and message QoS; validated in Gazebo before field trials.
+- Improved collision rate in aisle trials after tuning costmap inflation and safety margins with the controls team.
+- Wrote Python tooling for bag replay and regression checks on perception pipelines.
+- Collaborated with mechanical and embedded on sensor mounting, calibration, and bring-up.
+
+Junior Robotics Engineer — MechNest Automation, Bangalore
+Aug 2022 – Feb 2024
+- Developed ROS (ROS1 → early ROS2 migration) packages for conveyor-adjacent mobile bases.
+- Implemented OpenCV-based line and marker detection for docking assist; C++ nodes for tighter loops where needed.
+- Brought up STM32 firmware for motor driver interfacing and basic telemetry over UART/CAN.
+- Supported on-site commissioning for two factory pilot deployments (daytime IST).
+
+Embedded Systems Intern — MechNest Automation, Bangalore
+Jan 2022 – Jul 2022
+- Prototyped sensor drivers (IMU, ultrasonic) and logging utilities on STM32 / Arduino-class boards.
+- Assisted senior engineers with hardware bring-up checklists and lab test scripts.
+
+SKILLS
+- Robotics middleware: ROS2 (nodes, launch, tf, bags), Gazebo simulation
+- Perception: OpenCV, camera calibration basics, obstacle detection, basic SLAM exposure
+- Languages: Python, C++, C (embedded)
+- Embedded: STM32, UART/CAN basics, motor driver bring-up
+- Controls / planning: PID tuning support, costmaps & planners (learning deeper motion planning)
+- Tools: Git, Linux, basic CI for package builds
+- Preferences: Bangalore, Hyderabad, or remote IST daytime; lab/field OK; no pure night-shift-only roles
+
+EDUCATION
+B.Tech, Electronics & Communication Engineering — RV College of Engineering, Bangalore
+2018 – 2022
+Coursework highlights: control systems, embedded systems, computer vision elective; final-year project on ROS-based line-following mobile robot.
+
+PROJECTS (selected)
+- Gazebo sim stack for AMR aisle navigation demos (costmap + simple planner configs).
+- STM32 + ROS bridge prototype for wheel odometry telemetry.
+
+Note: Fictional sample CV for Voice Job Radar product demos. Names and employers are made up.

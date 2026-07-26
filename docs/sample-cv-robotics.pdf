@@ -1,0 +1,287 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 5110 >>
+stream
+BT
+/F1 20 Tf
+1 0 0 1 48.00 793.89 Tm
+(Arjun Mehra) Tj
+ET
+BT
+/F1 10 Tf
+1 0 0 1 48.00 777.89 Tm
+(Robotics / Perception Engineer  |  Bangalore / Hyderabad / Remote IST  |  Daytime preferred) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 48.00 764.89 Tm
+(arjun.mehra.robotics@email.com  |  +91 98123 45670  |  linkedin.com/in/arjunmehra-robotics) Tj
+ET
+0.75 w
+48.00 756.89 m
+547.28 756.89 l
+S
+BT
+/F1 11 Tf
+1 0 0 1 48.00 742.89 Tm
+(SUMMARY) Tj
+ET
+0.75 w
+48.00 736.89 m
+547.28 736.89 l
+S
+BT
+/F1 9 Tf
+1 0 0 1 48.00 724.89 Tm
+(Robotics engineer with ~2.5 years building perception and ROS2 software for mobile robots.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 48.00 713.89 Tm
+(Strong in Python, C++, OpenCV, and embedded \(STM32\). Experience shipping camera + ranging) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 48.00 702.89 Tm
+(obstacle avoidance on warehouse AMRs, validated in Gazebo before field trials. Seeking Robotics) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 48.00 691.89 Tm
+(Engineer roles in perception, control, ROS, or embedded - warehouse, industrial automation, or) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 48.00 680.89 Tm
+(deep-tech hardware+software teams in India.) Tj
+ET
+BT
+/F1 11 Tf
+1 0 0 1 48.00 655.89 Tm
+(EXPERIENCE) Tj
+ET
+0.75 w
+48.00 649.89 m
+547.28 649.89 l
+S
+BT
+/F1 10.5 Tf
+1 0 0 1 48.00 637.89 Tm
+(Robotics Software Engineer  -  NovaBot Labs, Bangalore) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 48.00 625.89 Tm
+(Mar 2024 - Present) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 48.00 612.89 Tm
+(- Owned ROS2 perception nodes for warehouse AMRs: camera + ultrasonic fusion for obstacle) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 58.00 601.89 Tm
+(avoidance.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 48.00 589.89 Tm
+(- Cut end-to-end perception latency via node graph and QoS changes; validated in Gazebo before) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 58.00 578.89 Tm
+(field trials.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 48.00 566.89 Tm
+(- Improved aisle-trial collision rate after tuning costmap inflation and safety margins with) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 58.00 555.89 Tm
+(controls.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 48.00 543.89 Tm
+(- Wrote Python tooling for bag replay and regression checks on perception pipelines.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 48.00 531.89 Tm
+(- Collaborated with mechanical and embedded on sensor mounting, calibration, and bring-up.) Tj
+ET
+BT
+/F1 10.5 Tf
+1 0 0 1 48.00 517.89 Tm
+(Junior Robotics Engineer  -  MechNest Automation, Bangalore) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 48.00 505.89 Tm
+(Aug 2022 - Feb 2024) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 48.00 492.89 Tm
+(- Developed ROS \(ROS1 to early ROS2\) packages for conveyor-adjacent mobile bases.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 48.00 480.89 Tm
+(- Implemented OpenCV line/marker detection for docking assist; C++ nodes for tighter loops.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 48.00 468.89 Tm
+(- Brought up STM32 firmware for motor drivers and basic telemetry over UART/CAN.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 48.00 456.89 Tm
+(- Supported on-site commissioning for two factory pilot deployments \(daytime IST\).) Tj
+ET
+BT
+/F1 10.5 Tf
+1 0 0 1 48.00 442.89 Tm
+(Embedded Systems Intern  -  MechNest Automation, Bangalore) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 48.00 430.89 Tm
+(Jan 2022 - Jul 2022) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 48.00 417.89 Tm
+(- Prototyped sensor drivers \(IMU, ultrasonic\) and logging utilities on STM32 / Arduino-class) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 58.00 406.89 Tm
+(boards.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 48.00 394.89 Tm
+(- Assisted senior engineers with hardware bring-up checklists and lab test scripts.) Tj
+ET
+BT
+/F1 11 Tf
+1 0 0 1 48.00 370.89 Tm
+(SKILLS) Tj
+ET
+0.75 w
+48.00 364.89 m
+547.28 364.89 l
+S
+BT
+/F1 9 Tf
+1 0 0 1 48.00 353.89 Tm
+(- Robotics middleware: ROS2 \(nodes, launch, tf, bags\), Gazebo simulation) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 48.00 342.89 Tm
+(- Perception: OpenCV, camera calibration basics, obstacle detection, basic SLAM exposure) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 48.00 331.89 Tm
+(- Languages: Python, C++, C \(embedded\)) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 48.00 320.89 Tm
+(- Embedded: STM32, UART/CAN basics, motor driver bring-up) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 48.00 309.89 Tm
+(- Controls / planning: PID tuning support, costmaps & planners \(deepening motion planning\)) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 48.00 298.89 Tm
+(- Tools: Git, Linux, basic CI for package builds) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 48.00 287.89 Tm
+(- Preferences: Bangalore, Hyderabad, or remote IST daytime; lab/field OK; no night-only roles) Tj
+ET
+BT
+/F1 11 Tf
+1 0 0 1 48.00 264.89 Tm
+(EDUCATION) Tj
+ET
+0.75 w
+48.00 258.89 m
+547.28 258.89 l
+S
+BT
+/F1 10.5 Tf
+1 0 0 1 48.00 247.89 Tm
+(B.Tech, Electronics & Communication  -  RV College of Engineering, Bangalore) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 48.00 236.89 Tm
+(2018 - 2022  |  Coursework: control systems, embedded, computer vision; ROS line-follower project) Tj
+ET
+BT
+/F1 11 Tf
+1 0 0 1 48.00 224.89 Tm
+(PROJECTS) Tj
+ET
+0.75 w
+48.00 218.89 m
+547.28 218.89 l
+S
+BT
+/F1 9 Tf
+1 0 0 1 48.00 207.89 Tm
+(- Gazebo sim stack for AMR aisle navigation demos \(costmap + simple planner configs\)) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 48.00 196.89 Tm
+(- STM32 + ROS bridge prototype for wheel odometry telemetry) Tj
+ET
+BT
+/F1 8.5 Tf
+1 0 0 1 48.00 175.89 Tm
+(This document is a fictional sample CV for product demos. All names and employers are made up.) Tj
+ET
+
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000121 00000 n 
+0000000253 00000 n 
+0000005415 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+5485
+%%EOF

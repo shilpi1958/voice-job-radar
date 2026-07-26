@@ -3,7 +3,8 @@
 Glance sheet. Speak the narration lines. Click the path. Freeze on the product.
 
 **Live URL:** https://voice-job-radar.vercel.app  
-**Sample CV:** `docs/sample-cv-backend.pdf` (Rahul Sharma, backend)
+**Sample CVs:** `docs/sample-cv-backend.pdf` (Rahul Sharma, backend) · `docs/sample-cv-robotics.pdf` (Arjun Mehra, robotics / Hindi; also `.txt`)  
+**Robotics Hindi persona (full Q&A):** `docs/sample-profile-robotics-hindi.md`
 
 ---
 
@@ -51,8 +52,8 @@ Glance sheet. Speak the narration lines. Click the path. Freeze on the product.
 |------|--------|-----|-----------|
 | **A. Language** | **Profile** → Language | Set **Hindi** | “Same person. Their language.” |
 | **B. Voice profile** | **Voice profile** → **Start** | Answer **1–2** questions out loud (Speak → Stop). Skip the rest with **Skip** / **Done for now** if clock is tight. | “AI interviewer — speak answers; profile ranks jobs, not just keywords.” |
-| **C. CV** | **Upload CV** → Choose file | Upload `sample-cv-backend.pdf` → **Review my CV** → wait for **2-sentence** review → **Update CV** → show dual pane (Original \| Updated) → **Download CV-updated.txt** | “Upload → short review → update beside the original → take it with you.” |
-| **D. Search** | **Search** | Roles: speak or type `Backend Engineer` · Keywords: `fintech` (or `remote`) → **Search jobs** | “Search in their words — live jobs, ranked with the profile.” |
+| **C. CV** | **Upload CV** → Choose file | Upload `sample-cv-backend.pdf` *or* robotics path: `sample-cv-robotics.pdf` → **Review my CV** → wait for **2-sentence** review → **Update CV** → show dual pane (Original \| Updated) → **Download CV-updated.txt** | “Upload → short review → update beside the original → take it with you.” |
+| **D. Search** | **Search** | Backend: `Backend Engineer` + `fintech` · **or robotics:** `Robotics Engineer` + `ROS2` → **Search jobs** | “Search in their words — live jobs, ranked with the profile.” |
 | **E. One job** | Open **first solid card** | Point at **you already have** / **skills to close the gap** | “Not translate-and-pray — have vs missing, for *this* posting.” |
 | **F. Chat** | **Ask a question about this job** | Speak (or type) one Hindi question → get answer (+ Speak if time) | “Comprehension barrier: ask the job, in Hindi.” |
 
@@ -125,13 +126,15 @@ From the demo brief / grading posture:
 - **Don’t use mocked job cards.** Live results matter for JTBD credibility.
 - **Don’t end on architecture or a blank screen.** End on gap + answer.
 - **Don’t apologize into a spiral.** One line, fallback recording, continue.
-- **Don’t hide the human.** You’re demoing for a person who searches by voice — keep Rahul’s story, not the API diagram.
+- **Don’t hide the human.** You’re demoing for a person who searches by voice — keep Rahul’s or Arjun’s story, not the API diagram.
 
 ---
 
 ## 9. Demo data suggestions
 
-### Persona
+Pick **one** persona per run. Backend (§9a) is the default; robotics (§9b) when you want a different JTBD story. Full robotics sheet: `docs/sample-profile-robotics-hindi.md`.
+
+### 9a. Persona — Backend (default)
 **Rahul Sharma** — Hindi-speaking backend engineer (~3 years, Node.js + PostgreSQL). Bangalore or remote; no night shifts. Fintech / deep-tech. Mid-level Backend or Full-stack. Sample file: `docs/sample-cv-backend.pdf`.
 
 ### Voice profile (1–2 answers — Hindi)
@@ -157,6 +160,39 @@ English backup if STT fails:
 
 ### English profile (if you must paste)
 > 3 years backend, Node.js and PostgreSQL. Bangalore or remote, no night shifts. Fintech or deep-tech. Mid-level Backend or Full-stack.
+
+---
+
+### 9b. Persona — Robotics (Hindi alternate)
+
+**Arjun Mehra** — Hindi-speaking robotics engineer (~2.5 years, ROS2 / perception / embedded). Bangalore; daytime IST. Warehouse AMR / industrial / deep-tech. Strong junior → early mid. Upload: `docs/sample-cv-robotics.pdf` (regen via `python3 docs/generate-sample-cv.py`). Full Q&A: `docs/sample-profile-robotics-hindi.md`.
+
+### Voice profile (1–2 answers — Hindi) — prefer Q1 + Q4 live
+
+**Strengths (romanized):**  
+> Mujhe robot perception aur ROS2 pipelines banana accha lagta hai. Python, C++, OpenCV, aur STM32 embedded pe main solid hoon.
+
+**Proud of / highlight (romanized):**  
+> Warehouse AMR pe camera + ultrasonic se obstacle avoidance pipeline banayi. ROS2 nodes se latency kam ki, Gazebo pe pehle validate kiya.
+
+**Devanagari (strengths):**  
+> मुझे रोबोट perception और ROS2 pipelines बनाना अच्छा लगता है। Python, C++, OpenCV, और STM32 embedded पे मैं solid हूँ।
+
+### Search terms
+| Field | Use |
+|-------|-----|
+| Roles | `Robotics Engineer` or speak: रोबोटिक्स इंजीनियर |
+| Keywords | `ROS2` · optional: `OpenCV` · `Bangalore` |
+| Companies (optional) | `GreyOrange` · `Addverb` · `Ati Motors` — skip if short on time |
+
+### One job-chat question (Hindi)
+> Is role me ROS2 production experience kitna zaroori hai? Mere paas warehouse AMR pe ROS2 perception pipeline hai, lekin multi-robot fleet nahi.
+
+English backup if STT fails:  
+> How important is production ROS2 for this role if I’ve shipped AMR perception but not multi-robot fleets?
+
+### English profile (if you must paste)
+> About 2.5 years in robotics. ROS2, Python, C++, OpenCV, STM32. AMR perception and obstacle avoidance in Bangalore. Want Robotics Engineer — perception, control, or ROS. Bangalore, Hyderabad, or remote IST daytime.
 
 ---
 

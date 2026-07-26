@@ -368,20 +368,21 @@
   .cv-apply-prompt{margin-top:14px;}
   .cv-apply-prompt.hidden{display:none;}
   .cv-apply-prompt .row{gap:8px; flex-wrap:wrap;}
+  /* Stacked by default: body max-width is 640px, so side-by-side
+     columns were ~300px each. Prefer full-width top/bottom panes. */
   .cv-edit-dual{
     margin-top:16px;
     display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:12px;
+    grid-template-columns:1fr;
+    gap:14px;
     align-items:stretch;
-    min-height:min(62vh, 640px);
   }
   .cv-edit-dual.hidden{display:none;}
   .cv-pane{
     border:1px solid var(--border);
     border-radius:10px;
     background:var(--field-bg);
-    min-height:min(58vh, 560px);
+    min-height:min(48vh, 480px);
     display:flex;
     flex-direction:column;
     overflow:hidden;
@@ -424,7 +425,7 @@
   textarea.cv-updated-editor{
     flex:1 1 auto;
     width:100%;
-    min-height:min(52vh, 480px);
+    min-height:min(48vh, 480px);
     height:100%;
     margin:0;
     resize:none;
@@ -468,13 +469,24 @@
   .cv-pane-body-editor.is-busy .cv-editor-busy-banner{display:inline-flex;}
   .cv-notes .status{margin:0 0 8px;}
   .cv-notes .status:empty{display:none; margin:0;}
-  @media (max-width:720px){
+  /* Side-by-side only when each column can be ≥~420px: break out of
+     the 640px body shell so panes use horizontal space comfortably. */
+  @media (min-width:960px){
     .cv-edit-dual{
-      grid-template-columns:1fr;
-      min-height:0;
+      --cv-dual-w: min(100vw - 40px, 1100px);
+      width: var(--cv-dual-w);
+      max-width: none;
+      margin-left: calc((100% - var(--cv-dual-w)) / 2);
+      grid-template-columns: 1fr 1fr;
+      gap:16px;
+      min-height: min(62vh, 640px);
     }
-    .cv-pane{min-height:min(50vh, 420px);}
-    textarea.cv-updated-editor{min-height:min(46vh, 380px);}
+    .cv-pane{min-height:min(58vh, 560px);}
+    textarea.cv-updated-editor{min-height:min(52vh, 480px);}
+  }
+  @media (max-width:520px){
+    .cv-pane{min-height:min(42vh, 360px);}
+    textarea.cv-updated-editor{min-height:min(40vh, 340px);}
   }
   .text-actions{
     display:flex; gap:6px; flex-wrap:wrap; align-items:center;
@@ -2295,6 +2307,8 @@ bindMicButton({
 // ---------- voice profile agent (AI interviewer) ----------
 const GUIDED_OPENING_QUESTION =
   "Let's build your profile for job search. To start — what kind of role are you looking for, and what are you strongest at?";
+const GUIDED_OPENING_QUESTION_WITH_CV =
+  "I see you've uploaded a CV — we'll dig into your experience next. First, what kind of role are you looking for right now?";
 const GUIDED_MAX_QUESTIONS = 8;
 const GUIDED_STORAGE_KEY = 'vjr_guided_answers';
 // Used only to migrate older fixed-question saves.
@@ -2475,30 +2489,51 @@ function interviewHistoryForPrompt(){
   }).join('\n');
 }
 
+function cvExcerptForInterview(){
+  const raw = (cvText || '').trim();
+  if(!raw) return '';
+  return truncateForPrompt(raw, MAX_CV_CHARS);
+}
+
+function guidedOpeningQuestion(){
+  return cvExcerptForInterview() ? GUIDED_OPENING_QUESTION_WITH_CV : GUIDED_OPENING_QUESTION;
+}
+
 function buildNextQuestionPrompt({ forceDone = false } = {}){
   const asked = guidedTurns.length;
   const remaining = Math.max(0, GUIDED_MAX_QUESTIONS - asked);
+  const cvExcerpt = cvExcerptForInterview();
+  const cvBlock = cvExcerpt
+    ? `\nUploaded CV (authoritative for experience/skills; may be truncated):\n${cvExcerpt}\n`
+    : '';
   if(forceDone || remaining <= 0){
-    return `You are wrapping up a short job-seeker interview. Using only the Q&A below, write a compact profile for matching jobs (skills, experience signals, role goals, constraints). Do not invent facts.
+    return `You are wrapping up a short job-seeker interview. Using only the Q&A below${cvExcerpt ? ' and the uploaded CV' : ''}, write a compact profile for matching jobs (skills, experience signals, role goals, constraints). Do not invent facts.
 
 Interview so far:
 ${interviewHistoryForPrompt()}
-
+${cvBlock}
 Respond ONLY with raw JSON (no fences, no preamble):
 {"done":true,"summary":"2-4 sentence English profile for job search"}`;
   }
-  return `You are an AI interviewer helping build a job-search profile. Ask one focused follow-up question at a time about skills, experience, goals, constraints, location/remote preferences, or gaps — whatever is most useful next.
+  return `You are an AI interviewer helping build a job-search profile. Ask one focused follow-up question at a time.
+
+Mix across the interview:
+- Goals and preferences (role target, location/remote, constraints)
+- ${cvExcerpt
+    ? 'CV-grounded probes (specific projects, stack, impact, and gaps vs their stated target role — e.g. robotics if that is the goal)'
+    : 'Skills, experience, and gaps useful for job matching'}
 
 Rules:
+- Do not invent employers, titles, skills, projects, or outcomes — only ask from the CV text and answers so far.
 - Do not repeat earlier questions.
 - Keep the question short and conversational (one or two sentences).
 - Prefer concrete, answerable questions.
 - After about 4–${GUIDED_MAX_QUESTIONS} questions you may finish if you have enough signal.
 - You have asked ${asked} question(s); at most ${remaining} more allowed (including the next one).
-
+${cvExcerpt ? '- When a CV is present, prefer follow-ups that reference real items from it (projects, stack, impact, missing pieces for the target role), not only generic HR questions.\n' : ''}
 Interview so far:
 ${interviewHistoryForPrompt()}
-
+${cvBlock}
 Respond ONLY with raw JSON (no fences, no preamble), either:
 {"done":false,"question":"..."}
 or when enough information:
@@ -2672,7 +2707,7 @@ function speakCurrentGuidedQuestion(){
 
 function beginGuidedAt(index, { speak = true } = {}){
   if(!guidedTurns.length){
-    guidedTurns = [{ question: GUIDED_OPENING_QUESTION }];
+    guidedTurns = [{ question: guidedOpeningQuestion() }];
     guidedInterviewDone = false;
     guidedSummary = '';
   }
@@ -2911,6 +2946,7 @@ document.getElementById('guidedAnswersList').addEventListener('click', (e) => {
 });
 
 const CV_REVIEW_MAX_BULLETS = 6;
+const CV_REVIEW_MAX_WORDS = 15;
 
 function clearCvNotesPanel(){
   const panel = document.getElementById('cvNotesPanel');
@@ -2958,7 +2994,17 @@ function cleanCvReviewBullet(s){
     .trim();
 }
 
-/** Normalize model output to 4–6 sharp improvement bullets (cap at 6). */
+/** Hard-cap bullet length; drop trailing punctuation left by mid-sentence cuts. */
+function enforceCvReviewWordLimit(s, maxWords = CV_REVIEW_MAX_WORDS){
+  const words = String(s || '').split(/\s+/).filter(Boolean);
+  if(!words.length) return '';
+  if(words.length <= maxWords) return words.join(' ');
+  return words.slice(0, maxWords).join(' ')
+    .replace(/[,;:–—\-…/\\]+$/u, '')
+    .trim();
+}
+
+/** Normalize model output to 4–6 sharp improvement bullets (cap at 6; ≤15 words each). */
 function normalizeBulletReview(text){
   let t = String(text || '').trim();
   if(!t) return [];
@@ -2987,6 +3033,7 @@ function normalizeBulletReview(text){
 
   bullets = bullets
     .map(cleanCvReviewBullet)
+    .map(b => enforceCvReviewWordLimit(b, CV_REVIEW_MAX_WORDS))
     .filter(b => b && b.split(/\s+/).filter(Boolean).length >= 3)
     .slice(0, CV_REVIEW_MAX_BULLETS);
 
@@ -3136,7 +3183,8 @@ async function reviewMyCv(){
     const answersText = formatGuidedAnswersText();
     const prompt = `You are a CV coach. Review this CV and return ONLY 4–6 sharp improvement bullets.
 Each bullet: one concrete, actionable change (what to add, cut, rewrite, quantify, or reorder) — specific to THIS CV.
-Rules: detailed but to the point; improvement-focused; plain bullets only (- or •); no headers; no preamble; no closing; no praise essay; no vague advice. Do not invent employers, dates, or credentials.
+Hard limit: each bullet must be at most 15 words (count carefully; shorter is fine).
+Rules: pointed and actionable; improvement-focused; plain bullets only (- or •); no headers; no preamble; no closing; no praise essay; no vague advice. Do not invent employers, dates, or credentials.
 ${answersText ? `\nProfile answers for optional context:\n${answersText}\n` : ''}
 CV text (may be truncated):
 ${cvExcerpt}`;
