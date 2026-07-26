@@ -1008,87 +1008,149 @@ async function sarvamTranscribe(audioBlob, languageCode){
   return data; // { transcript, language_code, ... }
 }
 
+// sarvam-translate:v1 rejects input over 2000 chars (422). Chunk longer text, translate, rejoin.
+const SARVAM_TRANSLATE_MAX_CHARS = 2000;
+
 async function sarvamTranslate(text, sourceLang, targetLang){
   const key = getSarvamKey();
   if(!key) throw new Error('add your Sarvam API key first');
-  const resp = await fetch('https://api.sarvam.ai/translate', {
-    method: 'POST',
-    headers: { 'api-subscription-key': key, 'content-type': 'application/json' },
-    body: JSON.stringify({
-      input: text,
-      source_language_code: sourceLang || 'auto',
-      target_language_code: targetLang,
-      model: 'sarvam-translate:v1'
-    })
-  });
-  const data = await resp.json().catch(()=>({}));
-  if(!resp.ok) throw new Error(data.error?.message || `Sarvam translate HTTP ${resp.status}`);
-  return data.translated_text;
+  const input = String(text || '').trim();
+  if(!input) return '';
+
+  const pieces = input.length <= SARVAM_TRANSLATE_MAX_CHARS
+    ? [input]
+    : chunkTextForSarvamTts(input, SARVAM_TRANSLATE_MAX_CHARS);
+  // chunkTextForSarvamTts is defined below; for the rare long input we inline-split if needed.
+  const chunks = pieces.length ? pieces : [input];
+  const out = [];
+  for(const chunk of chunks){
+    const resp = await fetch('https://api.sarvam.ai/translate', {
+      method: 'POST',
+      headers: { 'api-subscription-key': key, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        input: chunk,
+        source_language_code: sourceLang || 'auto',
+        target_language_code: targetLang,
+        model: 'sarvam-translate:v1'
+      })
+    });
+    const data = await resp.json().catch(()=>({}));
+    if(!resp.ok) throw new Error(data.error?.message || `Sarvam translate HTTP ${resp.status}`);
+    if(data.translated_text) out.push(data.translated_text);
+  }
+  return out.join(' ').trim();
+}
+
+// Sarvam TTS validates each inputs[] string at ≤500 chars.
+const SARVAM_TTS_MAX_CHARS = 500;
+
+// Split long text for TTS: prefer a sentence end in the latter half of the window,
+// then words; mid-word only if unavoidable. Avoids tiny first chunks that waste
+// round-trips when an early "." is the only punctuation in the first 500 chars.
+function chunkTextForSarvamTts(text, maxChars = SARVAM_TTS_MAX_CHARS){
+  const trimmed = String(text || '').trim();
+  if(!trimmed) return [];
+  if(trimmed.length <= maxChars) return [trimmed];
+
+  const minSentenceSplit = Math.floor(maxChars * 0.4);
+  const chunks = [];
+  let remaining = trimmed;
+  while(remaining.length > maxChars){
+    const window = remaining.slice(0, maxChars);
+    let splitAt = -1;
+    const sentenceEnds = [...window.matchAll(/[.?!।]\s*/g)];
+    for(let i = sentenceEnds.length - 1; i >= 0; i--){
+      const end = sentenceEnds[i].index + sentenceEnds[i][0].length;
+      if(end >= minSentenceSplit){
+        splitAt = end;
+        break;
+      }
+    }
+    if(splitAt <= 0){
+      const lastSpace = window.lastIndexOf(' ');
+      splitAt = lastSpace >= minSentenceSplit ? lastSpace + 1 : maxChars;
+    }
+    const piece = remaining.slice(0, splitAt).trim();
+    // Guard against a no-progress split (would infinite-loop).
+    if(!piece || splitAt >= remaining.length){
+      chunks.push(remaining.slice(0, maxChars));
+      remaining = remaining.slice(maxChars).trim();
+      continue;
+    }
+    chunks.push(piece);
+    remaining = remaining.slice(splitAt).trim();
+  }
+  if(remaining) chunks.push(remaining);
+  return chunks;
 }
 
 async function sarvamSpeak(texts, languageCode){
   const key = getSarvamKey();
   if(!key) throw new Error('add your Sarvam API key first');
-  const resp = await fetch('https://api.sarvam.ai/text-to-speech', {
-    method: 'POST',
-    headers: { 'api-subscription-key': key, 'content-type': 'application/json' },
-    body: JSON.stringify({
-      inputs: texts,
-      target_language_code: languageCode,
-      speaker: 'priya',
-      model: 'bulbul:v3',
-      speech_sample_rate: 24000,
-      enable_preprocessing: true
-    })
-  });
-  const data = await resp.json().catch(()=>({}));
-  if(!resp.ok) throw new Error(data.error?.message || `Sarvam TTS HTTP ${resp.status}`);
-  return data.audios; // base64 wav strings
+  const chunks = (Array.isArray(texts) ? texts : [texts])
+    .flatMap(t => chunkTextForSarvamTts(t));
+  if(!chunks.length) return [];
+
+  // One input per request keeps each string ≤500 and avoids multi-input batch limits.
+  // Every chunk must yield audio — silently skipping would sound like a mid-answer cutoff.
+  const allAudios = [];
+  for(let i = 0; i < chunks.length; i++){
+    const chunk = chunks[i];
+    const resp = await fetch('https://api.sarvam.ai/text-to-speech', {
+      method: 'POST',
+      headers: { 'api-subscription-key': key, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        inputs: [chunk],
+        target_language_code: languageCode,
+        speaker: 'priya',
+        model: 'bulbul:v3',
+        speech_sample_rate: 24000,
+        enable_preprocessing: true
+      })
+    });
+    const data = await resp.json().catch(()=>({}));
+    if(!resp.ok) throw new Error(data.error?.message || `Sarvam TTS HTTP ${resp.status}`);
+    const piece = Array.isArray(data.audios) ? data.audios.filter(Boolean) : [];
+    if(!piece.length){
+      throw new Error(`Sarvam TTS returned no audio for chunk ${i + 1}/${chunks.length}`);
+    }
+    allAudios.push(...piece);
+  }
+  return allAudios; // base64 wav strings, in chunk order
 }
 
-// ---------- Claude: web-search job scan ----------
-const JOB_SEARCH_PROMPT = (query, stance, cv) => `You are a job search assistant for someone who does not search or read confidently in English — they just spoke this search out loud in their own language, and it was transcribed and translated to reach you. They cannot easily double-check an English job posting themselves, so your accuracy and honesty here directly determines whether they can act on what you find. Do not invent, embellish, or guess at anything — a wrong or fabricated detail wastes a real trip or application for someone who cannot easily verify it.
+// ---------- Claude / OpenAI: web-search job scan ----------
+// Keep prompts small: full CVs and long profiles dominate latency on Responses + web_search.
+const MAX_CV_CHARS = 6000;
+const MAX_STANCE_CHARS = 1500;
+const MAX_JOB_RESULTS = 5;
 
-Search the web right now for CURRENT, REAL, live job openings (not generic listing-site search pages) that match this structured search and this candidate's stated profile.
+function truncateForPrompt(text, maxChars){
+  const t = (text || '').trim();
+  if(!t || t.length <= maxChars) return t;
+  return `${t.slice(0, maxChars)}\n…[truncated]`;
+}
 
-The candidate's search is organized into labeled parts (some may be empty — ignore empty parts). Treat each label with its intended meaning; do NOT smash them into one undifferentiated bag of words:
+const JOB_SEARCH_PROMPT = (query, stance, cv) => `Job search for someone who cannot easily verify English postings. Never invent titles, companies, skills, or URLs. Empty array beats fabricated matches.
+
+Search the web NOW for CURRENT live openings (not hub pages) matching:
+
 ${query}
 
-How to weight the parts:
-- Roles: preferred job titles / role names — primary match signal for the position title.
-- Companies: named employers to prioritize or restrict to — search those companies' career pages first when present.
-- Keywords: topics, domains, skills, industries, or locations (e.g. robotics, deep tech, Bangalore) — use for topical and location fit, not as job titles unless a role is also listed.
+Weight labels separately (ignore empty): Roles=title; Companies=careers pages first; Keywords=topics/skills/locations (not titles unless also under Roles).
 
-Prioritize these sources, in order, over generic search results:
-1. Company career pages directly (search "site:[company].com careers" style or the company's own jobs page) — especially for any Companies listed above
-2. Naukri, Indeed, Instahyre, Cutshort, Wellfound (AngelList Talent) — weight Indian job boards heavily unless the query clearly wants a different region
-3. LinkedIn Jobs and other structured job boards via regular web search
-4. Company-specific career pages for any companies the candidate explicitly names
-Only fall back to generic listing aggregators if these don't surface enough results.
+Prefer: company careers → Naukri/Indeed/Instahyre/Cutshort/Wellfound (India-weighted unless query says otherwise) → LinkedIn/other boards.
 
-Who this candidate is and what they're looking for, in their own words:
-${stance || '(not given — rank generically on relevance to the search query alone, and do not assume seniority, background, or requirements you were not told)'}
-${cv ? `\nThe candidate's actual CV/resume text, extracted from an uploaded file (this is the authoritative source of their real skills and experience — trust this over the spoken profile above for anything factual, like years of experience, specific tools used, or past job titles):\n${cv}\n` : ''}
+Profile:
+${stance || '(none — rank on query only; do not invent background)'}
+${cv ? `\nCV (authoritative for skills/experience over profile):\n${cv}\n` : ''}
 
-Score each role 0-100 on: how well it matches the labeled search parts (roles / companies / keywords) and location intent (up to 50 points), how well it fits the stated profile/stance if given (up to 40 points), and how current/legitimate the listing looks (up to 10 points). Do not inflate scores to make results look better than they are — a mediocre match should score low, not be flattered.
+HARD CAP: return at most ${MAX_JOB_RESULTS} jobs — never more. Prefer fewer if sparse. Score 0-100: query/location ≤50, profile fit ≤40, legitimacy ≤10. Do not inflate.
 
-Find up to 5 real, specific, currently-open roles at named companies. For each, give:
-- title
-- company
-- location
-- a direct URL to the posting — CRITICAL: this must be the literal URL returned by the search, copied exactly. NEVER construct, guess, or pattern-match a URL yourself. If you don't have a verified direct link from a search result, use the company's actual careers/jobs listing page URL instead, also taken verbatim from a search result, never invented.
-- fit: one plain, concrete sentence on why it fits this search and profile — no vague filler like "great opportunity," name the actual overlap or the actual gap
-- score: integer 0-100 per the scoring above
-- gate: short string naming a hard blocker/requirement the candidate may not meet, or null — be direct here, this is the single most important field for someone who can't read the fine print in the original posting themselves
-- skills_required: array of 3-6 short skill/requirement tags actually mentioned in the posting
-- source: which source this actually came from (e.g. "company careers page", "Naukri", "Instahyre", "LinkedIn", or the aggregator name)
-${cv ? `- matched_skills: array of specific skills/requirements from skills_required that the candidate's CV shows they actually have — only include ones genuinely supported by the CV text, do not be generous
-- missing_skills: array of specific skills/requirements from skills_required that the CV does NOT show evidence of — this is the real gap, be precise and honest, this is the entire point of asking for a CV
-- next_step: one concrete, specific action to close the gap for THIS role — not generic career advice. Name an actual thing to learn/do (e.g. "Take a short course covering Django REST Framework — you already know Python and SQL, this is the main missing piece" or "You meet every requirement — apply directly, no gap to close"). If there is no CV, omit this field.` : ''}
+Fields per job: title, company, location, url (verbatim from search only — never invent; else careers URL from search), fit (one concrete sentence), score, gate (blocker or null), skills_required (3-6), source
+${cv ? `, matched_skills (CV-supported only), missing_skills (honest gaps), next_step (one action for THIS role)` : ''}
 
-If you cannot find at least one real, verifiable listing, return an empty array rather than filling it with a weak or invented match — an empty result the candidate can trust is better than a fabricated one they can't.
-
-Respond with ONLY a raw JSON array, no markdown fences, no preamble. Never use double-quote characters inside string values (use single quotes if quoting something). Format:
+ONLY raw JSON array. No fences/preamble. No " inside strings. Schema:
 [{"title":"","company":"","location":"","url":"","fit":"","score":0,"gate":null,"skills_required":[]${cv ? ',"matched_skills":[],"missing_skills":[],"next_step":""' : ''},"source":""}]`;
 
 async function callClaude(prompt, { webSearch = false, maxTokens = 4000 } = {}){
@@ -1099,7 +1161,8 @@ async function callClaude(prompt, { webSearch = false, maxTokens = 4000 } = {}){
     max_tokens: maxTokens,
     messages: [{ role: 'user', content: prompt }]
   };
-  if(webSearch) body.tools = [{ type: 'web_search_20250305', name: 'web_search', max_uses: 5 }];
+  // Fewer search rounds = lower latency; 3 is enough for a short job list.
+  if(webSearch) body.tools = [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 }];
   let response;
   try{
     response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -1127,7 +1190,7 @@ async function callClaude(prompt, { webSearch = false, maxTokens = 4000 } = {}){
 }
 
 // getProvider/setProvider are defined earlier, near the key-loading code.
-async function callOpenAI(prompt){
+async function callOpenAI(prompt, { webSearch = false } = {}){
   const key = getOpenAIKey();
   if(!key) throw new Error('add your OpenAI API key first');
   // Local / Vercel: same-origin /api/openai-search.
@@ -1143,7 +1206,7 @@ async function callOpenAI(prompt){
     response = await fetch(proxyUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt, apiKey: key })
+      body: JSON.stringify({ prompt, apiKey: key, webSearch: !!webSearch })
     });
   }catch(err){
     throw new Error(
@@ -1170,9 +1233,15 @@ async function callOpenAI(prompt){
 }
 
 async function callJobSearch(query, stance, cv){
-  const prompt = JOB_SEARCH_PROMPT(query, stance, cv);
+  const prompt = JOB_SEARCH_PROMPT(
+    query,
+    truncateForPrompt(stance, MAX_STANCE_CHARS),
+    cv ? truncateForPrompt(cv, MAX_CV_CHARS) : ''
+  );
   const provider = getProvider();
-  return provider === 'openai' ? callOpenAI(prompt) : callClaude(prompt, { webSearch: true });
+  return provider === 'openai'
+    ? callOpenAI(prompt, { webSearch: true })
+    : callClaude(prompt, { webSearch: true, maxTokens: 2500 });
 }
 
 // ---------- cleanup pass: polish raw STT+translate output (Wispr-style) ----------
@@ -1189,7 +1258,9 @@ async function cleanupTranslatedText(rawText){
   try{
     const prompt = CLEANUP_PROMPT(rawText);
     const provider = getProvider();
-    const cleaned = provider === 'openai' ? await callOpenAI(prompt) : await callClaude(prompt, { webSearch: false, maxTokens: 300 });
+    const cleaned = provider === 'openai'
+      ? await callOpenAI(prompt, { webSearch: false })
+      : await callClaude(prompt, { webSearch: false, maxTokens: 300 });
     return cleaned.trim() || rawText;
   }catch(err){
     log(`cleanup pass failed, using raw translation: ${err.message}`);
@@ -1399,6 +1470,31 @@ CHIP_CATS.forEach((cat) => {
 });
 
 // ---------- search flow ----------
+function startSearchProgress(statusEl){
+  const stages = [
+    'searching the web for live postings…',
+    'checking career pages and job boards…',
+    'ranking matches for your profile…',
+    'still working — web search can take a minute…'
+  ];
+  const started = Date.now();
+  let stageIdx = 0;
+  const render = () => {
+    const secs = Math.floor((Date.now() - started) / 1000);
+    statusEl.className = 'status';
+    statusEl.innerHTML = `<span class="spinner"></span>${stages[stageIdx]} <span style="opacity:0.7">${secs}s</span>`;
+  };
+  render();
+  const tick = setInterval(() => {
+    const secs = Math.floor((Date.now() - started) / 1000);
+    if(secs >= 12 && stageIdx < 1) stageIdx = 1;
+    else if(secs >= 28 && stageIdx < 2) stageIdx = 2;
+    else if(secs >= 50 && stageIdx < 3) stageIdx = 3;
+    render();
+  }, 1000);
+  return () => clearInterval(tick);
+}
+
 document.getElementById('searchBtn').addEventListener('click', async () => {
   const query = getChipQuery();
   const stance = document.getElementById('stanceText').value.trim();
@@ -1407,18 +1503,21 @@ document.getElementById('searchBtn').addEventListener('click', async () => {
     return;
   }
   const btn = document.getElementById('searchBtn');
+  const statusEl = document.getElementById('searchStatus');
   btn.disabled = true;
   setStatus('searchStatus', '', '');
-  document.getElementById('searchStatus').innerHTML = '<span class="spinner"></span>searching live job postings…';
+  const stopProgress = startSearchProgress(statusEl);
   try{
-    log(`calling ${getProvider()} web search for:\n${query}${cvText ? ' (with CV)' : ''}`);
+    log(`calling ${getProvider()} web search for:\n${query}${cvText ? ` (with CV, ${Math.min(cvText.length, MAX_CV_CHARS)}/${cvText.length} chars)` : ''}`);
     const raw = await callJobSearch(query, stance, cvText);
     log(`raw response length: ${raw.length}`);
-    const jobs = parseJobsJson(raw);
+    const jobs = parseJobsJson(raw).slice(0, MAX_JOB_RESULTS);
     log(`parsed ${jobs.length} jobs`);
+    stopProgress();
     renderResults(jobs);
     setStatus('searchStatus', `found ${jobs.length} result${jobs.length===1?'':'s'}`, 'ok');
   }catch(err){
+    stopProgress();
     log(`ERROR: ${err.message}`);
     setStatus('searchStatus', err.message, 'err');
   }finally{
@@ -1875,7 +1974,9 @@ Write a concise, well-organized profile covering what they shared: skills/areas,
 
 Respond with ONLY the profile text, no preamble, no headers.`;
     const provider = getProvider();
-    const profile = provider === 'openai' ? await callOpenAI(prompt) : await callClaude(prompt, { webSearch: false, maxTokens: 500 });
+    const profile = provider === 'openai'
+      ? await callOpenAI(prompt, { webSearch: false })
+      : await callClaude(prompt, { webSearch: false, maxTokens: 500 });
     document.getElementById('stanceText').value = profile.trim();
     localStorage.setItem('vjr_stance', profile.trim());
     saveGuidedAnswers();
@@ -2012,7 +2113,10 @@ Candidate's question: "${question}"
 Answer directly and concisely — 2-4 sentences, plain language, no headers or markdown. If the answer isn't knowable from the job details given (e.g. something only the employer would know, like exact salary or interview process), say so honestly instead of guessing.`;
 
   const provider = getProvider();
-  return provider === 'openai' ? callOpenAI(prompt) : callClaude(prompt, { webSearch: false, maxTokens: 400 });
+  // 400 truncated mid-answer (and TTS); 1200 is enough for a short chat reply.
+  return provider === 'openai'
+    ? callOpenAI(prompt, { webSearch: false })
+    : callClaude(prompt, { webSearch: false, maxTokens: 1200 });
 }
 
 async function handleJobChatQuestion(index, blob){

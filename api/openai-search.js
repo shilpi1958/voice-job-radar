@@ -1,5 +1,5 @@
 // Vercel serverless OpenAI proxy — mirrors local-server.js BYOK relay.
-// Browser sends { prompt, apiKey }; we forward to Responses API and never store the key.
+// Browser sends { prompt, apiKey, webSearch? }; we forward to Responses API and never store the key.
 // CORS allows GitHub Pages (or any origin) to call this when the app is not same-origin.
 
 module.exports = async function handler(req, res) {
@@ -24,12 +24,25 @@ module.exports = async function handler(req, res) {
 
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body || {};
-    const { prompt, apiKey } = body;
+    const { prompt, apiKey, webSearch } = body;
     if (!apiKey) {
       res.status(400).json({
         error: 'missing OpenAI API key — add it in the page and save',
       });
       return;
+    }
+
+    // gpt-5.6-terra = documented balanced tier (faster/cheaper than flagship gpt-5.6 / Sol).
+    // Job search: web_search + low reasoning + medium search context.
+    // Cleanup / chat / profile: no tools (web_search was previously always on — very slow).
+    const payload = {
+      model: 'gpt-5.6-terra',
+      input: prompt,
+    };
+    if (webSearch) {
+      payload.tools = [{ type: 'web_search', search_context_size: 'medium' }];
+      payload.reasoning = { effort: 'low' };
+      payload.tool_choice = 'required';
     }
 
     const upstream = await fetch('https://api.openai.com/v1/responses', {
@@ -38,11 +51,7 @@ module.exports = async function handler(req, res) {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({
-        model: 'gpt-5.6',
-        tools: [{ type: 'web_search' }],
-        input: prompt,
-      }),
+      body: JSON.stringify(payload),
     });
 
     const data = await upstream.json();

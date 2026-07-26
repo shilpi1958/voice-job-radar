@@ -55,10 +55,22 @@ function createAppServer(){
       req.on('data', chunk => body += chunk);
       req.on('end', async () => {
         try{
-          const { prompt, apiKey } = JSON.parse(body || '{}');
+          const { prompt, apiKey, webSearch } = JSON.parse(body || '{}');
           if(!apiKey){
             json(res, 400, { error: 'missing OpenAI API key — add it in the page and save' });
             return;
+          }
+          // gpt-5.6-terra = documented balanced tier (faster/cheaper than flagship gpt-5.6 / Sol).
+          // Job search only: web_search + low reasoning + medium search context.
+          // Cleanup / chat / profile: no tools (avoids accidental agentic web search).
+          const payload = {
+            model: 'gpt-5.6-terra',
+            input: prompt
+          };
+          if(webSearch){
+            payload.tools = [{ type: 'web_search', search_context_size: 'medium' }];
+            payload.reasoning = { effort: 'low' };
+            payload.tool_choice = 'required';
           }
           const upstream = await fetch('https://api.openai.com/v1/responses', {
             method: 'POST',
@@ -66,11 +78,7 @@ function createAppServer(){
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${apiKey}`
             },
-            body: JSON.stringify({
-              model: 'gpt-5.6',
-              tools: [{ type: 'web_search' }],
-              input: prompt
-            })
+            body: JSON.stringify(payload)
           });
           const data = await upstream.json();
           res.writeHead(upstream.status, { 'Content-Type': 'application/json' });
