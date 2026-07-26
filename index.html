@@ -78,6 +78,15 @@
   .skill-gap .skills.have span{background:rgba(94,233,168,0.15); border:1px solid var(--phosphor-dim); color:var(--phosphor);}
   .skill-gap .skills.missing span{background:rgba(255,107,107,0.12); border:1px solid var(--danger); color:var(--danger);}
   .skill-gap .next-step{font-size:0.85rem; color:var(--text);}
+  .job-chat{margin-top:10px; padding-top:10px; border-top:1px solid var(--phosphor-dim);}
+  .job-chat-toggle{width:100%; text-align:left;}
+  .job-chat-panel{margin-top:10px;}
+  .job-chat-history{display:flex; flex-direction:column; gap:8px; margin-bottom:4px;}
+  .job-chat-msg{border-radius:8px; padding:8px 10px; font-size:0.85rem; max-width:90%;}
+  .job-chat-msg.user{background:var(--phosphor-dim); color:var(--phosphor); align-self:flex-end;}
+  .job-chat-msg.assistant{background:#0a1a13; border:1px solid var(--phosphor-dim); color:var(--text); align-self:flex-start;}
+  .job-chat-msg .msg-label{font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em; opacity:0.7; margin-bottom:2px;}
+  .job-chat-mic{padding:6px 12px; font-size:0.85rem;}
 </style>
 </head>
 <body>
@@ -177,6 +186,36 @@
     <input type="file" id="cvFileInput" accept=".pdf,.txt" style="display:none;">
     <span class="status" id="cvStatus"></span>
     <button type="button" id="cvClearBtn" class="secondary" style="display:none;">remove CV</button>
+  </div>
+
+  <div class="sub" style="margin-top:16px; margin-bottom:8px;">
+    No CV, or want to build a better one? Answer a few quick spoken
+    questions — in your own language — and we'll write you a proper
+    profile from your answers.
+  </div>
+  <div class="row">
+    <button type="button" id="startGuidedBtn" class="secondary">&#128172; build my profile with a few questions</button>
+  </div>
+
+  <div id="guidedConvo" style="display:none; margin-top:14px; padding-top:14px; border-top:1px solid var(--phosphor-dim);">
+    <div class="row" style="justify-content:space-between;">
+      <span class="status" id="guidedProgress" style="margin:0;"></span>
+      <button type="button" id="guidedCancelBtn" class="secondary">cancel</button>
+    </div>
+    <div id="guidedQuestion" style="margin-top:8px; color:var(--text); font-size:0.95rem;"></div>
+    <div class="row" style="margin-top:10px;">
+      <button id="guidedMicBtn" class="mic">&#9679; hold to speak</button>
+      <span class="status" id="guidedMicStatus"></span>
+    </div>
+    <div class="transcript-box" id="guidedTranscriptBox">
+      <div class="label">heard (original)</div>
+      <div id="guidedTranscriptOriginal"></div>
+      <div class="label" style="margin-top:8px;">written in English</div>
+      <div id="guidedTranscriptEnglish"></div>
+    </div>
+    <div class="row" style="margin-top:10px; justify-content:flex-end;">
+      <button type="button" id="guidedNextBtn" style="display:none;">next question &rarr;</button>
+    </div>
   </div>
 </section>
 
@@ -573,8 +612,19 @@ function renderResults(jobs){
         ${missingSkills ? `<div class="row-label">skills to close the gap</div><div class="skills missing">${missingSkills}</div>` : ''}
         ${job.next_step ? `<div class="row-label">what to do next</div><div class="next-step">${escapeHtml(job.next_step)}</div>` : ''}
       </div>` : ''}
+      <div class="job-chat">
+        <button type="button" class="secondary job-chat-toggle" data-job-index="${index}">&#128172; ask a question about this job</button>
+        <div class="job-chat-panel" id="jobChatPanel-${index}" style="display:none;">
+          <div class="job-chat-history" id="jobChatHistory-${index}"></div>
+          <div class="row" style="margin-top:8px;">
+            <button class="mic job-chat-mic" data-job-index="${index}">&#9679; hold to ask</button>
+            <span class="status" id="jobChatMicStatus-${index}"></span>
+          </div>
+        </div>
+      </div>
     `;
     card.querySelector('.read-job-btn').addEventListener('click', () => readJobAloud(index));
+    card.querySelector('.job-chat-toggle').addEventListener('click', () => toggleJobChat(index));
     list.appendChild(card);
   });
   section.style.display = 'block';
@@ -801,6 +851,93 @@ bindMicButton({
   speakBackAfter: true, readbackStatusId: 'stanceReadbackStatus'
 });
 
+// ---------- guided CV-building conversation ----------
+const GUIDED_QUESTIONS = [
+  "What are you really good at? Tell us your strongest skills or the work you do best.",
+  "What's something you're still learning, or could use a bit of coaching or practice on?",
+  "Is there something you used to do professionally that you don't really do anymore, but still know how to do?",
+  "Tell us about a piece of work you're genuinely proud of.",
+  "What kind of role are you focused on finding right now?"
+];
+
+let guidedAnswers = [];
+let guidedQuestionIndex = 0;
+let guidedAnswerReady = false;
+
+function showGuidedQuestion(){
+  document.getElementById('guidedQuestion').textContent =
+    `Question ${guidedQuestionIndex + 1} of ${GUIDED_QUESTIONS.length}: ${GUIDED_QUESTIONS[guidedQuestionIndex]}`;
+  document.getElementById('guidedProgress').textContent = `${guidedQuestionIndex + 1} / ${GUIDED_QUESTIONS.length}`;
+  document.getElementById('guidedTranscriptBox').classList.remove('show');
+  document.getElementById('guidedNextBtn').style.display = 'none';
+  setStatus('guidedMicStatus', '', '');
+  guidedAnswerReady = false;
+}
+
+document.getElementById('startGuidedBtn').addEventListener('click', () => {
+  guidedAnswers = [];
+  guidedQuestionIndex = 0;
+  document.getElementById('guidedConvo').style.display = 'block';
+  document.getElementById('startGuidedBtn').style.display = 'none';
+  showGuidedQuestion();
+});
+
+document.getElementById('guidedCancelBtn').addEventListener('click', () => {
+  document.getElementById('guidedConvo').style.display = 'none';
+  document.getElementById('startGuidedBtn').style.display = 'inline-block';
+  guidedAnswers = [];
+});
+
+document.getElementById('guidedNextBtn').addEventListener('click', async () => {
+  guidedQuestionIndex++;
+  if(guidedQuestionIndex >= GUIDED_QUESTIONS.length){
+    await synthesizeGuidedProfile();
+    return;
+  }
+  showGuidedQuestion();
+});
+
+async function synthesizeGuidedProfile(){
+  document.getElementById('guidedQuestion').textContent = 'Writing your profile…';
+  document.getElementById('guidedProgress').textContent = '';
+  document.getElementById('guidedMicBtn').style.display = 'none';
+  document.getElementById('guidedNextBtn').style.display = 'none';
+  try{
+    const answersText = guidedAnswers.map((a, i) => `Q: ${GUIDED_QUESTIONS[i]}\nA: ${a}`).join('\n\n');
+    const prompt = `You are helping someone build a short, honest CV-style profile from their spoken answers to a few questions. Their answers were spoken in their own language and translated to English, so phrasing may be a little rough — clean it up, but do not invent anything they didn't say.
+
+${answersText}
+
+Write a concise, well-organized profile covering: their strongest skills/areas, areas they're still developing (frame constructively, not as weaknesses), any past professional skills they've moved on from but still hold, one concrete highlight of work they're proud of, and what kind of role they're focused on now. Write it in plain first-person prose, not bullet points, suitable to drop directly into a job search profile field. Keep it under 150 words.
+
+Respond with ONLY the profile text, no preamble, no headers.`;
+    const provider = getProvider();
+    const profile = provider === 'openai' ? await callOpenAI(prompt) : await callClaude(prompt, { webSearch: false, maxTokens: 500 });
+    document.getElementById('stanceText').value = profile.trim();
+    localStorage.setItem('vjr_stance', profile.trim());
+    log(`guided profile synthesized: ${profile.trim().length} chars`);
+  }catch(err){
+    log(`guided profile ERROR: ${err.message}`);
+    document.getElementById('guidedQuestion').textContent = `Something went wrong writing your profile: ${err.message}`;
+  }finally{
+    document.getElementById('guidedMicBtn').style.display = 'inline-block';
+    document.getElementById('guidedConvo').style.display = 'none';
+    document.getElementById('startGuidedBtn').style.display = 'inline-block';
+  }
+}
+
+bindMicButton({
+  buttonId: 'guidedMicBtn', statusId: 'guidedMicStatus',
+  onResult: (text) => {
+    guidedAnswers[guidedQuestionIndex] = text;
+    guidedAnswerReady = true;
+    document.getElementById('guidedNextBtn').style.display = 'inline-block';
+    document.getElementById('guidedNextBtn').textContent =
+      guidedQuestionIndex === GUIDED_QUESTIONS.length - 1 ? 'finish & write my profile' : 'next question →';
+  },
+  originalBoxId: 'guidedTranscriptOriginal', englishBoxId: 'guidedTranscriptEnglish', transcriptBoxId: 'guidedTranscriptBox'
+});
+
 // ---------- TTS readback, one job at a time ----------
 function buildJobReadbackText(job){
   const parts = [
@@ -847,6 +984,144 @@ async function readJobAloud(index){
     btn.textContent = originalLabel;
   }
 }
+
+// ---------- chat with a job ----------
+const jobChatHistories = {}; // { [jobIndex]: [{role, text}] }
+
+function toggleJobChat(index){
+  const panel = document.getElementById(`jobChatPanel-${index}`);
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+
+function renderJobChatHistory(index){
+  const history = jobChatHistories[index] || [];
+  const el = document.getElementById(`jobChatHistory-${index}`);
+  el.innerHTML = history.map(msg => `
+    <div class="job-chat-msg ${msg.role}">
+      <div class="msg-label">${msg.role === 'user' ? 'you asked' : 'answer'}</div>
+      ${escapeHtml(msg.text)}
+    </div>
+  `).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+function buildJobContextForChat(job){
+  const lines = [
+    `Title: ${job.title}`, `Company: ${job.company}`, `Location: ${job.location}`,
+    `Why it fits: ${job.fit}`
+  ];
+  if(job.gate) lines.push(`Known blocker: ${job.gate}`);
+  if(job.skills_required && job.skills_required.length) lines.push(`Required skills mentioned in posting: ${job.skills_required.join(', ')}`);
+  if(job.matched_skills && job.matched_skills.length) lines.push(`Candidate already has: ${job.matched_skills.join(', ')}`);
+  if(job.missing_skills && job.missing_skills.length) lines.push(`Candidate is missing: ${job.missing_skills.join(', ')}`);
+  if(job.next_step) lines.push(`Suggested next step: ${job.next_step}`);
+  if(job.source) lines.push(`Found via: ${job.source}`);
+  return lines.join('\n');
+}
+
+async function answerJobChatQuestion(index, question){
+  const job = lastResults[index];
+  const history = jobChatHistories[index] || [];
+  const historyText = history.map(m => `${m.role === 'user' ? 'Candidate' : 'You'}: ${m.text}`).join('\n');
+  const prompt = `You are answering a candidate's question about one specific job listing they're considering. Answer using ONLY the job details below plus your general knowledge (e.g. explaining what a technology or term means, general industry context) — do not claim to have searched for new information, and do not invent anything about this specific company or posting beyond what's given.
+
+Job details:
+${buildJobContextForChat(job)}
+
+${historyText ? `Earlier in this conversation:\n${historyText}\n` : ''}
+Candidate's question: "${question}"
+
+Answer directly and concisely — 2-4 sentences, plain language, no headers or markdown. If the answer isn't knowable from the job details given (e.g. something only the employer would know, like exact salary or interview process), say so honestly instead of guessing.`;
+
+  const provider = getProvider();
+  return provider === 'openai' ? callOpenAI(prompt) : callClaude(prompt, { webSearch: false, maxTokens: 400 });
+}
+
+async function handleJobChatQuestion(index, blob){
+  const statusId = `jobChatMicStatus-${index}`;
+  setStatus(statusId, '', '');
+  document.getElementById(statusId).innerHTML = '<span class="spinner"></span>transcribing…';
+  try{
+    const selectedLang = document.getElementById('langSelect').value;
+    const spokenLang = selectedLang === 'unknown' ? lastSpokenLanguage : selectedLang;
+
+    const sttResult = await sarvamTranscribe(blob, selectedLang);
+    const original = sttResult.transcript || '';
+    const detectedLang = sttResult.language_code || spokenLang;
+    if(!original.trim()){
+      setStatus(statusId, 'didn\'t catch that — try again', 'err');
+      return;
+    }
+
+    const translated = await sarvamTranslate(original, detectedLang, 'en-IN');
+    const question = await cleanupTranslatedText(translated);
+
+    jobChatHistories[index] = jobChatHistories[index] || [];
+    jobChatHistories[index].push({ role: 'user', text: question });
+    renderJobChatHistory(index);
+
+    document.getElementById(statusId).innerHTML = '<span class="spinner"></span>thinking…';
+    const englishAnswer = await answerJobChatQuestion(index, question);
+
+    jobChatHistories[index].push({ role: 'assistant', text: englishAnswer.trim() });
+    renderJobChatHistory(index);
+
+    document.getElementById(statusId).innerHTML = '<span class="spinner"></span>reading answer aloud…';
+    let answerToSpeak = englishAnswer.trim();
+    const replyLang = detectedLang !== 'unknown' ? detectedLang : spokenLang;
+    if(!replyLang.startsWith('en')){
+      answerToSpeak = await sarvamTranslate(englishAnswer.trim(), 'en-IN', replyLang);
+    }
+    const audios = await sarvamSpeak([answerToSpeak], replyLang);
+    for(const b64 of audios){
+      await playBase64Wav(b64);
+    }
+    setStatus(statusId, '', '');
+  }catch(err){
+    log(`job chat ERROR: ${err.message}`);
+    setStatus(statusId, err.message, 'err');
+  }
+}
+
+// Event delegation: chat mic buttons are created dynamically per card.
+let jobChatRecording = false;
+document.getElementById('resultsList').addEventListener('mousedown', async (e) => {
+  const btn = e.target.closest('.job-chat-mic');
+  if(!btn || jobChatRecording || activeMicButton) return;
+  e.preventDefault();
+  const index = btn.dataset.jobIndex;
+  try{
+    await startRecording();
+    jobChatRecording = true;
+    activeMicButton = btn;
+    btn.classList.add('recording');
+    setStatus(`jobChatMicStatus-${index}`, 'listening… release to stop', '');
+  }catch(err){
+    setStatus(`jobChatMicStatus-${index}`, `mic error: ${err.message}`, 'err');
+  }
+});
+document.getElementById('resultsList').addEventListener('mouseup', async (e) => {
+  const btn = e.target.closest('.job-chat-mic');
+  if(!btn || !jobChatRecording) return;
+  e.preventDefault();
+  const index = btn.dataset.jobIndex;
+  jobChatRecording = false;
+  activeMicButton = null;
+  btn.classList.remove('recording');
+  const blob = await stopRecording();
+  await handleJobChatQuestion(index, blob);
+});
+document.getElementById('resultsList').addEventListener('mouseleave', async (e) => {
+  if(!jobChatRecording) return;
+  const btn = document.querySelector('.job-chat-mic.recording');
+  if(!btn) return;
+  const index = btn.dataset.jobIndex;
+  jobChatRecording = false;
+  activeMicButton = null;
+  btn.classList.remove('recording');
+  const blob = await stopRecording();
+  await handleJobChatQuestion(index, blob);
+}, true);
 
 function playBase64Wav(b64){
   return new Promise((resolve, reject) => {
