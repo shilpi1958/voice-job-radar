@@ -115,19 +115,18 @@ product: the customization is structural, not decorative.
 
 ## GitHub Pages
 
-Expected URL: https://shilpi1958.github.io/voice-job-radar/
+Live: https://shilpi1958.github.io/voice-job-radar/
 
-**One-time enable** (required — the deploy workflow cannot turn Pages on by itself):
-
-1. Open [Pages settings](https://github.com/shilpi1958/voice-job-radar/settings/pages)
-2. Under **Build and deployment → Source**, choose either:
-   - **Deploy from a branch** → Branch `gh-pages` → folder `/` (root) → Save  
-     (simplest; `gh-pages` already has `index.html`), or
-   - **GitHub Actions** → then re-run the [Deploy GitHub Pages](https://github.com/shilpi1958/voice-job-radar/actions/workflows/pages.yml) workflow
+Served from the `gh-pages` branch (`index.html` + `.nojekyll`). Pushes to
+`main` update that branch via `.github/workflows/pages.yml`.
 
 On Pages, use **Claude** (direct from the browser). OpenAI needs the local
 proxy in `server.js`, which does not run on Pages — for OpenAI, run
 `node server.js` and open `http://localhost:8788`.
+
+If the site ever 404s, re-enable under
+[Pages settings](https://github.com/shilpi1958/voice-job-radar/settings/pages):
+**Deploy from a branch** → `gh-pages` → `/` (root).
 
 ## Status
 

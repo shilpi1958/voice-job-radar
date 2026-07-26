@@ -1,4 +1,5 @@
-# Deploy the static SPA (index.html) to GitHub Pages on every push to main.
+# Keep the gh-pages branch in sync with index.html on every push to main.
+# Pages source should be: Deploy from a branch → gh-pages → / (root).
 name: Deploy GitHub Pages
 
 on:
@@ -7,9 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: pages
@@ -17,9 +16,6 @@ concurrency:
 
 jobs:
   deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -31,17 +27,10 @@ jobs:
           cp index.html .nojekyll _site/
           # server.js is a local-only OpenAI CORS proxy — not used on Pages.
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
+      - name: Publish to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          # Public repos: create/enable Pages with GitHub Actions as the source.
-          enablement: true
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: _site
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: _site
+          force_orphan: true
+          commit_message: Deploy static site from main
