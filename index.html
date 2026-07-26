@@ -513,11 +513,11 @@
   </div>
 
   <div class="profile-panel active" id="profilePanel-speak">
-    <p class="hint">Speak freely. We'll write it in English and read it back.</p>
+    <p class="hint">Speak in short takes (Start / Stop). Each take adds on — keep going for a longer profile.</p>
     <div class="mic-control">
-      <button id="stanceMicBtn" class="mic" type="button" aria-label="Hold to speak">
+      <button id="stanceMicBtn" class="mic" type="button" aria-label="Start recording">
         <span class="mic-ico" aria-hidden="true"></span>
-        <span class="mic-text"><span class="full">Hold to speak</span><span class="short">Hold</span></span>
+        <span class="mic-text"><span class="full">Start</span><span class="short">Start</span></span>
       </button>
       <span class="status" id="stanceMicStatus"></span>
     </div>
@@ -558,9 +558,9 @@
       </div>
       <div class="guided-q" id="guidedQuestion"></div>
       <div class="mic-control">
-        <button id="guidedMicBtn" class="mic" type="button" aria-label="Hold to speak">
+        <button id="guidedMicBtn" class="mic" type="button" aria-label="Start recording">
           <span class="mic-ico" aria-hidden="true"></span>
-          <span class="mic-text"><span class="full">Hold to speak</span><span class="short">Hold</span></span>
+          <span class="mic-text"><span class="full">Start</span><span class="short">Start</span></span>
         </button>
         <span class="status" id="guidedMicStatus"></span>
       </div>
@@ -610,9 +610,9 @@
   </div>
 
   <div class="mic-control">
-    <button id="micBtn" class="mic" type="button" aria-label="Hold to speak">
+    <button id="micBtn" class="mic" type="button" aria-label="Start recording">
       <span class="mic-ico" aria-hidden="true"></span>
-      <span class="mic-text"><span class="full">Hold to speak</span><span class="short">Hold</span></span>
+      <span class="mic-text"><span class="full">Start</span><span class="short">Start</span></span>
     </button>
     <span class="status" id="micStatus"></span>
   </div>
@@ -1335,9 +1335,9 @@ function renderResults(jobs){
         <div class="job-chat-panel" id="jobChatPanel-${index}" style="display:none;">
           <div class="job-chat-history" id="jobChatHistory-${index}"></div>
           <div class="mic-control">
-            <button class="mic job-chat-mic" data-job-index="${index}" type="button" aria-label="Hold to speak">
+            <button class="mic job-chat-mic" data-job-index="${index}" type="button" aria-label="Start recording">
               <span class="mic-ico" aria-hidden="true"></span>
-              <span class="mic-text"><span class="full">Hold to speak</span><span class="short">Hold</span></span>
+              <span class="mic-text"><span class="full">Start</span><span class="short">Start</span></span>
             </button>
             <span class="status" id="jobChatMicStatus-${index}"></span>
           </div>
@@ -1532,8 +1532,9 @@ document.getElementById('searchBtn').addEventListener('click', async () => {
 });
 
 // ---------- mic recording ----------
+// Sarvam STT caps each clip at ~30s. Longer profiles = multiple Start/Stop takes that append.
 const MAX_RECORD_SECONDS = 30;
-const MAX_RECORD_MS = 29500; // stop just under Sarvam's 30s limit
+const MAX_RECORD_MS = 29500;
 let mediaRecorder = null;
 let audioChunks = [];
 let recordTickInterval = null;
@@ -1544,19 +1545,29 @@ function clearRecordTimer(){
   if(recordHardStop){ clearTimeout(recordHardStop); recordHardStop = null; }
 }
 
+function setMicButtonRecording(btn, recording){
+  if(!btn) return;
+  btn.classList.toggle('recording', recording);
+  btn.setAttribute('aria-label', recording ? 'Stop recording' : 'Start recording');
+  const full = btn.querySelector('.mic-text .full');
+  const short = btn.querySelector('.mic-text .short');
+  if(full) full.textContent = recording ? 'Stop' : 'Start';
+  if(short) short.textContent = recording ? 'Stop' : 'Start';
+}
+
 function startRecordTimer(statusId, onLimit){
   clearRecordTimer();
   const startedAt = Date.now();
   const tick = () => {
     const elapsed = Date.now() - startedAt;
     const left = Math.max(0, Math.ceil((MAX_RECORD_MS - elapsed) / 1000));
-    setStatus(statusId, `listening… ${left}s left`, '');
+    setStatus(statusId, `recording… ${left}s left this take · tap Stop, then Start again to add more`, '');
   };
   tick();
   recordTickInterval = setInterval(tick, 200);
   recordHardStop = setTimeout(() => {
     clearRecordTimer();
-    setStatus(statusId, `hit ${MAX_RECORD_SECONDS}s limit — stopping`, '');
+    setStatus(statusId, `${MAX_RECORD_SECONDS}s take limit — stopping (Start again to continue)`, '');
     onLimit();
   }, MAX_RECORD_MS);
 }
@@ -1581,13 +1592,21 @@ function stopRecording(){
   });
 }
 
-// Read the written-English text back in the speaker's own language, so they
-// can confirm it captured what they meant — trust barrier, human-in-the-loop.
+/** Append a new dictation take without wiping earlier text. */
+function appendDictatedText(current, next, separator = ' '){
+  const a = String(current || '').trim();
+  const b = String(next || '').trim();
+  if(!b) return a;
+  if(!a) return b;
+  return `${a}${separator}${b}`;
+}
+
+// Read the new take back in the speaker's language (not the whole profile).
 async function speakBackForConfirmation(englishText, spokenLanguage, statusId){
   if(!statusId) return;
   try{
     setStatus(statusId, '', '');
-    document.getElementById(statusId).innerHTML = '<span class="spinner"></span>reading it back to you…';
+    document.getElementById(statusId).innerHTML = '<span class="spinner"></span>reading that take back…';
     let textToSpeak = englishText;
     if(!spokenLanguage.startsWith('en')){
       textToSpeak = await sarvamTranslate(englishText, 'en-IN', spokenLanguage);
@@ -1596,7 +1615,7 @@ async function speakBackForConfirmation(englishText, spokenLanguage, statusId){
     for(const b64 of audios){
       await playBase64Wav(b64);
     }
-    setStatus(statusId, 'if that\'s not right, just hold the mic and speak again', 'ok');
+    setStatus(statusId, 'added — tap Start again to keep going', 'ok');
   }catch(err){
     log(`readback ERROR: ${err.message}`);
     setStatus(statusId, `couldn't read it back: ${err.message}`, 'err');
@@ -1609,32 +1628,33 @@ let activeMicButton = null;
 function bindMicButton({ buttonId, statusId, onResult, originalBoxId, englishBoxId, transcriptBoxId, speakBackAfter = false, readbackStatusId = null }){
   const btn = document.getElementById(buttonId);
   let isRecording = false;
+  let stopping = false;
 
-  async function handleMicDown(e){
-    e.preventDefault();
-    if(isRecording || activeMicButton) return;
+  async function startMic(){
+    if(isRecording || activeMicButton || stopping) return;
     try{
       await startRecording();
       isRecording = true;
       activeMicButton = btn;
-      btn.classList.add('recording');
-      startRecordTimer(statusId, () => handleMicUp({ preventDefault(){} }, { hitLimit: true }));
+      setMicButtonRecording(btn, true);
+      startRecordTimer(statusId, () => stopMic({ hitLimit: true }));
     }catch(err){
       clearRecordTimer();
+      setMicButtonRecording(btn, false);
       setStatus(statusId, `mic error: ${err.message}`, 'err');
     }
   }
 
-  async function handleMicUp(e, opts = {}){
-    e.preventDefault();
-    if(!isRecording) return;
+  async function stopMic(opts = {}){
+    if(!isRecording || stopping) return;
+    stopping = true;
     isRecording = false;
     activeMicButton = null;
-    btn.classList.remove('recording');
+    setMicButtonRecording(btn, false);
     clearRecordTimer();
     setStatus(statusId, '', '');
     document.getElementById(statusId).innerHTML =
-      `<span class="spinner"></span>${opts.hitLimit ? '30s limit — transcribing…' : 'transcribing…'}`;
+      `<span class="spinner"></span>${opts.hitLimit ? '30s take limit — transcribing…' : 'transcribing…'}`;
     try{
       const blob = await stopRecording();
       const selectedLang = document.getElementById('langSelect').value;
@@ -1647,15 +1667,13 @@ function bindMicButton({ buttonId, statusId, onResult, originalBoxId, englishBox
       log(`STT transcript (${detectedLang}): ${original}`);
 
       if(!original.trim()){
-        setStatus(statusId, 'didn\'t catch that — try again', 'err');
+        setStatus(statusId, 'didn\'t catch that — tap Start and try again', 'err');
         return;
       }
 
       const langMismatch = selectedLang !== 'unknown' && detectedLang !== 'unknown'
         && detectedLang.split('-')[0] !== selectedLang.split('-')[0];
 
-      // Always translate to English (even if Sarvam thinks it's already English),
-      // then run one cleanup pass to fix STT/translation artifacts, Wispr-style.
       const translated = await sarvamTranslate(original, detectedLang, 'en-IN');
       log(`translated: ${translated}`);
 
@@ -1663,17 +1681,19 @@ function bindMicButton({ buttonId, statusId, onResult, originalBoxId, englishBox
       const english = await cleanupTranslatedText(translated);
       log(`cleaned up: ${english}`);
 
-      document.getElementById(originalBoxId).textContent = original;
-      document.getElementById(englishBoxId).textContent = english;
+      const prevOriginal = document.getElementById(originalBoxId).textContent || '';
+      const prevEnglish = document.getElementById(englishBoxId).textContent || '';
+      document.getElementById(originalBoxId).textContent = appendDictatedText(prevOriginal, original);
+      document.getElementById(englishBoxId).textContent = appendDictatedText(prevEnglish, english);
       document.getElementById(transcriptBoxId).classList.add('show');
       onResult(english);
 
       if(langMismatch){
-        setStatus(statusId, `heard you — but this sounded like ${detectedLang}, not the ${selectedLang} you selected. Review below.`, 'err');
+        setStatus(statusId, `added — but this sounded like ${detectedLang}, not ${selectedLang}. Review below.`, 'err');
       }else{
         setStatus(statusId, opts.hitLimit
-          ? 'stopped at 30s — review below (or speak again in shorter pieces)'
-          : 'heard you — review below', 'ok');
+          ? 'take saved — tap Start again to keep adding (30s per take)'
+          : 'added — tap Start again to keep going', 'ok');
       }
 
       if(speakBackAfter && !langMismatch){
@@ -1682,14 +1702,16 @@ function bindMicButton({ buttonId, statusId, onResult, originalBoxId, englishBox
     }catch(err){
       log(`ERROR: ${err.message}`);
       setStatus(statusId, err.message, 'err');
+    }finally{
+      stopping = false;
     }
   }
 
-  btn.addEventListener('mousedown', handleMicDown);
-  btn.addEventListener('mouseup', handleMicUp);
-  btn.addEventListener('mouseleave', (e) => { if(isRecording) handleMicUp(e); });
-  btn.addEventListener('touchstart', handleMicDown, { passive: false });
-  btn.addEventListener('touchend', handleMicUp, { passive: false });
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    if(isRecording) stopMic();
+    else startMic();
+  });
 }
 
 bindMicButton({
@@ -1699,8 +1721,9 @@ bindMicButton({
 bindMicButton({
   buttonId: 'stanceMicBtn', statusId: 'stanceMicStatus',
   onResult: (text) => {
-    document.getElementById('stanceText').value = text;
-    localStorage.setItem('vjr_stance', text);
+    const el = document.getElementById('stanceText');
+    el.value = appendDictatedText(el.value, text, '\n\n');
+    localStorage.setItem('vjr_stance', el.value);
   },
   originalBoxId: 'stanceTranscriptOriginal', englishBoxId: 'stanceTranscriptEnglish', transcriptBoxId: 'stanceTranscriptBox',
   speakBackAfter: true, readbackStatusId: 'stanceReadbackStatus'
@@ -2047,8 +2070,9 @@ document.getElementById('reviewGuidedBtn').addEventListener('click', () => {
 bindMicButton({
   buttonId: 'guidedMicBtn', statusId: 'guidedMicStatus',
   onResult: (text) => {
-    document.getElementById('guidedAnswerInput').value = text;
-    guidedAnswers[guidedQuestionIndex] = text;
+    const input = document.getElementById('guidedAnswerInput');
+    input.value = appendDictatedText(input.value, text);
+    guidedAnswers[guidedQuestionIndex] = input.value.trim();
     saveGuidedAnswers();
     guidedAnswerReady = true;
     document.getElementById('guidedNextBtn').style.display = 'inline-block';
@@ -2212,55 +2236,57 @@ async function handleJobChatQuestion(index, blob){
 
 // Event delegation: chat mic buttons are created dynamically per card.
 let jobChatRecording = false;
+let jobChatStopping = false;
 
 async function finishJobChatRecording(btn){
-  if(!jobChatRecording || !btn) return;
+  if(!jobChatRecording || !btn || jobChatStopping) return;
+  jobChatStopping = true;
   const index = btn.dataset.jobIndex;
   const hitLimit = btn.dataset.hitLimit === '1';
   delete btn.dataset.hitLimit;
   jobChatRecording = false;
   activeMicButton = null;
-  btn.classList.remove('recording');
+  setMicButtonRecording(btn, false);
   clearRecordTimer();
   if(hitLimit){
     document.getElementById(`jobChatMicStatus-${index}`).innerHTML =
-      '<span class="spinner"></span>30s limit — transcribing…';
+      '<span class="spinner"></span>30s take limit — transcribing…';
   }
-  const blob = await stopRecording();
-  await handleJobChatQuestion(index, blob);
+  try{
+    const blob = await stopRecording();
+    await handleJobChatQuestion(index, blob);
+  }finally{
+    jobChatStopping = false;
+  }
 }
 
-document.getElementById('resultsList').addEventListener('mousedown', async (e) => {
+document.getElementById('resultsList').addEventListener('click', async (e) => {
   const btn = e.target.closest('.job-chat-mic');
-  if(!btn || jobChatRecording || activeMicButton) return;
+  if(!btn) return;
   e.preventDefault();
   const index = btn.dataset.jobIndex;
+
+  if(jobChatRecording && activeMicButton === btn){
+    await finishJobChatRecording(btn);
+    return;
+  }
+  if(jobChatRecording || activeMicButton || jobChatStopping) return;
+
   try{
     await startRecording();
     jobChatRecording = true;
     activeMicButton = btn;
-    btn.classList.add('recording');
+    setMicButtonRecording(btn, true);
     startRecordTimer(`jobChatMicStatus-${index}`, () => {
       btn.dataset.hitLimit = '1';
       finishJobChatRecording(btn);
     });
   }catch(err){
     clearRecordTimer();
+    setMicButtonRecording(btn, false);
     setStatus(`jobChatMicStatus-${index}`, `mic error: ${err.message}`, 'err');
   }
 });
-document.getElementById('resultsList').addEventListener('mouseup', async (e) => {
-  const btn = e.target.closest('.job-chat-mic');
-  if(!btn || !jobChatRecording) return;
-  e.preventDefault();
-  await finishJobChatRecording(btn);
-});
-document.getElementById('resultsList').addEventListener('mouseleave', async (e) => {
-  if(!jobChatRecording) return;
-  const btn = document.querySelector('.job-chat-mic.recording');
-  if(!btn) return;
-  await finishJobChatRecording(btn);
-}, true);
 
 function playBase64Wav(b64){
   return new Promise((resolve, reject) => {
