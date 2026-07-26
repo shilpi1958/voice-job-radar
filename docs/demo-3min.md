@@ -2,6 +2,8 @@
 
 Glance sheet. Speak the narration lines. Click the path. Freeze on the product.
 
+**Scorecard evidence (per judging parameter):** [`docs/judging-parameters.md`](judging-parameters.md)
+
 **Live URL:** https://voice-job-radar.vercel.app  
 **Sample CVs:** `docs/sample-cv-backend.pdf` (Rahul Sharma, backend) · `docs/sample-cv-robotics.pdf` (Arjun Mehra, robotics / Hindi; also `.txt`)  
 **Robotics Hindi persona (full Q&A):** `docs/sample-profile-robotics-hindi.md`

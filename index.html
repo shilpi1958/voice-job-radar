@@ -42,7 +42,11 @@
   }
   *{box-sizing:border-box;}
   body{
-    background:var(--bg); color:var(--text);
+    background:
+      radial-gradient(ellipse 90% 55% at 12% -10%, color-mix(in srgb, var(--accent-tint) 55%, transparent), transparent 55%),
+      radial-gradient(ellipse 70% 45% at 100% 0%, color-mix(in srgb, var(--secondary-tint) 50%, transparent), transparent 50%),
+      linear-gradient(180deg, color-mix(in srgb, var(--bg) 92%, var(--accent-tint)) 0%, var(--bg) 42%, var(--bg) 100%);
+    color:var(--text);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     max-width:640px; margin:0 auto; padding:24px 20px 80px; line-height:1.55;
     -webkit-font-smoothing:antialiased;
@@ -185,7 +189,11 @@
   .nav-btn.needs-setup .dot{display:block;}
 
   .view{display:none;}
-  .view.active{display:block;}
+  .view.active{display:block; animation:view-in 0.32s ease-out;}
+  @keyframes view-in{
+    from{opacity:0; transform:translateY(6px);}
+    to{opacity:1; transform:none;}
+  }
 
   /* setup wizard */
   .setup-progress{
@@ -285,9 +293,62 @@
     padding:18px; background:var(--field-bg);
   }
   .guided-start{margin-top:4px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  .guided-progress-track{
+    height:3px; border-radius:2px; background:var(--border);
+    margin:10px 0 2px; overflow:hidden;
+  }
+  .guided-progress-fill{
+    height:100%; width:0%; border-radius:2px; background:var(--accent);
+    transition:width 0.35s ease;
+  }
   .guided-q{
     font-size:1rem; font-weight:500; color:var(--text); margin:10px 0 8px;
     text-wrap:balance;
+  }
+  .guided-q.enter{
+    animation:q-enter 0.38s ease-out;
+  }
+  @keyframes q-enter{
+    from{opacity:0; transform:translateY(8px);}
+    to{opacity:1; transform:none;}
+  }
+  .interview-ready{
+    display:none; margin-top:16px; padding:16px 16px 14px;
+    border-radius:10px; border:1px solid color-mix(in srgb, var(--secondary) 35%, var(--border));
+    background:
+      linear-gradient(135deg, color-mix(in srgb, var(--secondary-tint) 70%, transparent), transparent 70%),
+      var(--field-bg);
+  }
+  .interview-ready.show{
+    display:block; animation:ready-in 0.45s ease-out;
+  }
+  @keyframes ready-in{
+    from{opacity:0; transform:translateY(10px) scale(0.98);}
+    to{opacity:1; transform:none;}
+  }
+  .interview-ready .ready-kicker{
+    margin:0 0 4px; font-size:0.72rem; text-transform:uppercase;
+    letter-spacing:0.06em; color:var(--secondary); font-weight:700;
+  }
+  .interview-ready .ready-title{
+    margin:0 0 6px; font-family:Fraunces,Georgia,serif; font-size:1.15rem; font-weight:600;
+  }
+  .interview-ready .ready-summary{
+    margin:0 0 12px; font-size:0.9rem; color:var(--muted); max-width:46ch;
+  }
+  .interview-ready .ready-actions{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  .memory-cue{
+    display:none; margin:0 0 10px; font-size:0.82rem; color:var(--secondary);
+    opacity:0; transform:translateY(4px);
+    transition:opacity 0.28s ease, transform 0.28s ease;
+  }
+  .memory-cue.show{
+    display:block; opacity:1; transform:none;
+  }
+  .memory-cue em{font-style:normal; font-weight:600;}
+  @media (prefers-reduced-motion: reduce){
+    .view.active, .guided-q.enter, .interview-ready.show{animation:none;}
+    .guided-progress-fill, .memory-cue{transition:none;}
   }
   .guided-q-actions{
     display:flex; gap:8px; align-items:center; flex-wrap:wrap;
@@ -737,6 +798,9 @@
         <span class="status" id="guidedProgress" style="margin:0;"></span>
         <button type="button" id="guidedCancelBtn" class="secondary">Done for now</button>
       </div>
+      <div class="guided-progress-track" aria-hidden="true">
+        <div class="guided-progress-fill" id="guidedProgressFill"></div>
+      </div>
       <div class="guided-q" id="guidedQuestion"></div>
       <div class="guided-q-actions">
         <button type="button" id="guidedAskSpeakBtn" class="secondary" aria-label="Speak question" aria-pressed="false">Speak question</button>
@@ -766,6 +830,16 @@
       <div class="guided-nav">
         <button type="button" id="guidedSkipBtn" class="secondary">Skip</button>
         <button type="button" id="guidedNextBtn" style="display:none;">Next</button>
+      </div>
+    </div>
+
+    <div id="interviewReady" class="interview-ready" aria-live="polite">
+      <p class="ready-kicker">Interview complete</p>
+      <p class="ready-title">Ready to search</p>
+      <p class="ready-summary" id="interviewReadySummary"></p>
+      <div class="ready-actions">
+        <button type="button" id="interviewReadySearchBtn">Search with this profile</button>
+        <button type="button" id="interviewReadyCvBtn" class="secondary">Optional: upload CV</button>
       </div>
     </div>
 
@@ -889,6 +963,7 @@
     <button id="searchBtn" type="button">Search jobs</button>
     <span class="status" id="searchStatus"></span>
   </div>
+  <p class="memory-cue" id="searchMemoryCue" aria-live="polite"></p>
 </section>
 
 <section id="resultsSection" style="display:none;">
@@ -899,6 +974,7 @@
   <p class="hint" style="color:var(--muted); font-size:0.9rem; margin:4px 0 16px;">
     Ranked for your profile.
   </p>
+  <p class="memory-cue" id="resultsMemoryCue" aria-live="polite"></p>
   <div id="resultsList"></div>
 </section>
 
@@ -1052,6 +1128,50 @@ function getStanceText(){
 
 function setStanceText(text){
   localStorage.setItem('vjr_stance', text || '');
+}
+
+/** Concise profile memory for search / job chat (stance + short CV). */
+function buildCandidateMemoryBlock({ maxStance = 900, maxCv = 1200 } = {}){
+  const stance = truncateForPrompt(getStanceText(), maxStance);
+  const cv = truncateForPrompt((cvText || '').trim(), maxCv);
+  const parts = [];
+  if(stance) parts.push(`Voice interview profile:\n${stance}`);
+  if(cv) parts.push(`CV excerpt (authoritative for skills/experience):\n${cv}`);
+  return parts.join('\n\n');
+}
+
+function hasProfileMemory(){
+  return !!(getStanceText().trim() || (cvText || '').trim());
+}
+
+function updateSearchMemoryCue(){
+  const cue = document.getElementById('searchMemoryCue');
+  if(!cue) return;
+  const stance = !!getStanceText().trim();
+  const cv = !!(cvText || '').trim();
+  if(!stance && !cv){
+    cue.classList.remove('show');
+    cue.textContent = '';
+    return;
+  }
+  const bits = [];
+  if(stance) bits.push('your interview');
+  if(cv) bits.push('your CV');
+  cue.innerHTML = `Ranking will use <em>${bits.join(' + ')}</em>.`;
+  cue.classList.add('show');
+}
+
+function updateResultsMemoryCue(used){
+  const cue = document.getElementById('resultsMemoryCue');
+  if(!cue) return;
+  if(!used){
+    cue.classList.remove('show');
+    cue.textContent = '';
+    return;
+  }
+  cue.innerHTML = 'Matched using <em>your interview</em>' +
+    ((cvText || '').trim() ? ' <em>+ CV</em>' : '') + '.';
+  cue.classList.add('show');
 }
 
 // ---------- CV upload (session-only, never persisted to localStorage) ----------
@@ -1674,11 +1794,12 @@ Weight labels separately (ignore empty): Roles=title; Companies=careers pages fi
 
 Prefer: company careers → Naukri/Indeed/Instahyre/Cutshort/Wellfound (India-weighted unless query says otherwise) → LinkedIn/other boards.
 
-Profile:
-${stance || '(none — rank on query only; do not invent background)'}
+${stance
+  ? `Candidate memory (MUST use for ranking fit — skills, seniority, domain, constraints from their voice interview; do not invent beyond this):\n${stance}`
+  : 'Profile: (none — rank on query only; do not invent background)'}
 ${cv ? `\nCV (authoritative for skills/experience over profile):\n${cv}\n` : ''}
 
-HARD CAP: return at most ${MAX_JOB_RESULTS} jobs — never more. Prefer fewer if sparse. Score 0-100: query/location ≤50, profile fit ≤40, legitimacy ≤10. Do not inflate.
+HARD CAP: return at most ${MAX_JOB_RESULTS} jobs — never more. Prefer fewer if sparse. Score 0-100: query/location ≤50, profile fit ≤40, legitimacy ≤10. Do not inflate. When profile/CV memory is present, fit sentences must reference concrete signals from it.
 
 Fields per job: title, company, location, url (verbatim from search only — never invent; else careers URL from search), fit (one concrete sentence), score, gate (blocker or null), skills_required (3-6), source
 ${cv ? `, matched_skills (CV-supported only), missing_skills (honest gaps), next_step (one action for THIS role)` : ''}
@@ -1822,8 +1943,12 @@ function renderResults(jobs){
   const section = document.getElementById('resultsSection');
   list.innerHTML = '';
   if(!jobs.length){
-    list.innerHTML = '<div class="status">no results found — try broadening the search or stance.</div>';
+    const hasMemory = hasProfileMemory();
+    list.innerHTML = hasMemory
+      ? '<div class="status">No live matches for that query — try a broader role or keyword. Your interview is still saved for the next search.</div>'
+      : '<div class="status">No results found — try broadening the search, or build a voice profile so ranking has more to work with.</div>';
     section.style.display = 'block';
+    updateResultsMemoryCue(false);
     return;
   }
   jobs.forEach((job, index) => {
@@ -2052,11 +2177,13 @@ FIELD_CATS.forEach((cat) => {
 });
 
 // ---------- search flow ----------
-function startSearchProgress(statusEl){
+function startSearchProgress(statusEl, { hasMemory = false } = {}){
   const stages = [
     'searching the web for live postings…',
     'checking career pages and job boards…',
-    'ranking matches for your profile…',
+    hasMemory
+      ? 'ranking matches with your interview…'
+      : 'ranking matches for your profile…',
     'still working — web search can take a minute…'
   ];
   const started = Date.now();
@@ -2081,22 +2208,28 @@ document.getElementById('searchBtn').addEventListener('click', async () => {
   const query = getChipQuery();
   const stance = getStanceText().trim();
   if(!query){
-    setStatus('searchStatus', 'Add roles, companies, or keywords first', 'err');
+    if(stance){
+      setStatus('searchStatus', 'Add a role or keyword — your interview is ready to rank matches', 'err');
+    }else{
+      setStatus('searchStatus', 'Add roles, companies, or keywords first — or build a voice profile', 'err');
+    }
     return;
   }
   const btn = document.getElementById('searchBtn');
   const statusEl = document.getElementById('searchStatus');
   btn.disabled = true;
   setStatus('searchStatus', '', '');
-  const stopProgress = startSearchProgress(statusEl);
+  updateSearchMemoryCue();
+  const stopProgress = startSearchProgress(statusEl, { hasMemory: !!(stance || (cvText || '').trim()) });
   try{
-    log(`calling ${getProvider()} web search for:\n${query}${cvText ? ` (with CV, ${Math.min(cvText.length, MAX_CV_CHARS)}/${cvText.length} chars)` : ''}`);
+    log(`calling ${getProvider()} web search for:\n${query}${stance ? `\n(with interview stance, ${Math.min(stance.length, MAX_STANCE_CHARS)} chars)` : ''}${cvText ? `\n(with CV, ${Math.min(cvText.length, MAX_CV_CHARS)}/${cvText.length} chars)` : ''}`);
     const raw = await callJobSearch(query, stance, cvText);
     log(`raw response length: ${raw.length}`);
     const jobs = parseJobsJson(raw).slice(0, MAX_JOB_RESULTS);
     log(`parsed ${jobs.length} jobs`);
     stopProgress();
     renderResults(jobs);
+    updateResultsMemoryCue(!!(stance || (cvText || '').trim()) && jobs.length > 0);
     setStatus('searchStatus', `found ${jobs.length} result${jobs.length===1?'':'s'}`, 'ok');
   }catch(err){
     stopProgress();
@@ -2194,6 +2327,8 @@ function startElapsedClock(statusId){
 
 async function beginRecordSession({ btn, statusId }){
   if(recordSession || activeMicButton) throw new Error('already recording');
+  // User is about to speak — never let TTS talk over them.
+  stopTtsPlayback();
   const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
   const { recorder, chunks } = startRecorderOnStream(stream);
   recordSession = {
@@ -2278,7 +2413,57 @@ async function transcribeBlobsToEnglish(blobs){
   };
 }
 
-function bindMicButton({ buttonId, statusId, onResult }){
+/**
+ * Detect empty / tiny / nonsense STT+cleanup results so the interviewer
+ * can ask for a repeat instead of saving garbage and advancing.
+ * Allows short real answers ("Yes", "Remote", "ROS", "5 years").
+ */
+function isUnclearSpeechTranscript(english, original = ''){
+  const text = String(english || '').trim();
+  const raw = String(original || '').trim();
+  const source = text || raw;
+  if(!source) return true;
+
+  const words = source.split(/\s+/).filter(Boolean);
+  const letters = (source.match(/[A-Za-z\u0900-\u097F]/g) || []).join('');
+  const digits = (source.match(/\d/g) || []).join('');
+
+  // Almost no linguistic content
+  if(letters.length + digits.length < 2) return true;
+  if(words.length === 1 && words[0].length < 2 && !digits) return true;
+
+  // Single-token filler / non-answers after cleanup
+  const lone = words.length === 1 ? words[0].toLowerCase().replace(/[^a-z\u0900-\u097F0-9]/gi, '') : '';
+  const fillerOnly = new Set([
+    'um', 'uh', 'uhm', 'hmm', 'hm', 'ah', 'eh', 'oh', 'er', 'erm',
+    'a', 'an', 'the', 'and', 'to', 'of', 'ya', 'haan', 'ha', 'na'
+  ]);
+  if(lone && fillerOnly.has(lone) && !digits) return true;
+
+  // Keyboard smash / repeated character runs (e.g. "aaaa", "asdfasdf")
+  if(/(.)\1{3,}/i.test(source.replace(/\s/g, ''))) return true;
+  if(words.length === 1 && lone.length >= 6){
+    const uniq = new Set(lone.split(''));
+    if(uniq.size <= 3) return true;
+    const half = Math.floor(lone.length / 2);
+    if(half >= 3 && lone.slice(0, half) === lone.slice(half, half * 2)) return true;
+  }
+
+  // Latin text with almost no vowels → likely garble (skip if Devanagari-heavy)
+  const hasDevanagari = /[\u0900-\u097F]/.test(source);
+  if(!hasDevanagari && letters.length >= 4){
+    const vowels = (letters.match(/[aeiou]/gi) || []).length;
+    if(vowels / letters.length < 0.12) return true;
+  }
+
+  // Mostly punctuation / symbols
+  const alnum = (source.match(/[A-Za-z0-9\u0900-\u097F]/g) || []).length;
+  if(alnum > 0 && alnum / source.replace(/\s/g, '').length < 0.4) return true;
+
+  return false;
+}
+
+function bindMicButton({ buttonId, statusId, onResult, requireClearSpeech = false }){
   const btn = document.getElementById(buttonId);
   let busy = false;
 
@@ -2306,6 +2491,12 @@ function bindMicButton({ buttonId, statusId, onResult }){
       const { original, english, langMismatch } = await transcribeBlobsToEnglish(blobs);
       if(!english.trim() && !original.trim()){
         setStatus(statusId, 'didn\'t catch that — try again', 'err');
+        return;
+      }
+
+      if(requireClearSpeech && isUnclearSpeechTranscript(english, original)){
+        log(`unclear speech rejected: english="${english}" original="${original}"`);
+        setStatus(statusId, 'didn\'t catch that clearly — please say it again', 'err');
         return;
       }
 
@@ -2402,6 +2593,8 @@ function syncStanceFromGuidedAnswers({ force = false } = {}){
   const composed = composeStanceFromGuided();
   if(composed) setStanceText(composed);
   else if(force) setStanceText('');
+  updateSearchMemoryCue();
+  updateInterviewReadyPanel();
 }
 
 function saveGuidedAnswers(){
@@ -2522,6 +2715,17 @@ function interviewHistoryForPrompt(){
   }).join('\n');
 }
 
+function lastGuidedAnswerMeta(){
+  for(let i = guidedTurns.length - 1; i >= 0; i--){
+    const t = guidedTurns[i];
+    if(!isGuidedAnswered(t?.answer)) continue;
+    const answer = t.answer.trim();
+    const words = answer.split(/\s+/).filter(Boolean);
+    return { answer, wordCount: words.length, question: t.question };
+  }
+  return null;
+}
+
 function cvExcerptForInterview(){
   const raw = (cvText || '').trim();
   if(!raw) return '';
@@ -2548,25 +2752,48 @@ ${cvBlock}
 Respond ONLY with raw JSON (no fences, no preamble):
 {"done":true,"summary":"2-4 sentence English profile for job search"}`;
   }
-  return `You are an AI interviewer helping build a job-search profile. Ask one focused follow-up question at a time.
+
+  const last = lastGuidedAnswerMeta();
+  const lastBlock = last
+    ? `\nLatest answer (must ground your next question in this and/or the CV):\nQ: ${last.question}\nA (${last.wordCount} words): ${last.answer}\n`
+    : '\nLatest answer: (none yet — ask an opening follow-up grounded in any CV signals if present)\n';
+  const pacingHint = last && last.wordCount >= 40
+    ? '- Their last answer was long — ask a shorter, sharper follow-up (one short sentence).\n'
+    : last && last.wordCount > 0 && last.wordCount <= 8
+      ? '- Their last answer was brief — one concrete probe is fine; do not pad with filler.\n'
+      : '';
+
+  return `You are a sharp, natural AI interviewer building a job-search profile — not a phone tree and not a fixed HR script.
+
+Before choosing the next question, silently extract signals from the Q&A and CV (do not output this list):
+- Target role / function
+- Years of experience / seniority (junior / mid / senior / lead — infer only from evidence)
+- Domain (e.g. robotics, SaaS, fintech) and concrete skills/tools (e.g. ROS, retention, Python, PLC)
+- Constraints (location, remote, visa, notice) and goals
+- Gaps vs the stated target role
 
 Mix across the interview:
 - Goals and preferences (role target, location/remote, constraints)
 - ${cvExcerpt
-    ? 'CV-grounded probes (specific projects, stack, impact, and gaps vs their stated target role — e.g. robotics if that is the goal)'
-    : 'Skills, experience, and gaps useful for job matching'}
+    ? 'CV-grounded probes (named projects, stack, impact metrics, and gaps vs their stated target — e.g. robotics if that is the goal)'
+    : 'Skills, experience depth, and gaps useful for job matching'}
 
-Rules:
+Hard rules:
+- The next question MUST reference something concrete from the latest answer and/or the CV (a role, tool, project, metric, constraint, or phrase they used). Forbidden: generic openers like "tell me about your most recent role", "what are your strengths", "walk me through your background" when they already covered that.
 - Do not invent employers, titles, skills, projects, or outcomes — only ask from the CV text and answers so far.
-- Do not repeat earlier questions.
-- Keep the question short and conversational (one or two sentences).
-- Prefer concrete, answerable questions.
-- After about 4–${GUIDED_MAX_QUESTIONS} questions you may finish if you have enough signal.
+- Do not repeat earlier questions or re-ask facts already answered.
+- Language: the candidate may code-switch Hindi–English when speaking; transcripts arrive in English after STT. Treat meaning, not surface language. Never re-ask something already answered just because wording was mixed or translated.
+- If the latest answer says they are confused, unclear, or asks you to repeat: rephrase the previous question more simply. Do not advance to a new topic. Do not claim you "sense" emotions (anxiety, etc.) — only respond to what they said.
+- Vary depth by seniority/goal: juniors → clearer, narrower questions; seniors/leads → dig into scope, tradeoffs, ownership, impact. Know when one short question is enough vs when to go deeper.
+- Ban stock / empty empathy phrases ("I understand your concern", "That's great", "Thank you for sharing", "I appreciate that"). No phone-tree filler.
+- Prefer short, natural spoken questions (good for TTS): usually one sentence, max two. Conversational, not formal survey wording.
+${pacingHint}- Prefer concrete, answerable questions.
+- After about 4–${GUIDED_MAX_QUESTIONS} questions you may finish if you have enough signal for job matching.
 - You have asked ${asked} question(s); at most ${remaining} more allowed (including the next one).
-${cvExcerpt ? '- When a CV is present, prefer follow-ups that reference real items from it (projects, stack, impact, missing pieces for the target role), not only generic HR questions.\n' : ''}
+${cvExcerpt ? '- When a CV is present, prefer follow-ups that cite real CV items over generic HR questions.\n' : ''}
 Interview so far:
 ${interviewHistoryForPrompt()}
-${cvBlock}
+${lastBlock}${cvBlock}
 Respond ONLY with raw JSON (no fences, no preamble), either:
 {"done":false,"question":"..."}
 or when enough information:
@@ -2772,9 +2999,12 @@ function commitGuidedAnswerFromInput(){
   const raw = input.value.trim();
   if(!raw) return false;
   if(!guidedTurns[guidedQuestionIndex]) return false;
+  const prev = guidedTurns[guidedQuestionIndex].answer;
   guidedTurns[guidedQuestionIndex].answer = raw;
   // Edits invalidate a prior LLM summary; search falls back to Q&A compose.
+  // Re-answering after "done" should allow wrap-up to rebuild — do not restart from Q1.
   if(guidedSummary) guidedSummary = '';
+  if(guidedInterviewDone && prev !== raw) guidedInterviewDone = false;
   saveGuidedAnswers();
   guidedAnswerReady = true;
   document.getElementById('guidedNativePeek').classList.remove('show');
@@ -2929,6 +3159,7 @@ document.getElementById('guidedClearBtn').addEventListener('click', () => {
   if(turn && Object.prototype.hasOwnProperty.call(turn, 'answer')){
     delete turn.answer;
     if(guidedSummary) guidedSummary = '';
+    if(guidedInterviewDone) guidedInterviewDone = false;
     saveGuidedAnswers();
   }
   syncClearButton(input, document.getElementById('guidedClearBtn'));
@@ -2969,6 +3200,7 @@ document.getElementById('guidedAnswersList').addEventListener('click', (e) => {
   if(!btn) return;
   const index = Number(btn.dataset.guidedIndex);
   if(Number.isNaN(index)) return;
+  // Jump to that turn only — keep full Q&A history; do not restart from Q1.
   if(!guidedConvoActive) beginGuidedAt(index, { speak: true });
   else {
     commitGuidedAnswerFromInput();
@@ -3381,12 +3613,17 @@ document.getElementById('cvDownloadTxtBtn').addEventListener('click', () => {
 
 bindMicButton({
   buttonId: 'guidedMicBtn', statusId: 'guidedMicStatus',
+  requireClearSpeech: true,
   onResult: (text) => {
     const input = document.getElementById('guidedAnswerInput');
     input.value = appendDictatedText(input.value, text);
     if(guidedTurns[guidedQuestionIndex]){
-      guidedTurns[guidedQuestionIndex].answer = input.value.trim();
+      const prev = guidedTurns[guidedQuestionIndex].answer;
+      const next = input.value.trim();
+      guidedTurns[guidedQuestionIndex].answer = next;
       if(guidedSummary) guidedSummary = '';
+      // Correction of this turn only — never wipe earlier Q&A or jump back to Q1.
+      if(guidedInterviewDone && prev !== next) guidedInterviewDone = false;
       saveGuidedAnswers();
     }
     guidedAnswerReady = true;
@@ -3431,7 +3668,14 @@ const jobChatHistories = {}; // { [jobIndex]: [{role, text}] }
 
 function toggleJobChat(index){
   const panel = document.getElementById(`jobChatPanel-${index}`);
-  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  const opening = panel.style.display === 'none';
+  panel.style.display = opening ? 'block' : 'none';
+  if(opening){
+    const statusId = `jobChatMicStatus-${index}`;
+    if(hasProfileMemory()){
+      setStatus(statusId, 'using your interview' + ((cvText || '').trim() ? ' + CV' : '') + ' for answers', 'ok');
+    }
+  }
 }
 
 function buildJobContextForChat(job){
@@ -3452,15 +3696,19 @@ async function answerJobChatQuestion(index, question){
   const job = lastResults[index];
   const history = jobChatHistories[index] || [];
   const historyText = history.map(m => `${m.role === 'user' ? 'Candidate' : 'You'}: ${m.text}`).join('\n');
-  const prompt = `You are answering a candidate's question about one specific job listing they're considering. Answer using ONLY the job details below plus your general knowledge (e.g. explaining what a technology or term means, general industry context) — do not claim to have searched for new information, and do not invent anything about this specific company or posting beyond what's given.
+  const memory = buildCandidateMemoryBlock({ maxStance: 700, maxCv: 900 });
+  const memoryBlock = memory
+    ? `\nCandidate memory (reuse when answering fit, gaps, or "should I apply" — do not invent beyond this + job details):\n${memory}\n`
+    : '';
+  const prompt = `You are answering a candidate's question about one specific job listing they're considering. Answer using ONLY the job details below, their candidate memory when relevant, plus your general knowledge (e.g. explaining what a technology or term means, general industry context) — do not claim to have searched for new information, and do not invent anything about this specific company or posting beyond what's given.
 
 Job details:
 ${buildJobContextForChat(job)}
-
-${historyText ? `Earlier in this conversation:\n${historyText}\n` : ''}
+${memoryBlock}
+${historyText ? `Earlier in this conversation (continue coherently; do not ignore prior turns):\n${historyText}\n` : ''}
 Candidate's question: "${question}"
 
-Answer directly and concisely — 2-4 sentences, plain language, no headers or markdown. If the answer isn't knowable from the job details given (e.g. something only the employer would know, like exact salary or interview process), say so honestly instead of guessing.`;
+Answer directly and concisely — 2-4 sentences, plain language, no headers or markdown. When the question is about fit or readiness, ground the reply in their interview/CV memory and this listing. If the answer isn't knowable from the job details given (e.g. something only the employer would know, like exact salary or interview process), say so honestly instead of guessing.`;
 
   const provider = getProvider();
   // 400 truncated mid-answer (and TTS); 1200 is enough for a short chat reply.
