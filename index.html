@@ -292,6 +292,10 @@
   .guided-answer .q{font-size:0.78rem; color:var(--muted); margin-bottom:4px;}
   .guided-answer .a{font-size:0.9rem; color:var(--text);}
   .guided-answer .a.muted{color:var(--muted); font-style:italic;}
+  .guided-answer-input{
+    width:100%; margin-top:12px; min-height:72px;
+    font-size:0.95rem; line-height:1.45;
+  }
   .guided-nav{
     display:flex; gap:8px; align-items:center; justify-content:flex-end;
     margin-top:12px; flex-wrap:wrap;
@@ -541,7 +545,7 @@
   </div>
 
   <div class="profile-panel" id="profilePanel-guided">
-    <p class="hint">Five spoken questions. Skip any you want — we use what you answer.</p>
+    <p class="hint">Five questions — speak or type. Skip any you want — we use what you answer.</p>
     <div class="guided-start">
       <button type="button" id="startGuidedBtn">Start</button>
       <button type="button" id="resumeGuidedBtn" class="secondary" style="display:none;">Continue</button>
@@ -562,6 +566,7 @@
         </button>
         <span class="status" id="guidedMicStatus"></span>
       </div>
+      <textarea id="guidedAnswerInput" class="guided-answer-input" rows="3" placeholder="Or type your answer" aria-label="Or type your answer" autocomplete="off"></textarea>
       <div class="transcript-box" id="guidedTranscriptBox">
         <div class="label">heard</div>
         <div id="guidedTranscriptOriginal"></div>
@@ -1852,6 +1857,7 @@ function beginGuidedAt(index){
   document.getElementById('reviewGuidedBtn').style.display = 'none';
   document.getElementById('clearGuidedBtn').style.display = 'none';
   document.getElementById('guidedMicBtn').style.display = 'inline-block';
+  document.getElementById('guidedAnswerInput').style.display = 'block';
   document.getElementById('guidedSkipBtn').style.display = 'inline-block';
   showGuidedQuestion();
   renderGuidedAnswersReview();
@@ -1871,6 +1877,32 @@ function advanceGuided(){
   renderGuidedAnswersReview();
 }
 
+function guidedNextLabel(){
+  return guidedQuestionIndex === GUIDED_QUESTIONS.length - 1 ? 'Finish' : 'Next';
+}
+
+function commitGuidedAnswerFromInput(){
+  const val = document.getElementById('guidedAnswerInput').value.trim();
+  if(!val) return false;
+  guidedAnswers[guidedQuestionIndex] = val;
+  saveGuidedAnswers();
+  guidedAnswerReady = true;
+  return true;
+}
+
+function updateGuidedNextFromInput(){
+  const hasTyped = document.getElementById('guidedAnswerInput').value.trim().length > 0;
+  const existing = guidedAnswers[guidedQuestionIndex];
+  if(hasTyped || isGuidedAnswered(existing) || existing === null){
+    document.getElementById('guidedNextBtn').style.display = 'inline-block';
+    document.getElementById('guidedNextBtn').textContent = guidedNextLabel();
+    if(hasTyped || isGuidedAnswered(existing)) guidedAnswerReady = true;
+  }else{
+    document.getElementById('guidedNextBtn').style.display = 'none';
+    guidedAnswerReady = false;
+  }
+}
+
 function showGuidedQuestion(){
   document.getElementById('guidedQuestion').textContent = GUIDED_QUESTIONS[guidedQuestionIndex];
   document.getElementById('guidedProgress').textContent =
@@ -1878,24 +1910,28 @@ function showGuidedQuestion(){
   document.getElementById('guidedTranscriptBox').classList.remove('show');
   document.getElementById('guidedNextBtn').style.display = 'none';
   document.getElementById('guidedSkipBtn').style.display = 'inline-block';
+  document.getElementById('guidedAnswerInput').style.display = 'block';
   setStatus('guidedMicStatus', '', '');
   guidedAnswerReady = false;
 
+  const input = document.getElementById('guidedAnswerInput');
   const existing = guidedAnswers[guidedQuestionIndex];
   if(isGuidedAnswered(existing)){
+    input.value = existing.trim();
     document.getElementById('guidedTranscriptEnglish').textContent = existing.trim();
     document.getElementById('guidedTranscriptOriginal').textContent = '(saved answer)';
     document.getElementById('guidedTranscriptBox').classList.add('show');
     document.getElementById('guidedNextBtn').style.display = 'inline-block';
-    document.getElementById('guidedNextBtn').textContent =
-      guidedQuestionIndex === GUIDED_QUESTIONS.length - 1 ? 'Finish' : 'Next';
+    document.getElementById('guidedNextBtn').textContent = guidedNextLabel();
     guidedAnswerReady = true;
-    setStatus('guidedMicStatus', 'saved — speak again to replace, or skip', 'ok');
+    setStatus('guidedMicStatus', 'saved — edit, speak again, or skip', 'ok');
   }else if(existing === null){
-    setStatus('guidedMicStatus', 'previously skipped — speak to answer, or skip again', '');
+    input.value = '';
+    setStatus('guidedMicStatus', 'previously skipped — type, speak, or skip again', '');
     document.getElementById('guidedNextBtn').style.display = 'inline-block';
-    document.getElementById('guidedNextBtn').textContent =
-      guidedQuestionIndex === GUIDED_QUESTIONS.length - 1 ? 'Finish' : 'Next';
+    document.getElementById('guidedNextBtn').textContent = guidedNextLabel();
+  }else{
+    input.value = '';
   }
 }
 
@@ -1927,13 +1963,21 @@ document.getElementById('clearGuidedBtn').addEventListener('click', () => {
 });
 
 document.getElementById('guidedCancelBtn').addEventListener('click', () => {
+  commitGuidedAnswerFromInput();
   guidedConvoActive = false;
   document.getElementById('guidedConvo').style.display = 'none';
   renderGuidedAnswersReview();
   updateGuidedStartUI();
 });
 
-document.getElementById('guidedNextBtn').addEventListener('click', () => advanceGuided());
+document.getElementById('guidedNextBtn').addEventListener('click', () => {
+  commitGuidedAnswerFromInput();
+  advanceGuided();
+});
+
+document.getElementById('guidedAnswerInput').addEventListener('input', () => {
+  updateGuidedNextFromInput();
+});
 
 document.getElementById('guidedSkipBtn').addEventListener('click', () => {
   guidedAnswers[guidedQuestionIndex] = null;
@@ -1948,6 +1992,7 @@ document.getElementById('guidedAnswersList').addEventListener('click', (e) => {
   if(Number.isNaN(index)) return;
   if(!guidedConvoActive) beginGuidedAt(index);
   else {
+    commitGuidedAnswerFromInput();
     guidedQuestionIndex = index;
     showGuidedQuestion();
     renderGuidedAnswersReview();
@@ -1964,6 +2009,7 @@ async function synthesizeGuidedProfile(){
   document.getElementById('guidedQuestion').textContent = 'Writing your profile…';
   document.getElementById('guidedProgress').textContent = '';
   document.getElementById('guidedMicBtn').style.display = 'none';
+  document.getElementById('guidedAnswerInput').style.display = 'none';
   document.getElementById('guidedNextBtn').style.display = 'none';
   document.getElementById('guidedSkipBtn').style.display = 'none';
   document.getElementById('startGuidedBtn').style.display = 'none';
@@ -1975,7 +2021,7 @@ async function synthesizeGuidedProfile(){
       .map((a, i) => isGuidedAnswered(a) ? `Q: ${GUIDED_QUESTIONS[i]}\nA: ${a.trim()}` : null)
       .filter(Boolean)
       .join('\n\n');
-    const prompt = `You are helping someone build a short, honest CV-style profile from their spoken answers to a few questions. They may have skipped some questions — only use what they answered. Their answers were spoken in their own language and translated to English, so phrasing may be a little rough — clean it up, but do not invent anything they didn't say.
+    const prompt = `You are helping someone build a short, honest CV-style profile from their answers to a few questions. They may have skipped some questions — only use what they answered. Answers may be typed in any language, or spoken and translated to English (so phrasing may be a little rough) — clean it up into clear English, but do not invent anything they didn't say.
 
 ${answersText}
 
@@ -1997,10 +2043,12 @@ Respond with ONLY the profile text, no preamble, no headers.`;
     log(`guided profile ERROR: ${err.message}`);
     document.getElementById('guidedQuestion').textContent = `Something went wrong: ${err.message}`;
     document.getElementById('guidedMicBtn').style.display = 'inline-block';
+    document.getElementById('guidedAnswerInput').style.display = 'block';
     document.getElementById('guidedSkipBtn').style.display = 'inline-block';
   }finally{
     if(!guidedConvoActive){
       document.getElementById('guidedMicBtn').style.display = 'inline-block';
+      document.getElementById('guidedAnswerInput').style.display = 'block';
       document.getElementById('guidedConvo').style.display = 'none';
       renderGuidedAnswersReview();
       updateGuidedStartUI();
@@ -2115,12 +2163,12 @@ document.getElementById('reviewGuidedBtn').addEventListener('click', () => {
 bindMicButton({
   buttonId: 'guidedMicBtn', statusId: 'guidedMicStatus',
   onResult: (text) => {
+    document.getElementById('guidedAnswerInput').value = text;
     guidedAnswers[guidedQuestionIndex] = text;
     saveGuidedAnswers();
     guidedAnswerReady = true;
     document.getElementById('guidedNextBtn').style.display = 'inline-block';
-    document.getElementById('guidedNextBtn').textContent =
-      guidedQuestionIndex === GUIDED_QUESTIONS.length - 1 ? 'Finish' : 'Next';
+    document.getElementById('guidedNextBtn').textContent = guidedNextLabel();
   },
   originalBoxId: 'guidedTranscriptOriginal', englishBoxId: 'guidedTranscriptEnglish', transcriptBoxId: 'guidedTranscriptBox'
 });
