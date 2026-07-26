@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>voice job radar</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.js"></script>
 <style>
   :root{
     --bg:#0b0f0d; --panel:#111815; --phosphor:#5ee9a8; --phosphor-dim:#2f6b52;
@@ -68,6 +69,15 @@
   .chip button:hover{background:rgba(94,233,168,0.2);}
   .chip-input input{background:transparent; border:none; padding:4px 2px; width:100%;}
   .chip-input input:focus{outline:none;}
+  .cv-upload-btn{background:transparent; color:var(--phosphor); border:1px solid var(--phosphor-dim); border-radius:4px; padding:9px 16px; font-family:inherit; font-weight:600; cursor:pointer; font-size:0.9rem; display:inline-block;}
+  .cv-upload-btn:hover{border-color:var(--phosphor);}
+  .skill-gap{margin-top:10px; padding-top:10px; border-top:1px solid var(--phosphor-dim);}
+  .skill-gap .row-label{font-size:0.75rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;}
+  .skill-gap .skills{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;}
+  .skill-gap .skills span{border-radius:12px; padding:2px 8px; font-size:0.75rem;}
+  .skill-gap .skills.have span{background:rgba(94,233,168,0.15); border:1px solid var(--phosphor-dim); color:var(--phosphor);}
+  .skill-gap .skills.missing span{background:rgba(255,107,107,0.12); border:1px solid var(--danger); color:var(--danger);}
+  .skill-gap .next-step{font-size:0.85rem; color:var(--text);}
 </style>
 </head>
 <body>
@@ -155,6 +165,18 @@
   <textarea id="stanceText" rows="6" style="margin-top:8px; min-height:140px;" placeholder="e.g. I have 2 years of experience as a backend developer. I prefer remote work or Bangalore, don't want night shifts, and I'm open to fintech or e-commerce companies."></textarea>
   <div class="row" style="margin-top:8px; justify-content:space-between;">
     <span class="status" id="stanceReadbackStatus"></span>
+  </div>
+
+  <div class="sub" style="margin-top:16px; margin-bottom:8px;">
+    Optional: add your CV so we can tell you exactly which skills you're
+    missing for each job, and what to do about it — not just whether it's a
+    match.
+  </div>
+  <div class="row">
+    <label for="cvFileInput" class="cv-upload-btn">&#128196; upload CV (PDF or text)</label>
+    <input type="file" id="cvFileInput" accept=".pdf,.txt" style="display:none;">
+    <span class="status" id="cvStatus"></span>
+    <button type="button" id="cvClearBtn" class="secondary" style="display:none;">remove CV</button>
   </div>
 </section>
 
@@ -250,6 +272,65 @@ document.getElementById('stanceText').addEventListener('input', (e)=>{
   localStorage.setItem('vjr_stance', e.target.value);
 });
 loadStance();
+
+// ---------- CV upload (session-only, never persisted to localStorage) ----------
+let cvText = '';
+
+async function extractPdfText(file){
+  const buffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+  let text = '';
+  for(let i = 1; i <= pdf.numPages; i++){
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map(item => item.str).join(' ') + '\n';
+  }
+  return text.trim();
+}
+
+function readTextFile(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('could not read file'));
+    reader.readAsText(file);
+  });
+}
+
+document.getElementById('cvFileInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  setStatus('cvStatus', '', '');
+  document.getElementById('cvStatus').innerHTML = '<span class="spinner"></span>reading CV…';
+  try{
+    let text;
+    if(file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')){
+      if(typeof pdfjsLib === 'undefined') throw new Error('PDF reader failed to load — check your connection and try again');
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js';
+      text = await extractPdfText(file);
+    }else{
+      text = await readTextFile(file);
+    }
+    if(!text || !text.trim()) throw new Error('couldn\'t find any text in that file');
+    cvText = text.trim();
+    log(`CV parsed: ${cvText.length} chars from ${file.name}`);
+    setStatus('cvStatus', `${file.name} added (${cvText.length} chars)`, 'ok');
+    document.getElementById('cvClearBtn').style.display = 'inline-block';
+  }catch(err){
+    log(`CV parse ERROR: ${err.message}`);
+    setStatus('cvStatus', err.message, 'err');
+    cvText = '';
+    document.getElementById('cvClearBtn').style.display = 'none';
+  }
+});
+
+document.getElementById('cvClearBtn').addEventListener('click', () => {
+  cvText = '';
+  document.getElementById('cvFileInput').value = '';
+  setStatus('cvStatus', '', '');
+  document.getElementById('cvClearBtn').style.display = 'none';
+});
+
 document.getElementById('providerSelect').addEventListener('change', (e) => {
   setProvider(e.target.value);
   updateProviderNoteVisibility();
@@ -332,7 +413,7 @@ async function sarvamSpeak(texts, languageCode){
 }
 
 // ---------- Claude: web-search job scan ----------
-const JOB_SEARCH_PROMPT = (query, stance) => `You are a job search assistant for someone who does not search or read confidently in English — they just spoke this search out loud in their own language, and it was transcribed and translated to reach you. They cannot easily double-check an English job posting themselves, so your accuracy and honesty here directly determines whether they can act on what you find. Do not invent, embellish, or guess at anything — a wrong or fabricated detail wastes a real trip or application for someone who cannot easily verify it.
+const JOB_SEARCH_PROMPT = (query, stance, cv) => `You are a job search assistant for someone who does not search or read confidently in English — they just spoke this search out loud in their own language, and it was transcribed and translated to reach you. They cannot easily double-check an English job posting themselves, so your accuracy and honesty here directly determines whether they can act on what you find. Do not invent, embellish, or guess at anything — a wrong or fabricated detail wastes a real trip or application for someone who cannot easily verify it.
 
 Search the web right now for CURRENT, REAL, live job openings (not generic listing-site search pages) that match this search and this candidate's stated profile.
 
@@ -347,6 +428,7 @@ Only fall back to generic listing aggregators if these don't surface enough resu
 
 Who this candidate is and what they're looking for, in their own words:
 ${stance || '(not given — rank generically on relevance to the search query alone, and do not assume seniority, background, or requirements you were not told)'}
+${cv ? `\nThe candidate's actual CV/resume text, extracted from an uploaded file (this is the authoritative source of their real skills and experience — trust this over the spoken profile above for anything factual, like years of experience, specific tools used, or past job titles):\n${cv}\n` : ''}
 
 Score each role 0-100 on: how well it matches the search query and location intent (up to 50 points), how well it fits the stated profile/stance if given (up to 40 points), and how current/legitimate the listing looks (up to 10 points). Do not inflate scores to make results look better than they are — a mediocre match should score low, not be flattered.
 
@@ -360,11 +442,14 @@ Find up to 5 real, specific, currently-open roles at named companies. For each, 
 - gate: short string naming a hard blocker/requirement the candidate may not meet, or null — be direct here, this is the single most important field for someone who can't read the fine print in the original posting themselves
 - skills_required: array of 3-6 short skill/requirement tags actually mentioned in the posting
 - source: which source this actually came from (e.g. "company careers page", "Naukri", "Instahyre", "LinkedIn", or the aggregator name)
+${cv ? `- matched_skills: array of specific skills/requirements from skills_required that the candidate's CV shows they actually have — only include ones genuinely supported by the CV text, do not be generous
+- missing_skills: array of specific skills/requirements from skills_required that the CV does NOT show evidence of — this is the real gap, be precise and honest, this is the entire point of asking for a CV
+- next_step: one concrete, specific action to close the gap for THIS role — not generic career advice. Name an actual thing to learn/do (e.g. "Take a short course covering Django REST Framework — you already know Python and SQL, this is the main missing piece" or "You meet every requirement — apply directly, no gap to close"). If there is no CV, omit this field.` : ''}
 
 If you cannot find at least one real, verifiable listing, return an empty array rather than filling it with a weak or invented match — an empty result the candidate can trust is better than a fabricated one they can't.
 
 Respond with ONLY a raw JSON array, no markdown fences, no preamble. Never use double-quote characters inside string values (use single quotes if quoting something). Format:
-[{"title":"","company":"","location":"","url":"","fit":"","score":0,"gate":null,"skills_required":[],"source":""}]`;
+[{"title":"","company":"","location":"","url":"","fit":"","score":0,"gate":null,"skills_required":[]${cv ? ',"matched_skills":[],"missing_skills":[],"next_step":""' : ''},"source":""}]`;
 
 async function callClaude(prompt, { webSearch = false, maxTokens = 4000 } = {}){
   const key = getAnthropicKey();
@@ -413,8 +498,8 @@ async function callOpenAI(prompt){
   return text;
 }
 
-async function callJobSearch(query, stance){
-  const prompt = JOB_SEARCH_PROMPT(query, stance);
+async function callJobSearch(query, stance, cv){
+  const prompt = JOB_SEARCH_PROMPT(query, stance, cv);
   const provider = getProvider();
   return provider === 'openai' ? callOpenAI(prompt) : callClaude(prompt, { webSearch: true });
 }
@@ -472,6 +557,9 @@ function renderResults(jobs){
     const card = document.createElement('div');
     card.className = 'card';
     const skills = (job.skills_required || []).map(s => `<span>${escapeHtml(s)}</span>`).join('');
+    const hasGapAnalysis = job.matched_skills || job.missing_skills || job.next_step;
+    const matchedSkills = (job.matched_skills || []).map(s => `<span>${escapeHtml(s)}</span>`).join('');
+    const missingSkills = (job.missing_skills || []).map(s => `<span>${escapeHtml(s)}</span>`).join('');
     card.innerHTML = `
       <span class="score">${job.score ?? '?'}/100</span>
       <h3>${escapeHtml(job.title || 'Untitled role')}</h3>
@@ -480,6 +568,12 @@ function renderResults(jobs){
       ${job.gate ? `<div class="gate">&#9888; ${escapeHtml(job.gate)}</div>` : ''}
       <div class="skills">${skills}</div>
       ${job.url ? `<a href="${escapeHtml(job.url)}" target="_blank" rel="noopener">view posting &rarr;</a>` : ''}
+      ${hasGapAnalysis ? `
+      <div class="skill-gap">
+        ${matchedSkills ? `<div class="row-label">you already have</div><div class="skills have">${matchedSkills}</div>` : ''}
+        ${missingSkills ? `<div class="row-label">skills to close the gap</div><div class="skills missing">${missingSkills}</div>` : ''}
+        ${job.next_step ? `<div class="row-label">what to do next</div><div class="next-step">${escapeHtml(job.next_step)}</div>` : ''}
+      </div>` : ''}
     `;
     list.appendChild(card);
   });
@@ -553,8 +647,8 @@ document.getElementById('searchBtn').addEventListener('click', async () => {
   setStatus('searchStatus', '', '');
   document.getElementById('searchStatus').innerHTML = '<span class="spinner"></span>searching live job postings…';
   try{
-    log(`calling ${getProvider()} web search for: "${query}"`);
-    const raw = await callJobSearch(query, stance);
+    log(`calling ${getProvider()} web search for: "${query}"${cvText ? ' (with CV)' : ''}`);
+    const raw = await callJobSearch(query, stance, cvText);
     log(`raw response length: ${raw.length}`);
     const jobs = parseJobsJson(raw);
     log(`parsed ${jobs.length} jobs`);
